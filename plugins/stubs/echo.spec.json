@@ -1,0 +1,5 @@
+{
+  "name": "echo",
+  "description": "A simple plugin that echoes input",
+  "instructions": "Create a function echo(text: str) -> str that returns text"
+}

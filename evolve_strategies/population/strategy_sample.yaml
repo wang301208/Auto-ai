@@ -1,0 +1,11 @@
+think_mode: depth_first
+prompt_template: |
+  SYSTEM: You are AutoGPT.
+  USER: ${task}
+toolset:
+  - web_browser
+  - file_writer
+step_sequence:
+  - plan
+  - search
+  - reflect
