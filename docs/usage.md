@@ -7,15 +7,6 @@ Running with `--help` lists all the possible command line arguments you can pass
 agpt --help
 ```
 
-!!! info
-    For use with Docker, replace the script in the examples with
-    `docker compose run --rm auto-gpt`:
-
-    ```shell
-    docker compose run --rm auto-gpt --help
-    docker compose run --rm auto-gpt --ai-settings <filename>
-    ```
-
 !!! note
     Replace anything in angled brackets (<>) to a value you want to specify
 
@@ -103,8 +94,6 @@ To print out debug logs:
 
 ```shell
 agpt --debug
-
-docker-compose run --rm auto-gpt --debug    # in Docker
 ```
 
 ## Disabling Command Categories

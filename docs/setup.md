@@ -2,11 +2,10 @@
 
 ## 📋 Requirements
 
-Choose an environment to run Auto-GPT in (pick one):
+Auto-GPT runs on your local machine. You'll need:
 
-  - [Docker](https://docs.docker.com/get-docker/) (*recommended*)
   - Python 3.10 or later (instructions: [for Windows](https://www.tutorialspoint.com/how-to-install-python-in-windows))
-  - [VSCode + devcontainer](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+  - [Git](https://git-scm.com/downloads) (optional, but recommended)
 
 
 ## 🗝️ Getting an API key
@@ -31,59 +30,6 @@ Get your OpenAI API key from: [https://platform.openai.com/account/api-keys](htt
 
 ## Setting up Auto-GPT
 
-### Set up with Docker
-
-1. Make sure you have Docker installed, see [requirements](#requirements)
-2. Create a project directory for Auto-GPT
-
-    ```shell
-    mkdir Auto-GPT
-    cd Auto-GPT
-    ```
-
-3. In the project directory, create a file called `docker-compose.yml` with the following contents:
-
-    ```yaml
-    version: "3.9"
-    services:
-        auto-gpt:
-        image: significantgravitas/auto-gpt
-        env_file:
-            - .env
-        profiles: ["exclude-from-up"]
-        volumes:
-            - ./auto_gpt_workspace:/app/auto_gpt_workspace
-            - ./data:/app/data
-            ## allow auto-gpt to write logs to disk
-            - ./logs:/app/logs
-            ## uncomment following lines if you want to make use of these files
-            ## you must have them existing in the same folder as this docker-compose.yml
-            #- type: bind
-            #  source: ./azure.yaml
-            #  target: /app/azure.yaml
-            #- type: bind
-            #  source: ./ai_settings.yaml
-            #  target: /app/ai_settings.yaml
-    ```
-
-4. Create the necessary [configuration](#configuration) files. If needed, you can find
-    templates in the [repository].
-5. Pull the latest image from [Docker Hub]
-
-    ```shell
-    docker pull significantgravitas/auto-gpt
-    ```
-
-6. Continue to [Run with Docker](#run-with-docker)
-
-!!! note "Docker only supports headless browsing"
-    Auto-GPT uses a browser in headless mode by default: `HEADLESS_BROWSER=True`.
-    Please do not change this setting in combination with Docker, or Auto-GPT will crash.
-
-[Docker Hub]: https://hub.docker.com/r/significantgravitas/auto-gpt
-[repository]: https://github.com/Significant-Gravitas/Auto-GPT
-
-
 ### Set up with Git
 
 !!! important
@@ -105,10 +51,7 @@ Get your OpenAI API key from: [https://platform.openai.com/account/api-keys](htt
     cd Auto-GPT
     ```
 
-### Set up without Git/Docker
-
-!!! warning
-    We recommend to use Git or Docker, to make updating easier. Also note that some features such as Python execution will only work inside docker for security reasons.
+### Set up from release archive
 
 1. Download `Source code (zip)` from the [latest stable release](https://github.com/Significant-Gravitas/Auto-GPT/releases/latest)
 2. Extract the zip-file into a folder
@@ -157,72 +100,11 @@ Get your OpenAI API key from: [https://platform.openai.com/account/api-keys](htt
 
 ## Running Auto-GPT
 
-### Run with Docker
+### Run locally
 
-Easiest is to use `docker compose`. 
+#### Create a virtual environment
 
-Important: Docker Compose version 1.29.0 or later is required to use version 3.9 of the Compose file format.
-You can check the version of Docker Compose installed on your system by running the following command:
-
-```shell
-docker compose version
-```
-
-This will display the version of Docker Compose that is currently installed on your system.
-
-If you need to upgrade Docker Compose to a newer version, you can follow the installation instructions in the Docker documentation: https://docs.docker.com/compose/install/
-
-Once you have a recent version of Docker Compose, run the commands below in your Auto-GPT folder.
-
-1. Build the image. If you have pulled the image from Docker Hub, skip this step (NOTE: You *will* need to do this if you are modifying `pyproject.toml` to add or remove Python dependencies)
-
-    ```shell
-    docker compose build auto-gpt
-    ```
-        
-2. Run Auto-GPT
-
-    ```shell
-    docker compose run --rm auto-gpt
-    ```
-
-    By default, this will also start and attach a Redis memory backend. If you do not
-    want this, comment or remove the `depends: - redis` and `redis:` sections from
-    `docker-compose.yml`.
-
-    For related settings, see [Memory > Redis setup](./configuration/memory.md#redis-setup).
-
-You can pass extra arguments, e.g. running with `--gpt3only` and `--continuous`:
-
-```shell
-docker compose run --rm auto-gpt --gpt3only --continuous
-```
-
-If you dare, you can also build and run it with "vanilla" docker commands:
-
-```shell
-docker build -t auto-gpt .
-docker run -it --env-file=.env -v $PWD:/app auto-gpt
-docker run -it --env-file=.env -v $PWD:/app --rm auto-gpt --gpt3only --continuous
-```
-
-[Docker Compose file]: https://github.com/Significant-Gravitas/Auto-GPT/blob/stable/docker-compose.yml
-
-
-### Run with Dev Container
-
-1. Install the [Remote - Containers](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers) extension in VS Code.
-
-2. Open command palette with ++f1++ and type `Dev Containers: Open Folder in Container`.
-
-3. Run `agpt`.
-
-
-### Run without Docker
-
-#### Create a Virtual Environment
-
-Create a virtual environment to run in.
+Create and activate a virtual environment:
 
 ```shell
 python -m venv venvAutoGPT
@@ -230,11 +112,17 @@ source venvAutoGPT/bin/activate
 pip3 install --upgrade pip
 ```
 
-!!! warning
-    Due to security reasons, certain features (like Python execution) will by default be disabled when running without docker. So, even if you want to run the program outside a docker container, you currently still need docker to actually run scripts.
+#### Install Auto-GPT
 
-Simply run the command-line tool in your terminal. This will install any necessary Python
-packages and launch Auto-GPT.
+From the project directory, install Auto-GPT and its dependencies:
+
+```shell
+pip install -e .
+```
+
+#### Start Auto-GPT
+
+Run the command-line tool in your terminal:
 
 ```shell
 agpt

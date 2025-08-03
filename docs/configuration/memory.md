@@ -6,8 +6,7 @@
 
 ## Setting Your Cache Type
 
-By default, Auto-GPT set up with Docker Compose will use Redis as its memory backend.
-Otherwise, the default is LocalCache (which stores memory in a JSON file).
+By default, Auto-GPT uses LocalCache (which stores memory in a JSON file).
 
 To switch to a different backend, change the `MEMORY_BACKEND` in `.env`
 to the value that you want:
@@ -41,19 +40,12 @@ Links to memory backends
 
 ### Redis Setup
 
-!!! important
-    If you have set up Auto-GPT using Docker Compose, then Redis is included, no further
-    setup needed.
-
 !!! caution
     This setup is not intended to be publicly accessible and lacks security measures.
     Avoid exposing Redis to the internet without a password or at all!
 
-1. Launch Redis container
-
-    ```shell
-    docker run -d --name redis-stack-server -p 6379:6379 redis/redis-stack-server:latest
-    ```
+1. Start a Redis server and ensure it listens on port 6379.
+   You can use a local installation from [redis.io](https://redis.io) or any hosted service.
 
 3. Set the following settings in `.env`
 
@@ -72,9 +64,7 @@ Links to memory backends
     - `MEMORY_INDEX=<WHATEVER>` to specify a name for the memory index in Redis.
         The default is `auto-gpt`.
 
-!!! info
-    See [redis-stack-server](https://hub.docker.com/r/redis/redis-stack-server) for
-    setting a password and additional configuration.
+
 
 !!! warning
     The Pinecone, Milvus, Redis, and Weaviate memory backends were rendered incompatible
@@ -105,10 +95,10 @@ In the `.env` file set:
 ### Milvus Setup
 
 [Milvus](https://milvus.io/) is an open-source, highly scalable vector database to store
-huge amounts of vector-based memory and provide fast relevant search. It can be quickly
-deployed with docker, or as a cloud service provided by [Zilliz Cloud](https://zilliz.com/).
+huge amounts of vector-based memory and provide fast relevant search. It can be deployed
+locally or used as a cloud service provided by [Zilliz Cloud](https://zilliz.com/).
 
-1. Deploy your Milvus service, either locally using docker or with a managed Zilliz Cloud database:
+1. Deploy your Milvus service locally or use a managed Zilliz Cloud database:
     - [Install and deploy Milvus locally](https://milvus.io/docs/install_standalone-operator.md)
 
     - Set up a managed Zilliz Cloud database
