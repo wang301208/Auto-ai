@@ -39,8 +39,8 @@ def generate_diff(context: str) -> str:
     prompt = ChatSequence.for_model(
         cfg.smart_llm,
         [
-            Message.system(system_prompt),
-            Message.user(context),
+            Message("system", system_prompt),
+            Message("user", context),
         ],
     )
 
