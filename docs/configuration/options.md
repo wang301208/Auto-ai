@@ -1,6 +1,6 @@
 # 配置
 
-配置由 `Config` 对象控制。你可以通过 `.env` 文件设置配置变量。当创建工作空间时，Auto-GPT 会自动从 `.env.template` 生成 `.env` 文件、一个空的 `ai_settings.yaml`，并在缺少时复制 `prompt_settings.yaml`。可通过编辑这些文件来自定义代理。
+配置由 `Config` 对象控制。你可以通过 `.env` 文件设置配置变量。当创建工作空间时，Auto-GPT 会自动从 `.env.template` 生成 `.env` 文件、一个空的 `ai_settings.yaml`，并在缺少时复制 `prompt_settings.yaml`。可通过编辑这些文件来自定义代理。如需中文注释的模板，可手动复制 `.env.template-zh`。
 
 ## 环境变量
 
