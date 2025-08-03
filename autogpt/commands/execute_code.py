@@ -7,10 +7,6 @@ import os
 import subprocess
 from pathlib import Path
 
-import docker
-from docker.errors import DockerException, ImageNotFound
-from docker.models.containers import Container as DockerContainer
-
 from autogpt.agents.agent import Agent
 from autogpt.command_decorator import command
 from autogpt.config import Config
@@ -39,8 +35,8 @@ DENYLIST_CONTROL = "denylist"
     },
 )
 def execute_python_code(code: str, name: str, agent: Agent) -> str:
-    """Create and execute a Python file in a Docker container and return the STDOUT of the
-    executed code. If there is any data that needs to be captured use a print statement
+    """Create and execute a Python file and return the STDOUT of the executed code.
+    If there is any data that needs to be captured use a print statement
 
     Args:
         code (str): The Python code to run
@@ -84,7 +80,7 @@ def execute_python_code(code: str, name: str, agent: Agent) -> str:
 )
 @sanitize_path_arg("filename")
 def execute_python_file(filename: str, agent: Agent) -> str:
-    """Execute a Python file in a Docker container and return the output
+    """Execute a Python file and return the output
 
     Args:
         filename (str): The name of the file to execute
@@ -105,11 +101,7 @@ def execute_python_file(filename: str, agent: Agent) -> str:
         return (
             f"python: can't open file '{filename}': [Errno 2] No such file or directory"
         )
-
-    if we_are_running_in_a_docker_container():
-        logger.debug(
-            f"Auto-GPT is running in a Docker container; executing {file_path} directly..."
-        )
+    try:
         result = subprocess.run(
             ["python", str(file_path)],
             capture_output=True,
@@ -120,66 +112,6 @@ def execute_python_file(filename: str, agent: Agent) -> str:
             return result.stdout
         else:
             return f"Error: {result.stderr}"
-
-    logger.debug("Auto-GPT is not running in a Docker container")
-    try:
-        client = docker.from_env()
-        # You can replace this with the desired Python image/version
-        # You can find available Python images on Docker Hub:
-        # https://hub.docker.com/_/python
-        image_name = "python:3-alpine"
-        try:
-            client.images.get(image_name)
-            logger.debug(f"Image '{image_name}' found locally")
-        except ImageNotFound:
-            logger.info(
-                f"Image '{image_name}' not found locally, pulling from Docker Hub..."
-            )
-            # Use the low-level API to stream the pull response
-            low_level_client = docker.APIClient()
-            for line in low_level_client.pull(image_name, stream=True, decode=True):
-                # Print the status and progress, if available
-                status = line.get("status")
-                progress = line.get("progress")
-                if status and progress:
-                    logger.info(f"{status}: {progress}")
-                elif status:
-                    logger.info(status)
-
-        logger.debug(f"Running {file_path} in a {image_name} container...")
-        container: DockerContainer = client.containers.run(
-            image_name,
-            [
-                "python",
-                file_path.relative_to(agent.workspace.root).as_posix(),
-            ],
-            volumes={
-                str(agent.config.workspace_path): {
-                    "bind": "/workspace",
-                    "mode": "rw",
-                }
-            },
-            working_dir="/workspace",
-            stderr=True,
-            stdout=True,
-            detach=True,
-        )  # type: ignore
-
-        container.wait()
-        logs = container.logs().decode("utf-8")
-        container.remove()
-
-        # print(f"Execution complete. Output: {output}")
-        # print(f"Logs: {logs}")
-
-        return logs
-
-    except DockerException as e:
-        logger.warn(
-            "Could not run the script in a container. If you haven't already, please install Docker https://docs.docker.com/get-docker/"
-        )
-        return f"Error: {str(e)}"
-
     except Exception as e:
         return f"Error: {str(e)}"
 
@@ -299,12 +231,3 @@ def execute_shell_popen(command_line, agent: Agent) -> str:
     os.chdir(current_dir)
 
     return f"Subprocess started with PID:'{str(process.pid)}'"
-
-
-def we_are_running_in_a_docker_container() -> bool:
-    """Check if we are running in a Docker container
-
-    Returns:
-        bool: True if we are running in a Docker container, False otherwise
-    """
-    return os.path.exists("/.dockerenv")
