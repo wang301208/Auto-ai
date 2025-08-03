@@ -136,7 +136,6 @@ def scrape_text_with_selenium(url: str, agent: Agent) -> tuple[WebDriver, str]:
             options.add_argument("--disable-dev-shm-usage")
             options.add_argument("--remote-debugging-port=9222")
 
-        options.add_argument("--no-sandbox")
         if agent.config.selenium_headless:
             options.add_argument("--headless=new")
             options.add_argument("--disable-gpu")
