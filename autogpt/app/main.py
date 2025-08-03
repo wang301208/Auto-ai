@@ -369,11 +369,12 @@ def run_interaction_loop(
             logger.typewriter_log("\n")
             if cycles_remaining != math.inf:
                 # Print authorized commands left value
-            logger.typewriter_log(
-                _("AUTHORISED COMMANDS LEFT: "),
-                Fore.CYAN,
-                f"{cycles_remaining}",
-            )
+                authorized_commands_left = cycles_remaining
+                logger.typewriter_log(
+                    _("AUTHORISED COMMANDS LEFT: "),
+                    Fore.CYAN,
+                    f"{authorized_commands_left}",
+                )
 
         ###################
         # Execute Command #
