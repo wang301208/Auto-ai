@@ -79,7 +79,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     temperature: float = 0
     openai_functions: bool = False
     embedding_model: str = "text-embedding-ada-002"
-    browse_spacy_language_model: str = "zh_core_web_sm"
+    browse_spacy_language_model: str = f"{DEFAULT_LANGUAGE}_core_web_sm"
     # Run loop configuration
     continuous_mode: bool = False
     continuous_limit: int = 0
@@ -180,18 +180,24 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
                 "Please disable OPENAI_FUNCTIONS or choose a suitable model."
             )
 
-    def get_openai_credentials(self, model: str) -> dict[str, str]:
+    def get_openai_credentials(
+        self, model: str, language: str = DEFAULT_LANGUAGE
+    ) -> dict[str, str]:
+        language = language or DEFAULT_LANGUAGE
         credentials = {
             "api_key": self.openai_api_key,
             "api_base": self.openai_api_base,
             "organization": self.openai_organization,
         }
         if self.use_azure:
-            azure_credentials = self.get_azure_credentials(model)
+            azure_credentials = self.get_azure_credentials(model, language)
             credentials.update(azure_credentials)
         return credentials
 
-    def get_azure_credentials(self, model: str) -> dict[str, str]:
+    def get_azure_credentials(
+        self, model: str, language: str = DEFAULT_LANGUAGE
+    ) -> dict[str, str]:
+        language = language or DEFAULT_LANGUAGE
         """Get the kwargs for the Azure API."""
 
         # Fix --gpt3only and --gpt4only in combination with Azure
@@ -272,7 +278,9 @@ class ConfigBuilder(Configurable[Config]):
             "fast_llm": os.getenv("FAST_LLM", os.getenv("FAST_LLM_MODEL")),
             "smart_llm": os.getenv("SMART_LLM", os.getenv("SMART_LLM_MODEL")),
             "embedding_model": os.getenv("EMBEDDING_MODEL"),
-            "browse_spacy_language_model": os.getenv("BROWSE_SPACY_LANGUAGE_MODEL"),
+            "browse_spacy_language_model": os.getenv(
+                "BROWSE_SPACY_LANGUAGE_MODEL", f"{DEFAULT_LANGUAGE}_core_web_sm"
+            ),
             "openai_api_key": os.getenv("OPENAI_API_KEY"),
             "use_azure": os.getenv("USE_AZURE") == "True",
             "azure_config_file": os.getenv("AZURE_CONFIG_FILE", AZURE_CONFIG_FILE),
