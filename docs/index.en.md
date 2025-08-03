@@ -5,7 +5,7 @@ Auto-GPT is an autonomous GPT-4 experiment that chains thoughts to accomplish go
 * 🌐 Internet search and information gathering
 * 💾 Memory and workspace file management
 * 🔌 Plugin system with gap detection
-* 🔁 [Self Improvement Loop](self_improvement.md) for automatic self-development
+* 🔁 [Self Improvement Loop](self_improvement.en.md) for automatic self-development
 * 🧬 [AlphaEvolve strategy evolution](evolve_population.md) to iterate on agent behaviors
 
 Please follow the [Installation](/setup/) guide to get started.
