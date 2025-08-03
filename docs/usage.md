@@ -1,117 +1,73 @@
-# Usage
+# 使用方法
 
-## Command Line Arguments
-Running with `--help` lists all the possible command line arguments you can pass:
+## 命令行参数
+运行 `--help` 可列出所有可用的命令行参数：
 
 ```shell
 agpt --help
 ```
 
 !!! note
-    Replace anything in angled brackets (<>) to a value you want to specify
+    尖括号 (<>) 中的内容需替换为你要指定的值
 
-Here are some common arguments you can use when running Auto-GPT:
+常用参数示例：
 
-* Run Auto-GPT with a different AI Settings file
-
+* 使用不同的 AI 设置文件
 ```shell
-agpt --ai-settings <filename>
+agpt --ai-settings <文件名>
 ```
 
-* Run Auto-GPT with a different Prompt Settings file
-
+* 使用不同的提示词设置文件
 ```shell
-agpt --prompt-settings <filename>
+agpt --prompt-settings <文件名>
 ```
 
-* Specify a memory backend
-
+* 指定记忆后端
 ```shell
-agpt --use-memory  <memory-backend>
+agpt --use-memory <记忆后端>
 ```
 
 !!! note
-    There are shorthands for some of these flags, for example `-m` for `--use-memory`.  
-    Use `agpt --help` for more information.
+    某些选项有简写，例如 `-m` 对应 `--use-memory`。更多信息请运行 `agpt --help`。
 
-### Speak Mode
+### 语音模式
 
-Enter this command to use TTS _(Text-to-Speech)_ for Auto-GPT
+启用 TTS（文本转语音）：
 
 ```shell
 agpt --speak
 ```
 
-### 💀 Continuous Mode ⚠️
+### 💀 连续模式 ⚠️
 
-Run the AI **without** user authorization, 100% automated.
-Continuous mode is NOT recommended.
-It is potentially dangerous and may cause your AI to run forever or carry out actions you would not usually authorize.
-Use at your own risk.
+在 **无需** 用户授权的情况下运行 AI，完全自动化。连续模式可能很危险，可能导致 AI 无限运行或执行你通常不会授权的操作。使用需谨慎。
 
 ```shell
 agpt --continuous
 ```
 
-To exit the program, press ++ctrl+c++
+退出程序请按 ++ctrl+c++。
 
-### ♻️ Self-Feedback Mode ⚠️
+### ♻️ 自我反馈模式 ⚠️
 
-Running Self-Feedback will **INCREASE** token use and thus cost more. This feature enables the agent to provide self-feedback by verifying its own actions and checking if they align with its current goals. If not, it will provide better feedback for the next loop. To enable this feature for the current loop, input `S` into the input field.
+该模式会**增加** Token 使用量。代理会对自身操作提供反馈，并在下一轮给出更好的建议。当前循环启用请在输入字段中键入 `S`。
 
-### GPT-3.5 ONLY Mode
+### 仅使用 GPT-3.5 模式
 
-If you don't have access to GPT-4, this mode allows you to use Auto-GPT!
+如果没有 GPT-4 权限，可使用此模式：
 
 ```shell
 agpt --gpt3only
 ```
 
-You can achieve the same by setting `SMART_LLM` in `.env` to `gpt-3.5-turbo`.
+同样也可在 `.env` 中将 `SMART_LLM` 设置为 `gpt-3.5-turbo`。
 
-### GPT-4 ONLY Mode
+### 仅使用 GPT-4 模式
 
-If you have access to GPT-4, this mode allows you to use Auto-GPT solely with GPT-4.
-This may give your bot increased intelligence.
+只使用 GPT-4：
 
 ```shell
 agpt --gpt4only
 ```
 
-!!! warning
-    Since GPT-4 is more expensive to use, running Auto-GPT in GPT-4-only mode will
-    increase your API costs.
-
-## Logs
-
-Activity, Error, and Debug logs are located in `./logs`
-
-!!! tip 
-    Do you notice weird behavior with your agent? Do you have an interesting use case? Do you have a bug you want to report?
-    Follow the step below to enable your logs. You can include these logs when making an issue report or discussing an issue with us.
-
-To print out debug logs:
-
-```shell
-agpt --debug
-```
-
-## Disabling Command Categories
-
-If you want to selectively disable some command groups, you can use the `DISABLED_COMMAND_CATEGORIES` config in your `.env`. You can find the list of categories in your `.env.template`
-
-For example, to disable coding related features, set it to the value below:
-
-```ini
-DISABLED_COMMAND_CATEGORIES=autogpt.commands.execute_code
-```
-
-## Running AlphaEvolve
-
-To launch an AlphaEvolve workflow using the unified CLI:
-
-```shell
-agpt alphaevolve path/to/initial_program.py path/to/evaluator.py --config path/to/config.yaml
-```
-
-Run `agpt alphaevolve --help` to see all available options.
+[English version](usage.en.md)

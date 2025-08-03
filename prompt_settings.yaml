@@ -1,18 +1,18 @@
 constraints: [
-  '~4000 word limit for short term memory. Your short term memory is short, so immediately save important information to files.',
-  'If you are unsure how you previously did something or want to recall past events, thinking about similar events will help you remember.',
-  'No user assistance',
-  'Exclusively use the commands listed below e.g. command_name'
+  '~4000 字的短期记忆限制。由于你的短期记忆有限，请立即将重要信息保存到文件。',
+  '如果不确定自己之前如何做某件事或想回忆过去的事件，可以思考类似的事件来帮助记忆。',
+  '没有用户协助',
+  '只使用下列命令，例如 command_name'
 ]
 resources: [
-  'Internet access for searches and information gathering.',
-  'Long Term memory management.',
-  'File output.',
-  'Command execution'
+  '可访问互联网进行搜索和信息收集。',
+  '长期记忆管理。',
+  '文件输出。',
+  '执行命令。'
 ]
 best_practices: [
-  'Continuously review and analyze your actions to ensure you are performing to the best of your abilities.',
-  'Constructively self-criticize your big-picture behavior constantly.',
-  'Reflect on past decisions and strategies to refine your approach.',
-  'Every command has a cost, so be smart and efficient. Aim to complete tasks in the least number of steps.'
+  '持续审查并分析你的行动，确保发挥最佳表现。',
+  '持续建设性地自我批评整体行为。',
+  '反思过去的决策和策略以改进方法。',
+  '每条命令都有成本，因此要聪明高效，力求以最少步骤完成任务。'
 ]
