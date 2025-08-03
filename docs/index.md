@@ -1,15 +1,17 @@
 # Auto-GPT
 
-Auto-GPT is an autonomous GPT-4 experiment that chains thoughts to accomplish goals. Key capabilities include:
+Auto-GPT 是一个自动化的 GPT-4 实验，通过串联思维来完成目标。主要功能包括：
 
-* 🌐 Internet search and information gathering
-* 💾 Memory and workspace file management
-* 🔌 Plugin system with gap detection
-* 🔁 [Self Improvement Loop](self_improvement.md) for automatic self-development
-* 🧬 [AlphaEvolve strategy evolution](evolve_population.md) to iterate on agent behaviors
+* 🌐 互联网搜索与信息收集
+* 💾 记忆与工作区文件管理
+* 🔌 带缺口检测的插件系统
+* 🔁 [自我改进循环](self_improvement.md) 实现自动自我发展
+* 🧬 [AlphaEvolve 策略演化](evolve_population.md) 用于迭代代理行为
 
-Please follow the [Installation](/setup/) guide to get started.
+请参阅 [安装](/setup/) 指南开始使用。
 
-NOTE: For tasks that require high security measures, consider running Auto-GPT in an isolated environment or under a separate user account to prevent potential harm to your main system. This is especially important if you allow Auto-GPT to write or execute scripts and run shell commands.
+**注意：** 对于需要高安全措施的任务，建议在隔离环境或单独的用户账户中运行 Auto-GPT，以避免对主系统造成潜在损害，特别是在允许 Auto-GPT 写入或执行脚本及运行 shell 命令时。
 
-For these reasons, executing python scripts is disabled by default.
+出于这些原因，默认禁止执行 Python 脚本。
+
+[English version](index.en.md)

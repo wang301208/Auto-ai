@@ -8,7 +8,7 @@ import os
 import re
 import warnings
 from pathlib import Path
-from typing import Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union, cast
 
 import yaml
 
@@ -38,6 +38,8 @@ AI_SETTINGS_FILE = "ai_settings.yaml"
 AZURE_CONFIG_FILE = "azure.yaml"
 PLUGINS_CONFIG_FILE = "plugins_config.yaml"
 PROMPT_SETTINGS_FILE = "prompt_settings.yaml"
+
+DEFAULT_LANGUAGE = "zh"
 
 GPT_4_MODEL = "gpt-4"
 GPT_3_MODEL = "gpt-3.5-turbo"
@@ -77,7 +79,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     temperature: float = 0
     openai_functions: bool = False
     embedding_model: str = "text-embedding-ada-002"
-    browse_spacy_language_model: str = "en_core_web_sm"
+    browse_spacy_language_model: str = "zh_core_web_sm"
     # Run loop configuration
     continuous_mode: bool = False
     continuous_limit: int = 0
@@ -257,7 +259,7 @@ class ConfigBuilder(Configurable[Config]):
     @classmethod
     def build_config_from_env(cls, workdir: Path) -> Config:
         """Initialize the Config class"""
-        config_dict = {
+        config_dict: dict[str, Any] = {
             "workdir": workdir,
             "authorise_key": os.getenv("AUTHORISE_COMMAND_KEY"),
             "exit_key": os.getenv("EXIT_KEY"),
@@ -343,11 +345,11 @@ class ConfigBuilder(Configurable[Config]):
         config_dict["plugins_denylist"] = _safe_split(os.getenv("DENYLISTED_PLUGINS"))
 
         with contextlib.suppress(TypeError):
-            config_dict["image_size"] = int(os.getenv("IMAGE_SIZE"))
+            config_dict["image_size"] = int(cast(str, os.getenv("IMAGE_SIZE")))
         with contextlib.suppress(TypeError):
-            config_dict["redis_port"] = int(os.getenv("REDIS_PORT"))
+            config_dict["redis_port"] = int(cast(str, os.getenv("REDIS_PORT")))
         with contextlib.suppress(TypeError):
-            config_dict["temperature"] = float(os.getenv("TEMPERATURE"))
+            config_dict["temperature"] = float(cast(str, os.getenv("TEMPERATURE")))
         with contextlib.suppress(TypeError):
             interval_val = os.getenv("SELF_DEVELOP_INTERVAL")
             if interval_val is not None:
@@ -355,7 +357,7 @@ class ConfigBuilder(Configurable[Config]):
 
         if config_dict["use_azure"]:
             azure_config = cls.load_azure_config(
-                workdir / config_dict["azure_config_file"]
+                workdir / Path(cast(str, config_dict["azure_config_file"]))
             )
             config_dict.update(azure_config)
 
