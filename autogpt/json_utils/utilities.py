@@ -18,11 +18,18 @@ def extract_dict_from_response(response_content: str) -> dict[str, Any]:
         # Discard the first and last ```, then re-join in case the response naturally included ```
         response_content = "```".join(response_content.split("```")[1:-1])
 
-    # response content comes from OpenAI as a Python `str(content_dict)`, literal_eval reverses this
+    # Try to parse the string using json.loads first.
+    try:
+        return json.loads(response_content)
+    except json.JSONDecodeError as e_json:
+        logger.info(f"Error parsing JSON response with json.loads {e_json}")
+        logger.debug(f"Invalid JSON received in response: {response_content}")
+
+    # If json.loads fails, fall back to ast.literal_eval for Python dict strings
     try:
         return ast.literal_eval(response_content)
     except BaseException as e:
-        logger.info(f"Error parsing JSON response with literal_eval {e}")
+        logger.info(f"Error parsing JSON response with ast.literal_eval {e}")
         logger.debug(f"Invalid JSON received in response: {response_content}")
         raise ValueError(f"Error parsing JSON response: {e}") from e
 

@@ -1,6 +1,7 @@
 import os
 from unittest.mock import patch
 
+import json
 import pytest
 import requests
 
@@ -194,14 +195,21 @@ def test_validate_json_invalid(invalid_json_response, config: Config):
     assert errors is not None
 
 
-def test_extract_json_from_response(valid_json_response: dict):
+def test_extract_dict_from_response_json_string(valid_json_response: dict):
+    emulated_response_from_openai = json.dumps(valid_json_response)
+    assert (
+        extract_dict_from_response(emulated_response_from_openai) == valid_json_response
+    )
+
+
+def test_extract_dict_from_response_python_dict_string(valid_json_response: dict):
     emulated_response_from_openai = str(valid_json_response)
     assert (
         extract_dict_from_response(emulated_response_from_openai) == valid_json_response
     )
 
 
-def test_extract_json_from_response_wrapped_in_code_block(valid_json_response: dict):
+def test_extract_dict_from_response_wrapped_in_code_block(valid_json_response: dict):
     emulated_response_from_openai = "```" + str(valid_json_response) + "```"
     assert (
         extract_dict_from_response(emulated_response_from_openai) == valid_json_response
