@@ -92,6 +92,8 @@ pip install -e .[alphaevolve]
 
 ```bash
 cp .env.template .env
+# 或使用中文模板：
+# cp .env.template-zh .env
 ```
 
 编辑 `.env` 并设置 `OPENAI_API_KEY` 及其他所需值。
