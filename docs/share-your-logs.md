@@ -10,8 +10,6 @@ To print out debug logs:
 
 ```shell
 agpt --debug
-
-docker-compose run --rm auto-gpt --debug    # in Docker
 ```
 
 ### Inspect and share logs

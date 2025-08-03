@@ -33,7 +33,6 @@ dependencies = [
     "requests",
     "tiktoken==0.3.3",
     "gTTS==2.3.1",
-    "docker",
     "duckduckgo-search==3.0.2",
     "google-api-python-client",
     "pinecone-client==2.2.1",

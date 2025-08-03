@@ -10,6 +10,6 @@ Auto-GPT is an autonomous GPT-4 experiment that chains thoughts to accomplish go
 
 Please follow the [Installation](/setup/) guide to get started.
 
-NOTE: It is recommended to use a virtual machine/container (docker) for tasks that require high security measures to prevent any potential harm to the main computer's system and data. If you are considering to use Auto-GPT outside a virtualized/containerized environment, you are *strongly* advised to use a separate user account just for running Auto-GPT. This is even more important if you are going to allow Auto-GPT to write/execute scripts and run shell commands!
+NOTE: For tasks that require high security measures, consider running Auto-GPT in an isolated environment or under a separate user account to prevent potential harm to your main system. This is especially important if you allow Auto-GPT to write or execute scripts and run shell commands.
 
-It is for these reasons that executing python scripts is explicitly disabled when running outside a container environment.
+For these reasons, executing python scripts is disabled by default.
