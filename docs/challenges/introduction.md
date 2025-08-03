@@ -1,24 +1,24 @@
-introduction.md
-# Introduction to Challenges
+# 挑战简介
 
-Welcome to the Auto-GPT Challenges page! This is a space where we encourage community members to collaborate and contribute towards improving Auto-GPT by identifying and solving challenges that Auto-GPT is not yet able to achieve.
+欢迎来到 Auto-GPT 挑战页！在这里，我们鼓励社区成员协作，通过发现并解决 Auto-GPT 目前无法完成的任务来改进它。
 
-## What are challenges?
+## 什么是挑战？
 
-Challenges are tasks or problems that Auto-GPT has difficulty solving or has not yet been able to accomplish. These may include improving specific functionalities, enhancing the model's understanding of specific domains, or even developing new features that the current version of Auto-GPT lacks.
+挑战是 Auto-GPT 难以解决或尚未完成的任务。这些任务可能包括改进特定功能、增强模型对某些领域的理解，甚至开发当前版本缺乏的新特性。
 
-## Why are challenges important?
+## 为什么挑战很重要？
 
-Addressing challenges helps us improve Auto-GPT's performance, usability, and versatility. By working together to tackle these challenges, we can create a more powerful and efficient tool for everyone. It also allows the community to actively contribute to the project, making it a true open-source effort.
+解决挑战有助于提升 Auto-GPT 的性能、可用性和通用性。通过协作处理这些问题，我们可以为所有人打造更强大、更高效的工具，也让社区能够积极参与项目，使其真正开源。
 
-## How can you participate?
+## 如何参与？
 
-There are two main ways to get involved with challenges:
+参与挑战主要有两种方式：
 
-1. **Submit a Challenge**: If you have identified a task that Auto-GPT struggles with, you can submit it as a challenge. This allows others to see the issue and collaborate on finding a solution.
-2. **Beat a Challenge**: If you have a solution or idea to tackle an existing challenge, you can contribute by working on the challenge and submitting your solution.
+1. **提交挑战**：如果你发现 Auto-GPT 难以完成的任务，可以将其提交为挑战，让大家共同寻找解决方案。
+2. **解决挑战**：如果你已经有针对某个挑战的方案或想法，可以尝试解决并提交你的成果。
 
-To learn more about submitting and beating challenges, please visit the [List of Challenges](list.md), [Submit a Challenge](submit.md), and [Beat a Challenge](beat.md) pages.
+想了解更多，请访问[挑战列表](list.md)、[提交挑战](submit.md)和[解决挑战](beat.md)。
 
-We look forward to your contributions and the exciting solutions that the community will develop together to make Auto-GPT even better!
+我们期待你的贡献，与社区一起构建更强大的 Auto-GPT！
 
+[English version](introduction.en.md)
