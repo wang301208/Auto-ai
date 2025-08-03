@@ -1,53 +1,46 @@
 !!! warning
-    The Pinecone, Milvus, Redis, and Weaviate memory backends were rendered incompatible
-    by work on the memory system, and have been removed.
-    Whether support will be added back in the future is subject to discussion,
-    feel free to pitch in: https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280
+    Pinecone、Milvus、Redis 和 Weaviate 记忆后端因记忆系统的改动而变得不兼容，已被移除。
+    是否在未来重新添加支持仍在讨论中，欢迎在 https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280 参与讨论。
 
-## Setting Your Cache Type
+## 设置缓存类型
 
-By default, Auto-GPT uses LocalCache (which stores memory in a JSON file).
+默认情况下，Auto-GPT 使用 LocalCache（将记忆存储在 JSON 文件中）。
 
-To switch to a different backend, change the `MEMORY_BACKEND` in `.env`
-to the value that you want:
+若要切换到其他后端，可在 `.env` 中将 `MEMORY_BACKEND` 修改为你想要的值：
 
-* `json_file` uses a local JSON cache file
-* `pinecone` uses the Pinecone.io account you configured in your ENV settings
-* `redis` will use the redis cache that you configured
-* `milvus` will use the milvus cache that you configured
-* `weaviate` will use the weaviate cache that you configured
+* `json_file` 使用本地 JSON 缓存文件
+* `pinecone` 使用在环境变量中配置的 Pinecone.io 账户
+* `redis` 使用你配置的 redis 缓存
+* `milvus` 使用你配置的 milvus 缓存
+* `weaviate` 使用你配置的 weaviate 缓存
 
 !!! warning
-    The Pinecone, Milvus, Redis, and Weaviate memory backends were rendered incompatible
-    by work on the memory system, and have been removed.
-    Whether support will be added back in the future is subject to discussion,
-    feel free to pitch in: https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280
+    Pinecone、Milvus、Redis 和 Weaviate 记忆后端因记忆系统的改动而变得不兼容，已被移除。
+    是否在未来重新添加支持仍在讨论中，欢迎在 https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280 参与讨论。
 
-## Memory Backend Setup
+## 记忆后端设置
 
-Links to memory backends
+记忆后端链接：
 
 - [Pinecone](https://www.pinecone.io/)
-- [Milvus](https://milvus.io/) &ndash; [self-hosted](https://milvus.io/docs), or managed with [Zilliz Cloud](https://zilliz.com/)
+- [Milvus](https://milvus.io/) &ndash; [自托管](https://milvus.io/docs)，或使用 [Zilliz Cloud](https://zilliz.com/)
 - [Redis](https://redis.io)
 - [Weaviate](https://weaviate.io)
 
 !!! warning
-    The Pinecone, Milvus, Redis, and Weaviate memory backends were rendered incompatible
-    by work on the memory system, and have been removed.
-    Whether support will be added back in the future is subject to discussion,
-    feel free to pitch in: https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280
+    Pinecone、Milvus、Redis 和 Weaviate 记忆后端因记忆系统的改动而变得不兼容，已被移除。
+    是否在未来重新添加支持仍在讨论中，欢迎在 https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280 参与讨论。
 
-### Redis Setup
+### Redis 设置
 
 !!! caution
-    This setup is not intended to be publicly accessible and lacks security measures.
-    Avoid exposing Redis to the internet without a password or at all!
+    此设置不应公开访问，缺少安全措施。
+    请避免在没有密码的情况下将 Redis 暴露在互联网，或完全避免暴露！
 
-1. Start a Redis server and ensure it listens on port 6379.
-   You can use a local installation from [redis.io](https://redis.io) or any hosted service.
+1. 启动 Redis 服务器并确保其监听 6379 端口。
+   你可以使用 [redis.io](https://redis.io) 的本地安装或任何托管服务。
 
-3. Set the following settings in `.env`
+3. 在 `.env` 中设置以下变量：
 
     ```shell
     MEMORY_BACKEND=redis
@@ -55,140 +48,114 @@ Links to memory backends
     REDIS_PORT=6379
     REDIS_PASSWORD=<PASSWORD>
     ```
-    
-    Replace `<PASSWORD>` by your password, omitting the angled brackets (<>).
 
-    Optional configuration:
+    将 `<PASSWORD>` 替换为你的密码，省略尖括号。
 
-    - `WIPE_REDIS_ON_START=False` to persist memory stored in Redis between runs.
-    - `MEMORY_INDEX=<WHATEVER>` to specify a name for the memory index in Redis.
-        The default is `auto-gpt`.
+    可选配置：
 
-
+    - `WIPE_REDIS_ON_START=False` 在运行之间保留存储在 Redis 中的记忆。
+    - `MEMORY_INDEX=<WHATEVER>` 指定在 Redis 中使用的记忆索引名称，默认值为 `auto-gpt`。
 
 !!! warning
-    The Pinecone, Milvus, Redis, and Weaviate memory backends were rendered incompatible
-    by work on the memory system, and have been removed.
-    Whether support will be added back in the future is subject to discussion,
-    feel free to pitch in: https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280
+    Pinecone、Milvus、Redis 和 Weaviate 记忆后端因记忆系统的改动而变得不兼容，已被移除。
+    是否在未来重新添加支持仍在讨论中，欢迎在 https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280 参与讨论。
 
-### 🌲 Pinecone API Key Setup
+### 🌲 Pinecone API Key 设置
 
-Pinecone lets you store vast amounts of vector-based memory, allowing the agent to load only relevant memories at any given time.
+Pinecone 允许存储大量向量化记忆，使代理在任何时候只需加载相关记忆。
 
-1. Go to [pinecone](https://app.pinecone.io/) and make an account if you don't already have one.
-2. Choose the `Starter` plan to avoid being charged.
-3. Find your API key and region under the default project in the left sidebar.
+1. 前往 [pinecone](https://app.pinecone.io/) 并注册账号（如尚未注册）。
+2. 选择 *Starter* 套餐以避免收费。
+3. 在左侧边栏的默认项目下找到你的 API Key 和区域。
 
-In the `.env` file set:
+在 `.env` 文件中设置：
 
 - `PINECONE_API_KEY`
-- `PINECONE_ENV` (example: `us-east4-gcp`)
+- `PINECONE_ENV`（示例：`us-east4-gcp`）
 - `MEMORY_BACKEND=pinecone`
 
 !!! warning
-    The Pinecone, Milvus, Redis, and Weaviate memory backends were rendered incompatible
-    by work on the memory system, and have been removed.
-    Whether support will be added back in the future is subject to discussion,
-    feel free to pitch in: https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280
+    Pinecone、Milvus、Redis 和 Weaviate 记忆后端因记忆系统的改动而变得不兼容，已被移除。
+    是否在未来重新添加支持仍在讨论中，欢迎在 https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280 参与讨论。
 
-### Milvus Setup
+### Milvus 设置
 
-[Milvus](https://milvus.io/) is an open-source, highly scalable vector database to store
-huge amounts of vector-based memory and provide fast relevant search. It can be deployed
-locally or used as a cloud service provided by [Zilliz Cloud](https://zilliz.com/).
+[Milvus](https://milvus.io/) 是一个开源、高度可扩展的向量数据库，可存储大量向量化记忆并提供快速的相关搜索。可本地部署或使用 [Zilliz Cloud](https://zilliz.com/) 提供的云服务。
 
-1. Deploy your Milvus service locally or use a managed Zilliz Cloud database:
-    - [Install and deploy Milvus locally](https://milvus.io/docs/install_standalone-operator.md)
+1. 本地部署 Milvus 服务或使用托管的 Zilliz Cloud 数据库：
+    - [本地安装并部署 Milvus](https://milvus.io/docs/install_standalone-operator.md)
 
-    - Set up a managed Zilliz Cloud database
-        1. Go to [Zilliz Cloud](https://zilliz.com/) and sign up if you don't already have account.
-        2. In the *Databases* tab, create a new database.
-            - Remember your username and password
-            - Wait until the database status is changed to RUNNING.
-        3. In the *Database detail* tab of the database you have created, the public cloud endpoint, such as:
-        `https://xxx-xxxx.xxxx.xxxx.zillizcloud.com:443`.
+    - 设置托管的 Zilliz Cloud 数据库
+        1. 访问 [Zilliz Cloud](https://zilliz.com/) 并注册账号（如尚未注册）。
+        2. 在 *Databases* 选项卡中创建新数据库。
+            - 记下你的用户名和密码
+            - 等待数据库状态变为 RUNNING
+        3. 在所创建数据库的 *Database detail* 选项卡中可以找到公共云端点，例如：`https://xxx-xxxx.xxxx.xxxx.zillizcloud.com:443`。
 
-2. Run `pip3 install pymilvus` to install the required client library.
-    Make sure your PyMilvus version and Milvus version are [compatible](https://github.com/milvus-io/pymilvus#compatibility)
-    to avoid issues.
-    See also the [PyMilvus installation instructions](https://github.com/milvus-io/pymilvus#installation).
+2. 运行 `pip3 install pymilvus` 安装所需客户端库。确保 PyMilvus 版本与你的 Milvus 版本[兼容](https://github.com/milvus-io/pymilvus#compatibility)，以避免问题。参见 [PyMilvus 安装说明](https://github.com/milvus-io/pymilvus#installation)。
 
-3. Update `.env`:
+3. 更新 `.env`：
     - `MEMORY_BACKEND=milvus`
-    - One of:
-        - `MILVUS_ADDR=host:ip` (for local instance)
-        - `MILVUS_ADDR=https://xxx-xxxx.xxxx.xxxx.zillizcloud.com:443` (for Zilliz Cloud)
-
-    The following settings are **optional**:
-
+    - 二选一：
+        - `MILVUS_ADDR=host:ip`（本地实例）
+        - `MILVUS_ADDR=https://xxx-xxxx.xxxx.xxxx.zillizcloud.com:443`（Zilliz Cloud）
     - `MILVUS_USERNAME='username-of-your-milvus-instance'`
     - `MILVUS_PASSWORD='password-of-your-milvus-instance'`
-    - `MILVUS_SECURE=True` to use a secure connection.
-        Only use if your Milvus instance has TLS enabled.
-        *Note: setting `MILVUS_ADDR` to a `https://` URL will override this setting.*
-    - `MILVUS_COLLECTION` to change the collection name to use in Milvus.
-        Defaults to `autogpt`.
+    - `MILVUS_SECURE=True` 使用安全连接，仅当你的 Milvus 实例启用了 TLS 时使用。
+        *注意：将 `MILVUS_ADDR` 设置为 `https://` URL 会覆盖此设置。*
+    - `MILVUS_COLLECTION` 更改在 Milvus 中使用的集合名称，默认值为 `autogpt`。
 
 !!! warning
-    The Pinecone, Milvus, Redis, and Weaviate memory backends were rendered incompatible
-    by work on the memory system, and have been removed.
-    Whether support will be added back in the future is subject to discussion,
-    feel free to pitch in: https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280
+    Pinecone、Milvus、Redis 和 Weaviate 记忆后端因记忆系统的改动而变得不兼容，已被移除。
+    是否在未来重新添加支持仍在讨论中，欢迎在 https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280 参与讨论。
 
-### Weaviate Setup
-[Weaviate](https://weaviate.io/) is an open-source vector database. It allows to store
-data objects and vector embeddings from ML-models and scales seamlessly to billion of
-data objects. To set up a Weaviate database, check out their [Quickstart Tutorial](https://weaviate.io/developers/weaviate/quickstart).
+### Weaviate 设置
 
-Although still experimental, [Embedded Weaviate](https://weaviate.io/developers/weaviate/installation/embedded)
-is supported which allows the Auto-GPT process itself to start a Weaviate instance.
-To enable it, set `USE_WEAVIATE_EMBEDDED` to `True` and make sure you `pip install "weaviate-client>=3.15.4"`.
+[Weaviate](https://weaviate.io/) 是一个开源向量数据库，可存储数据对象和来自机器学习模型的向量嵌入，并能无缝扩展到数十亿个对象。要设置 Weaviate 数据库，请查看其[快速入门教程](https://weaviate.io/developers/weaviate/quickstart)。
 
-#### Install the Weaviate client
+虽然仍处于实验阶段，但支持使用 [嵌入式 Weaviate](https://weaviate.io/developers/weaviate/installation/embedded)，可让 Auto-GPT 进程自行启动一个 Weaviate 实例。要启用它，将 `USE_WEAVIATE_EMBEDDED` 设置为 `True`，并确保执行 `pip install "weaviate-client>=3.15.4"`。
 
-Install the Weaviate client before usage.
+#### 安装 Weaviate 客户端
+
+在使用前安装 Weaviate 客户端。
 
 ```shell
 $ pip install weaviate-client
 ```
 
-#### Setting up environment variables
+#### 设置环境变量
 
-In your `.env` file set the following:
+在 `.env` 文件中设置以下内容：
 
 ```ini
 MEMORY_BACKEND=weaviate
-WEAVIATE_HOST="127.0.0.1" # the IP or domain of the running Weaviate instance
-WEAVIATE_PORT="8080" 
+WEAVIATE_HOST="127.0.0.1" # 运行中 Weaviate 实例的 IP 或域名
+WEAVIATE_PORT="8080"
 WEAVIATE_PROTOCOL="http"
 WEAVIATE_USERNAME="your username"
 WEAVIATE_PASSWORD="your password"
 WEAVIATE_API_KEY="your weaviate API key if you have one"
-WEAVIATE_EMBEDDED_PATH="/home/me/.local/share/weaviate" # this is optional and indicates where the data should be persisted when running an embedded instance
-USE_WEAVIATE_EMBEDDED=False # set to True to run Embedded Weaviate
-MEMORY_INDEX="Autogpt" # name of the index to create for the application
+WEAVIATE_EMBEDDED_PATH="/home/me/.local/share/weaviate" # 可选，运行嵌入式实例时数据持久化的位置
+USE_WEAVIATE_EMBEDDED=False # 设为 True 以运行嵌入式 Weaviate
+MEMORY_INDEX="Autogpt" # 为应用创建的索引名称
 ```
 
-## View Memory Usage
+## 查看记忆使用情况
 
-View memory usage by using the `--debug` flag :)
+使用 `--debug` 标志可查看记忆使用情况 :)
 
-
-## 🧠 Memory pre-seeding
+## 🧠 记忆预置
 
 !!! warning
-    Data ingestion is broken in v0.4.7 and possibly earlier versions. This is a known issue that will be addressed in future releases. Follow these issues for updates.
+    数据摄取在 v0.4.7 及更早版本中存在问题。这是一个已知问题，将在未来版本中解决。请关注以下 Issue 以获取更新。
     [Issue 4435](https://github.com/Significant-Gravitas/Auto-GPT/issues/4435)
     [Issue 4024](https://github.com/Significant-Gravitas/Auto-GPT/issues/4024)
     [Issue 2076](https://github.com/Significant-Gravitas/Auto-GPT/issues/2076)
 
-
-
-Memory pre-seeding allows you to ingest files into memory and pre-seed it before running Auto-GPT.
+记忆预置允许你在运行 Auto-GPT 前将文件导入记忆。
 
 ```shell
-$ python data_ingestion.py -h 
+$ python data_ingestion.py -h
 usage: data_ingestion.py [-h] (--file FILE | --dir DIR) [--init] [--overlap OVERLAP] [--max_length MAX_LENGTH]
 
 Ingest a file or a directory with multiple files into memory. Make sure to set your .env before running this script.
@@ -204,38 +171,24 @@ options:
 # python data_ingestion.py --dir DataFolder --init --overlap 100 --max_length 2000
 ```
 
-In the example above, the script initializes the memory, ingests all files within the `Auto-Gpt/auto_gpt_workspace/DataFolder` directory into memory with an overlap between chunks of 100 and a maximum length of each chunk of 2000.
+上例中，脚本会初始化记忆，将 `Auto-Gpt/auto_gpt_workspace/DataFolder` 目录中的所有文件导入记忆，块之间重叠 100，单个块最大长度 2000。
 
-Note that you can also use the `--file` argument to ingest a single file into memory and that data_ingestion.py will only ingest files within the `/auto_gpt_workspace` directory.
+注意，也可以使用 `--file` 参数将单个文件导入记忆，且 `data_ingestion.py` 只会摄取 `auto_gpt_workspace` 目录内的文件。
 
-The DIR path is relative to the auto_gpt_workspace directory, so `python data_ingestion.py --dir . --init` will ingest everything in `auto_gpt_workspace` directory.
+DIR 路径是相对于 `auto_gpt_workspace` 目录的，因此 `python data_ingestion.py --dir . --init` 将导入 `auto_gpt_workspace` 目录中的所有内容。
 
-You can adjust the `max_length` and `overlap` parameters to fine-tune the way the
-    documents are presented to the AI when it "recall" that memory:
+你可以调整 `max_length` 和 `overlap` 参数，以微调 AI 在“回忆”该记忆时文档呈现方式：
 
-- Adjusting the overlap value allows the AI to access more contextual information
-    from each chunk when recalling information, but will result in more chunks being
-    created and therefore increase memory backend usage and OpenAI API requests.
-- Reducing the `max_length` value will create more chunks, which can save prompt
-    tokens by allowing for more message history in the context, but will also
-    increase the number of chunks.
-- Increasing the `max_length` value will provide the AI with more contextual
-    information from each chunk, reducing the number of chunks created and saving on
-    OpenAI API requests. However, this may also use more prompt tokens and decrease
-    the overall context available to the AI.
+- 调整 overlap 值可以让 AI 在回忆信息时获取更多上下文，但会生成更多块，从而增加记忆后端使用量和 OpenAI API 请求次数。
+- 减小 `max_length` 会生成更多块，可通过允许更多消息历史进入上下文来节省提示词 Token，但也会增加块数量。
+- 增大 `max_length` 能在每个块中提供更多上下文，减少块数量并节省 OpenAI API 请求，但可能使用更多提示词 Token，并降低 AI 可用的总上下文。
 
-Memory pre-seeding is a technique for improving AI accuracy by ingesting relevant data
-into its memory. Chunks of data are split and added to memory, allowing the AI to access
-them quickly and generate more accurate responses. It's useful for large datasets or when
-specific information needs to be accessed quickly. Examples include ingesting API or
-GitHub documentation before running Auto-GPT.
+记忆预置是一种通过预先摄取相关数据来提升 AI 准确度的技术。数据会被拆分成若干块并加入记忆，AI 可以快速访问，从而生成更准确的响应。它适用于大数据集或需要快速访问特定信息的场景，例如在运行 Auto-GPT 之前摄取 API 或 GitHub 文档。
 
 !!! attention
-    If you use Redis for memory, make sure to run Auto-GPT with `WIPE_REDIS_ON_START=False`
+    如果使用 Redis 作为记忆，请确保运行 Auto-GPT 时设置 `WIPE_REDIS_ON_START=False`
 
-    For other memory backends, we currently forcefully wipe the memory when starting
-    Auto-GPT. To ingest data with those memory backends, you can call the
-    `data_ingestion.py` script anytime during an Auto-GPT run.
+    对于其他记忆后端，我们目前在启动 Auto-GPT 时会强制清空记忆。要在这些后端摄取数据，你可以在 Auto-GPT 运行期间随时调用 `data_ingestion.py` 脚本。
 
-Memories will be available to the AI immediately as they are ingested, even if ingested
-while Auto-GPT is running.
+记忆在摄取后会立即对 AI 可用，即使在 Auto-GPT 运行过程中摄取也是如此。
+
