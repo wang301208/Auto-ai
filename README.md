@@ -171,6 +171,10 @@ example-plugin:
 [docs/usage]: https://docs.agpt.co/usage/
 [docs/plugins]: https://docs.agpt.co/plugins/
 
+## 🤝 参与贡献
+
+请阅读 [贡献指南](CONTRIBUTING-zh.md) 与 [行为准则](CODE_OF_CONDUCT-zh.md) 了解如何参与本项目。
+
 ## 💖 资助 Auto-GPT 的开发
 
 如果你愿意请我们喝杯咖啡，你的支持将帮助我们承担 Auto-GPT 的开发成本并推动全自动 AI 的边界！
