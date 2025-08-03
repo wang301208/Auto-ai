@@ -1,56 +1,56 @@
-# Running tests
+# 运行测试
 
-Install the test and type-checking dependencies first:
+首先安装测试和类型检查依赖：
 
 ```shell
 pip install .[test,dev]  # includes test tools and type stubs
 ```
 
-To run all tests, use the following command:
+要运行所有测试，使用以下命令：
 
 ```shell
 pytest
 ```
 
-If `pytest` is not found:
+如果找不到 `pytest`：
 
 ```shell
 python -m pytest
 ```
 
-### Running specific test suites
+### 运行特定测试套件
 
-- To run without integration tests:
+- 不运行集成测试：
 
 ```shell
 pytest --without-integration
 ```
 
-- To run without *slow* integration tests:
+- 不运行 *慢速* 集成测试：
 
 ```shell
 pytest --without-slow-integration
 ```
 
-- To run tests and see coverage:
+- 运行测试并查看覆盖率：
 
 ```shell
 pytest --cov=autogpt --without-integration --without-slow-integration
 ```
 
-## Running the linter
+## 运行代码检查器
 
-This project uses [flake8](https://flake8.pycqa.org/en/latest/) for linting.
-We currently use the following rules: `E303,W293,W291,W292,E305,E231,E302`.
-See the [flake8 rules](https://www.flake8rules.com/) for more information.
+本项目使用 [flake8](https://flake8.pycqa.org/en/latest/) 进行代码检查。
+我们目前使用以下规则：`E303,W293,W291,W292,E305,E231,E302`。
+更多信息参见 [flake8 规则](https://www.flake8rules.com/)。
 
-To run the linter:
+运行代码检查器：
 
 ```shell
 flake8 .
 ```
 
-Or:
+或者：
 
 ```shell
 python -m flake8 .
