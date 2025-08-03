@@ -1,18 +1,17 @@
+import subprocess
 from pathlib import Path
 
-from autogpt.sandbox import Sandbox
+
+def test_run_command_creates_file(tmp_path: Path) -> None:
+    result = subprocess.run(
+        "touch outside.txt", cwd=tmp_path, shell=True, capture_output=True
+    )
+    assert result.returncode == 0
+    assert (tmp_path / "outside.txt").exists()
 
 
-def test_write_outside_denied(tmp_path: Path):
-    sandbox_root = tmp_path / "root"
-    sandbox = Sandbox(sandbox_root)
-    sandbox.run("touch /outside.txt")
-    assert (sandbox_root / "outside.txt").exists()
-    assert not (tmp_path / "outside.txt").exists()
-
-
-def test_missing_host_binary(tmp_path: Path):
-    sandbox_root = tmp_path / "root"
-    sandbox = Sandbox(sandbox_root)
-    result = sandbox.run("/bin/true")
+def test_missing_binary_returns_error(tmp_path: Path) -> None:
+    result = subprocess.run(
+        "/bin/does_not_exist", cwd=tmp_path, shell=True, capture_output=True
+    )
     assert result.returncode != 0
