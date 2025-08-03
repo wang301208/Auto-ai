@@ -9,6 +9,7 @@ from prompt_toolkit.history import InMemoryHistory
 
 from autogpt.config import Config
 from autogpt.logs import logger
+from .i18n import _
 
 session = PromptSession(history=InMemoryHistory())
 
@@ -44,7 +45,7 @@ def clean_input(config: Config, prompt: str = "", talk=False):
                 return plugin_response
 
         # ask for input, default when just pressing Enter is y
-        logger.info("Asking user via keyboard...")
+        logger.info(_("Asking user via keyboard..."))
 
         # handle_sigint must be set to False, so the signal handler in the
         # autogpt/main.py could be employed properly. This referes to
@@ -52,8 +53,8 @@ def clean_input(config: Config, prompt: str = "", talk=False):
         answer = session.prompt(ANSI(prompt), handle_sigint=False)
         return answer
     except KeyboardInterrupt:
-        logger.info("You interrupted Auto-GPT")
-        logger.info("Quitting...")
+        logger.info(_("You interrupted Auto-GPT"))
+        logger.info(_("Quitting..."))
         exit(0)
 
 
@@ -89,12 +90,13 @@ def get_latest_bulletin() -> tuple[str, bool]:
     new_bulletin = get_bulletin_from_web()
     is_new_news = new_bulletin != "" and new_bulletin != current_bulletin
 
-    news_header = Fore.YELLOW + "Welcome to Auto-GPT!\n"
+    news_header = Fore.YELLOW + _("Welcome to Auto-GPT!\n")
     if new_bulletin or current_bulletin:
         news_header += (
-            "Below you'll find the latest Auto-GPT News and updates regarding features!\n"
-            "If you don't wish to see this message, you "
-            "can run Auto-GPT with the *--skip-news* flag.\n"
+            _(
+                "Below you'll find the latest Auto-GPT News and updates regarding features!\n"
+                "If you don't wish to see this message, you can run Auto-GPT with the *--skip-news* flag.\n"
+            )
         )
 
     if new_bulletin and is_new_news:

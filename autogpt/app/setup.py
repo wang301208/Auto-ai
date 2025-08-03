@@ -16,6 +16,7 @@ from autogpt.prompts.default_prompts import (
     DEFAULT_TASK_PROMPT_AICONFIG_AUTOMATIC,
     DEFAULT_USER_DESIRE_PROMPT,
 )
+from .i18n import _
 
 
 def prompt_user(
@@ -33,9 +34,9 @@ def prompt_user(
 
     # Construct the prompt
     logger.typewriter_log(
-        "Welcome to Auto-GPT! ",
+        _("Welcome to Auto-GPT! "),
         Fore.GREEN,
-        "run with '--help' for more information.",
+        _("run with '--help' for more information."),
         speak_text=True,
     )
 
@@ -51,14 +52,14 @@ def prompt_user(
     if not ai_config_template_provided:
         # Get user desire if command line overrides have not been passed in
         logger.typewriter_log(
-            "Create an AI-Assistant:",
+            _("Create an AI-Assistant:"),
             Fore.GREEN,
-            "input '--manual' to enter manual mode.",
+            _("input '--manual' to enter manual mode."),
             speak_text=True,
         )
 
         user_desire = utils.clean_input(
-            config, f"{Fore.LIGHTBLUE_EX}I want Auto-GPT to{Style.RESET_ALL}: "
+            config, f"{Fore.LIGHTBLUE_EX}{_('I want Auto-GPT to')}{Style.RESET_ALL}: "
         )
 
     if user_desire.strip() == "":
@@ -67,7 +68,7 @@ def prompt_user(
     # If user desire contains "--manual" or we have overridden any of the AI configuration
     if "--manual" in user_desire or ai_config_template_provided:
         logger.typewriter_log(
-            "Manual Mode Selected",
+            _("Manual Mode Selected"),
             Fore.GREEN,
             speak_text=True,
         )
@@ -78,9 +79,11 @@ def prompt_user(
             return generate_aiconfig_automatic(user_desire, config)
         except Exception as e:
             logger.typewriter_log(
-                "Unable to automatically generate AI Config based on user desire.",
+                _(
+                    "Unable to automatically generate AI Config based on user desire."
+                ),
                 Fore.RED,
-                "Falling back to manual mode.",
+                _("Falling back to manual mode."),
                 speak_text=True,
             )
             logger.debug(f"Error during AIConfig generation: {e}")
