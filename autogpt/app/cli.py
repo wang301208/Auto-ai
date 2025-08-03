@@ -6,72 +6,73 @@ from typing import Optional
 
 import click
 
+from .i18n import _
+
 
 def _check_python_version() -> None:
     """Ensure the running Python version is supported."""
     if sys.version_info < (3, 10):
-        raise click.ClickException("Python 3.10 or higher is required to run AutoGPT.")
+        raise click.ClickException(_("Python 3.10 or higher is required to run AutoGPT."))
 
 
 def _require_packages(packages: tuple[str, ...]) -> None:
     """Verify that required packages are installed."""
     missing = [p for p in packages if importlib.util.find_spec(p) is None]
     if missing:
-        raise click.ClickException("Required packages missing: " + ", ".join(missing))
+        raise click.ClickException(_("Required packages missing: ") + ", ".join(missing))
 
 
-@click.group(invoke_without_command=True)
-@click.option("-c", "--continuous", is_flag=True, help="Enable Continuous Mode")
+@click.group(invoke_without_command=True, help=_("Start an Auto-GPT assistant."))
+@click.option("-c", "--continuous", is_flag=True, help=_("Enable Continuous Mode"))
 @click.option(
     "--skip-reprompt",
     "-y",
     is_flag=True,
-    help="Skips the re-prompting messages at the beginning of the script",
+    help=_("Skips the re-prompting messages at the beginning of the script"),
 )
 @click.option(
     "--ai-settings",
     "-C",
-    help=(
-        "Specifies which ai_settings.yaml file to use, relative to the Auto-GPT"
-        " root directory. Will also automatically skip the re-prompt."
+    help=_(
+        "Specifies which ai_settings.yaml file to use, relative to the Auto-GPT root directory. Will also automatically skip the re-prompt."
     ),
 )
 @click.option(
     "--prompt-settings",
     "-P",
-    help="Specifies which prompt_settings.yaml file to use.",
+    help=_("Specifies which prompt_settings.yaml file to use."),
 )
 @click.option(
     "-l",
     "--continuous-limit",
     type=int,
-    help="Defines the number of times to run in continuous mode",
+    help=_("Defines the number of times to run in continuous mode"),
 )
-@click.option("--speak", is_flag=True, help="Enable Speak Mode")
-@click.option("--debug", is_flag=True, help="Enable Debug Mode")
-@click.option("--gpt3only", is_flag=True, help="Enable GPT3.5 Only Mode")
-@click.option("--gpt4only", is_flag=True, help="Enable GPT4 Only Mode")
+@click.option("--speak", is_flag=True, help=_("Enable Speak Mode"))
+@click.option("--debug", is_flag=True, help=_("Enable Debug Mode"))
+@click.option("--gpt3only", is_flag=True, help=_("Enable GPT3.5 Only Mode"))
+@click.option("--gpt4only", is_flag=True, help=_("Enable GPT4 Only Mode"))
 @click.option(
     "--use-memory",
     "-m",
     "memory_type",
     type=str,
-    help="Defines which Memory backend to use",
+    help=_("Defines which Memory backend to use"),
 )
 @click.option(
     "-b",
     "--browser-name",
-    help="Specifies which web-browser to use when using selenium to scrape the web.",
+    help=_("Specifies which web-browser to use when using selenium to scrape the web."),
 )
 @click.option(
     "--allow-downloads",
     is_flag=True,
-    help="Dangerous: Allows Auto-GPT to download files natively.",
+    help=_("Dangerous: Allows Auto-GPT to download files natively."),
 )
 @click.option(
     "--skip-news",
     is_flag=True,
-    help="Specifies whether to suppress the output of latest news on startup.",
+    help=_("Specifies whether to suppress the output of latest news on startup."),
 )
 @click.option(
     "--working-directory",
@@ -83,37 +84,34 @@ def _require_packages(packages: tuple[str, ...]) -> None:
     ),
     default=Path(__file__).parent.parent.parent,
     show_default=True,
-    help="Sets the working directory for Auto-GPT.",
+    help=_("Sets the working directory for Auto-GPT."),
 )
 @click.option(
     "--workspace-directory",
     "-w",
     type=click.Path(file_okay=False, resolve_path=True, path_type=Path),
-    help=(
-        "Path to the workspace directory. Defaults to 'auto_gpt_workspace' inside the "
-        "working directory."
-    ),
+    help=_("Path to the workspace directory. Defaults to 'auto_gpt_workspace' inside the working directory."),
 )
 @click.option(
     "--install-plugin-deps",
     is_flag=True,
-    help="Installs external dependencies for 3rd party plugins.",
+    help=_("Installs external dependencies for 3rd party plugins."),
 )
 @click.option(
     "--ai-name",
     type=str,
-    help="AI name override",
+    help=_("AI name override"),
 )
 @click.option(
     "--ai-role",
     type=str,
-    help="AI role override",
+    help=_("AI role override"),
 )
 @click.option(
     "--ai-goal",
     type=str,
     multiple=True,
-    help="AI goal override; may be used multiple times to pass multiple goals",
+    help=_("AI goal override; may be used multiple times to pass multiple goals"),
 )
 @click.pass_context
 def main(
@@ -174,7 +172,8 @@ def main(
 
 
 @main.command(
-    context_settings={"ignore_unknown_options": True, "allow_extra_args": True}
+    context_settings={"ignore_unknown_options": True, "allow_extra_args": True},
+    help=_("Run AlphaEvolve workflows."),
 )
 @click.pass_context
 def alphaevolve(ctx: click.Context) -> None:

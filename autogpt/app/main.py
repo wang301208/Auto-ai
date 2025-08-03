@@ -11,6 +11,8 @@ from typing import Optional
 
 from colorama import Fore, Style
 
+from .i18n import _
+
 from autogpt.agents import Agent, AgentThoughts, CommandArgs, CommandName
 from autogpt.app.configurator import create_config
 from autogpt.app.setup import prompt_user
@@ -114,7 +116,7 @@ def run_auto_gpt(
                 input(
                     Fore.MAGENTA
                     + Style.BRIGHT
-                    + "NEWS: Bulletin was updated! Press Enter to continue..."
+                    + _("NEWS: Bulletin was updated! Press Enter to continue...")
                     + Style.RESET_ALL
                 )
 
@@ -123,17 +125,17 @@ def run_auto_gpt(
             logger.typewriter_log(
                 "WARNING: ",
                 Fore.RED,
-                f"You are running on `{git_branch}` branch "
-                "- this is not a supported branch.",
+                _(
+                    "You are running on `{git_branch}` branch - this is not a supported branch."
+                ).format(git_branch=git_branch),
             )
         if sys.version_info < (3, 10):
             logger.typewriter_log(
                 "WARNING: ",
                 Fore.RED,
-                "You are running on an older version of Python. "
-                "Some people have observed problems with certain "
-                "parts of Auto-GPT with this version. "
-                "Please consider upgrading to Python 3.10 or higher.",
+                _(
+                    "You are running on an older version of Python. Some people have observed problems with certain parts of Auto-GPT with this version. Please consider upgrading to Python 3.10 or higher."
+                ),
             )
 
     if install_plugin_deps:
@@ -266,14 +268,15 @@ def run_interaction_loop(
     cycle_budget = cycles_remaining = _get_cycle_budget(
         config.continuous_mode, config.continuous_limit
     )
-    spinner = Spinner("Thinking...", plain_output=config.plain_output)
+    spinner = Spinner(_("Thinking..."), plain_output=config.plain_output)
 
     def graceful_agent_interrupt(signum: int, frame: Optional[FrameType]) -> None:
         nonlocal cycle_budget, cycles_remaining, spinner
         if cycles_remaining in [0, 1, math.inf]:
             logger.typewriter_log(
-                "Interrupt signal received. Stopping continuous command execution "
-                "immediately.",
+                _(
+                    "Interrupt signal received. Stopping continuous command execution immediately."
+                ),
                 Fore.RED,
             )
             sys.exit()
@@ -283,7 +286,9 @@ def run_interaction_loop(
                 spinner.stop()
 
             logger.typewriter_log(
-                "Interrupt signal received. Stopping continuous command execution.",
+                _(
+                    "Interrupt signal received. Stopping continuous command execution."
+                ),
                 Fore.RED,
             )
             cycles_remaining = 1
@@ -338,19 +343,23 @@ def run_interaction_loop(
                     # Case 1: Continuous iteration was interrupted -> resume
                     if cycle_budget > 1:
                         logger.typewriter_log(
-                            "RESUMING CONTINUOUS EXECUTION: ",
+                            _("RESUMING CONTINUOUS EXECUTION: "),
                             Fore.MAGENTA,
-                            f"The cycle budget is {cycle_budget}.",
+                            _("The cycle budget is {cycle_budget}.").format(
+                                cycle_budget=cycle_budget
+                            ),
                         )
                     # Case 2: The agent used up its cycle budget -> reset
                     cycles_remaining = cycle_budget + 1
                 logger.typewriter_log(
-                    "-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-=",
+                    _(
+                        "-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-="
+                    ),
                     Fore.MAGENTA,
                     "",
                 )
             elif user_feedback == UserFeedback.EXIT:
-                logger.typewriter_log("Exiting...", Fore.YELLOW)
+                logger.typewriter_log(_("Exiting..."), Fore.YELLOW)
                 exit()
             else:  # user_feedback == UserFeedback.TEXT
                 command_name = "human_feedback"
@@ -360,9 +369,11 @@ def run_interaction_loop(
             logger.typewriter_log("\n")
             if cycles_remaining != math.inf:
                 # Print authorized commands left value
-                logger.typewriter_log(
-                    "AUTHORISED COMMANDS LEFT: ", Fore.CYAN, f"{cycles_remaining}"
-                )
+            logger.typewriter_log(
+                _("AUTHORISED COMMANDS LEFT: "),
+                Fore.CYAN,
+                f"{cycles_remaining}",
+            )
 
         ###################
         # Execute Command #
@@ -375,9 +386,11 @@ def run_interaction_loop(
         result = agent.execute_step(command_name, command_args, user_input)
 
         if result is not None:
-            logger.typewriter_log("SYSTEM: ", Fore.YELLOW, result)
+            logger.typewriter_log(_("SYSTEM: "), Fore.YELLOW, result)
         else:
-            logger.typewriter_log("SYSTEM: ", Fore.YELLOW, "Unable to execute command")
+            logger.typewriter_log(
+                _("SYSTEM: "), Fore.YELLOW, _("Unable to execute command")
+            )
 
 
 def update_user(
@@ -402,10 +415,11 @@ def update_user(
     if command_name is not None:
         if command_name.lower().startswith("error"):
             logger.typewriter_log(
-                "ERROR: ",
+                _("ERROR: "),
                 Fore.RED,
-                f"The Agent failed to select an action. "
-                f"Error message: {command_name}",
+                _(
+                    "The Agent failed to select an action. Error message: {command_name}"
+                ).format(command_name=command_name),
             )
         else:
             if config.speak_mode:
@@ -421,9 +435,9 @@ def update_user(
             )
     else:
         logger.typewriter_log(
-            "NO ACTION SELECTED: ",
+            _("NO ACTION SELECTED: "),
             Fore.RED,
-            "The Agent failed to select an action.",
+            _("The Agent failed to select an action."),
         )
 
 
@@ -445,10 +459,13 @@ def get_user_feedback(
     # Get key press: Prompt the user to press enter to continue or escape
     # to exit
     logger.info(
-        f"Enter '{config.authorise_key}' to authorise command, "
-        f"'{config.authorise_key} -N' to run N continuous commands, "
-        f"'{config.exit_key}' to exit program, or enter feedback for "
-        f"{ai_config.ai_name}..."
+        _(
+            "Enter '{authorise}' to authorise command, '{authorise} -N' to run N continuous commands, '{exit}' to exit program, or enter feedback for {name}..."
+        ).format(
+            authorise=config.authorise_key,
+            exit=config.exit_key,
+            name=ai_config.ai_name,
+        )
     )
 
     user_feedback = None
@@ -458,26 +475,26 @@ def get_user_feedback(
     while user_feedback is None:
         # Get input from user
         if config.chat_messages_enabled:
-            console_input = clean_input(config, "Waiting for your response...")
+            console_input = clean_input(config, _("Waiting for your response..."))
         else:
             console_input = clean_input(
-                config, Fore.MAGENTA + "Input:" + Style.RESET_ALL
+                config, Fore.MAGENTA + _("Input:") + Style.RESET_ALL
             )
 
         # Parse user input
         if console_input.lower().strip() == config.authorise_key:
             user_feedback = UserFeedback.AUTHORIZE
         elif console_input.lower().strip() == "":
-            logger.warn("Invalid input format.")
+            logger.warn(_("Invalid input format."))
         elif console_input.lower().startswith(f"{config.authorise_key} -"):
             try:
                 user_feedback = UserFeedback.AUTHORIZE
                 new_cycles_remaining = abs(int(console_input.split(" ")[1]))
             except ValueError:
                 logger.warn(
-                    f"Invalid input format. "
-                    f"Please enter '{config.authorise_key} -N'"
-                    " where N is the number of continuous tasks."
+                    _(
+                        "Invalid input format. Please enter '{authorise} -N' where N is the number of continuous tasks."
+                    ).format(authorise=config.authorise_key)
                 )
         elif console_input.lower() in [config.exit_key, "exit"]:
             user_feedback = UserFeedback.EXIT
@@ -538,12 +555,21 @@ def construct_main_ai_config(
         )
         should_continue = clean_input(
             config,
-            f"""Continue with the last settings?
+            _(
+                """Continue with the last settings?
 Name:  {ai_config.ai_name}
 Role:  {ai_config.ai_role}
 Goals: {ai_config.ai_goals}
-API Budget: {"infinite" if ai_config.api_budget <= 0 else f"${ai_config.api_budget}"}
-Continue ({config.authorise_key}/{config.exit_key}): """,
+API Budget: {budget}
+Continue ({authorise}/{exit}): """
+            ).format(
+                ai_config=ai_config,
+                budget="infinite"
+                if ai_config.api_budget <= 0
+                else f"${ai_config.api_budget}",
+                authorise=config.authorise_key,
+                exit=config.exit_key,
+            ),
         )
         if should_continue.lower() == config.exit_key:
             ai_config = AIConfig()

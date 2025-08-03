@@ -7,6 +7,8 @@ from typing import TYPE_CHECKING, Any, Optional
 
 from colorama import Fore
 
+from autogpt.app.i18n import _
+
 if TYPE_CHECKING:
     from autogpt.config import Config
 
@@ -116,7 +118,9 @@ class Logger(metaclass=Singleton):
             content = ""
 
         self.typing_logger.log(
-            level, content, extra={"title": title, "color": title_color}
+            level,
+            _(content),
+            extra={"title": _(title), "color": title_color},
         )
 
     def debug(
@@ -157,7 +161,9 @@ class Logger(metaclass=Singleton):
             if isinstance(message, list):
                 message = " ".join(message)
         self.logger.log(
-            level, message, extra={"title": str(title), "color": str(title_color)}
+            level,
+            _(message),
+            extra={"title": _(str(title)), "color": str(title_color)},
         )
 
     def set_level(self, level: logging._Level) -> None:
