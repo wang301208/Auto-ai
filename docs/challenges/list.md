@@ -1,5 +1,7 @@
-# List of Challenges
+# 挑战列表
 
-This page contains a curated list of challenges that Auto-GPT currently faces. If you think you have a solution or idea to tackle any of these challenges, feel free to dive in and start working on them! New challenges can also be submitted by following the guidelines on the [Submit a Challenge](challenges/submit.md) page.
+此页面汇总了 Auto-GPT 当前面临的挑战。如果你有解决这些问题的想法，欢迎尝试！你也可以按照[提交挑战](challenges/submit.md)的指南提出新的挑战。
 
-Memory Challenges: [List of Challenges](memory/introduction.md)
+记忆挑战：[挑战列表](memory/introduction.md)
+
+[English version](list.en.md)
