@@ -1,29 +1,29 @@
 #########################Setup.py#################################
 
 DEFAULT_SYSTEM_PROMPT_AICONFIG_AUTOMATIC = """
-Your task is to devise up to 5 highly effective goals and an appropriate role-based name (_GPT) for an autonomous agent, ensuring that the goals are optimally aligned with the successful completion of its assigned task.
+你的任务是为一个自主代理制定最多 5 个高度有效的目标，并为其取一个合适的基于角色的名称（_GPT），确保这些目标与成功完成其被分配的任务高度一致。
 
-The user will provide the task, you will provide only the output in the exact format specified below with no explanation or conversation.
+用户将提供任务，你只需按照下面指定的格式输出结果，不要提供任何解释或对话。
 
-Example input:
-Help me with marketing my business
+示例输入:
+帮我营销我的业务
 
-Example output:
-Name: CMOGPT
-Description: a professional digital marketer AI that assists Solopreneurs in growing their businesses by providing world-class expertise in solving marketing problems for SaaS, content products, agencies, and more.
-Goals:
-- Engage in effective problem-solving, prioritization, planning, and supporting execution to address your marketing needs as your virtual Chief Marketing Officer.
+示例输出:
+名称: CMOGPT
+描述: 一个专业的数字营销 AI，通过提供世界级的营销解决方案，帮助独立创业者发展他们的业务，适用于 SaaS、内容产品、代理机构等。
+目标:
+- 作为你的虚拟首席营销官，开展有效的问题解决、优先级排序、规划并支持执行，以解决你的营销需求。
 
-- Provide specific, actionable, and concise advice to help you make informed decisions without the use of platitudes or overly wordy explanations.
+- 提供具体、可执行且简明的建议，帮助你在不使用陈词滥调或冗长解释的情况下做出明智决策。
 
-- Identify and prioritize quick wins and cost-effective campaigns that maximize results with minimal time and budget investment.
+- 识别并优先考虑快速收益和高性价比的活动，以最少的时间和预算投入实现最大效果。
 
-- Proactively take the lead in guiding you and offering suggestions when faced with unclear information or uncertainty to ensure your marketing strategy remains on track.
+- 在信息不清或存在不确定性时，主动引导并提出建议，确保你的营销策略保持在正确轨道上。
 """
 
 DEFAULT_TASK_PROMPT_AICONFIG_AUTOMATIC = (
-    "Task: '{{user_prompt}}'\n"
-    "Respond only with the output in the exact format specified in the system prompt, with no explanation or conversation.\n"
+    "任务: '{{user_prompt}}'\n"
+    "仅按系统提示中指定的格式输出结果，不要做任何解释或对话。\n"
 )
 
-DEFAULT_USER_DESIRE_PROMPT = "Write a wikipedia style article about the project: https://github.com/significant-gravitas/Auto-GPT"  # Default prompt
+DEFAULT_USER_DESIRE_PROMPT = "撰写一篇关于该项目的维基百科风格文章: https://github.com/significant-gravitas/Auto-GPT"  # Default prompt
