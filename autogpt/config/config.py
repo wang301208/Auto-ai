@@ -119,9 +119,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     # Web browsing
     selenium_web_browser: str = "chrome"
     selenium_headless: bool = True
-    user_agent: str = (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
-    )
+    user_agent: str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
 
     ###################
     # Plugin Settings #
@@ -276,7 +274,7 @@ class ConfigBuilder(Configurable[Config]):
             "openai_api_key": os.getenv("OPENAI_API_KEY"),
             "use_azure": os.getenv("USE_AZURE") == "True",
             "azure_config_file": os.getenv("AZURE_CONFIG_FILE", AZURE_CONFIG_FILE),
-            "execute_local_commands": os.getenv("EXECUTE_LOCAL_COMMANDS", "False")
+            "execute_local_commands": os.getenv("EXECUTE_LOCAL_COMMANDS", "True")
             == "True",
             "restrict_to_workspace": os.getenv("RESTRICT_TO_WORKSPACE", "True")
             == "True",

@@ -15,7 +15,7 @@ Configuration is controlled through the `Config` object. You can set configurati
 - `ELEVENLABS_API_KEY`: ElevenLabs API Key. Optional.
 - `ELEVENLABS_VOICE_ID`: ElevenLabs Voice ID. Optional.
 - `EMBEDDING_MODEL`: LLM Model to use for embedding tasks. Default: text-embedding-ada-002
-- `EXECUTE_LOCAL_COMMANDS`: If shell commands should be executed locally. Default: False
+- `EXECUTE_LOCAL_COMMANDS`: If shell commands should be executed locally. Default: True
 - `EXIT_KEY`: Exit key accepted to exit. Default: n
 - `FAST_LLM`: LLM Model to use for most tasks. Default: gpt-3.5-turbo
 - `GITHUB_API_KEY`: [Github API Key](https://github.com/settings/tokens). Optional.
