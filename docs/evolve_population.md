@@ -1,28 +1,28 @@
-# Strategy Evolution
+# 策略演化
 
-The `evolve_strategies/population` folder contains YAML files describing different agent strategies. Each file defines options such as the prompt template, the tools allowed and the order in which the agent uses them. These YAML files can be used to automatically build an agent with `build_agent_from_strategy`.
+`evolve_strategies/population` 文件夹包含描述不同代理策略的 YAML 文件。每个文件定义了提示模板、允许使用的工具以及代理使用这些工具的顺序等选项。这些 YAML 文件可以通过 `build_agent_from_strategy` 自动构建代理。
 
-## Seeding strategies
+## 策略种子
 
-Use `seed_population.py` to generate an initial set of random strategies. The script writes files to `evolve_strategies/population/generation_0`.
+使用 `seed_population.py` 生成初始的一组随机策略。脚本会将文件写入 `evolve_strategies/population/generation_0`。
 
 ```bash
 python seed_population.py -n 20
 ```
 
-## Evaluating strategies
+## 策略评估
 
-`evaluate_population.py` loads tasks from `bench_tasks` and evaluates every strategy file in the population directory.
+`evaluate_population.py` 会从 `bench_tasks` 加载任务，并评估人口目录中的每个策略文件。
 
 ```bash
 python evaluate_population.py
 ```
 
-Each strategy's fitness score is printed so you can select the best configurations.
+每个策略的适应度分数都会打印出来，方便你挑选最优配置。
 
-## Building an agent from a custom strategy
+## 根据自定义策略构建代理
 
-Once you have a YAML strategy, create an agent directly in Python:
+在拥有 YAML 策略后，你可以直接在 Python 中创建代理：
 
 ```python
 from autogpt import build_agent_from_strategy
@@ -32,14 +32,11 @@ result = agent.run("Write a short poem about the sea")
 print(result)
 ```
 
-This method applies the YAML settings to the standard configuration and returns an initialized agent ready for use.
+该方法会将 YAML 设置应用于标准配置，并返回一个初始化完成、可以立即使用的代理。
 
-## Full evolution loop
+## 完整演化循环
 
-The `auto_evolve.py` script runs multiple generations of strategy evolution.
-When it finishes, the top-performing YAML configuration is written to
-`evolve_strategies/best/best_strategy.yaml` for easy reuse. To maintain backward
-compatibility, the same file is also copied to `configs/default_strategy.yaml`:
+`auto_evolve.py` 脚本会运行多代策略演化。运行结束后，表现最好的 YAML 配置会被写入 `evolve_strategies/best/best_strategy.yaml` 以便重复使用。为保持向后兼容，该文件也会复制到 `configs/default_strategy.yaml`：
 
 ```bash
 python auto_evolve.py -g 10 -p 20 -r 5
