@@ -1,53 +1,92 @@
-from pathlib import Path
+"""Tests for the CacheManager utility."""
+
+from __future__ import annotations
+
+from typing import Iterable, List
+
+import pytest
 
 from autogpt.cache.cache_manager import (
+    Artifact,
+    CacheBackend,
     CacheManager,
-    DiskCacheBackend,
-    SQLiteCacheBackend,
     RetentionPolicy,
 )
 
 
-def dummy_embedder(text: str):
-    """Deterministic embedding for tests."""
+class InMemoryBackend(CacheBackend):
+    """Simple in-memory cache backend for testing."""
 
-    import hashlib
+    def __init__(self) -> None:
+        self._data: List[Artifact] = []
 
-    h = hashlib.md5(text.encode("utf-8")).digest()
-    return [float(b) for b in h[:8]]
+    def save(self, artifact: Artifact) -> None:  # pragma: no cover - simple storage
+        self._data.append(artifact)
+
+    def load_all(self) -> Iterable[Artifact]:  # pragma: no cover - simple storage
+        return list(self._data)
+
+    def delete(self, artifact: Artifact) -> None:  # pragma: no cover - simple storage
+        self._data = [a for a in self._data if a is not artifact]
 
 
-def test_store_and_lookup_by_signature(tmp_path: Path):
-    backend = DiskCacheBackend(tmp_path)
+def dummy_embedder(text: str) -> List[float]:
+    """Return a deterministic embedding for ``text``."""
+
+    mapping = {
+        "write unit tests": [1.0, 0.0],
+        "generate documentation": [0.0, 1.0],
+        "unit tests": [1.0, 0.0],
+    }
+    return mapping.get(text, [0.0, 0.0])
+
+
+def test_store_and_lookup_by_signature() -> None:
+    backend = InMemoryBackend()
     manager = CacheManager(backend, embedding_func=dummy_embedder)
+
     manager.store("task1", "log", "content", {"foo": "bar"})
+
     results = manager.lookup_by_signature("task1")
     assert len(results) == 1
     assert results[0].content == "content"
 
 
-def test_lookup_by_similarity(tmp_path: Path):
-    backend = DiskCacheBackend(tmp_path)
+def test_lookup_by_similarity() -> None:
+    backend = InMemoryBackend()
     manager = CacheManager(backend, embedding_func=dummy_embedder)
+
     manager.store("write unit tests", "script", "...", {})
     manager.store("generate documentation", "script", "...", {})
+
     results = manager.lookup_by_similarity("unit tests", top_k=1)
     assert results[0].task_signature == "write unit tests"
 
 
-def test_retention_policy_by_count(tmp_path: Path):
-    backend = DiskCacheBackend(tmp_path)
+def test_retention_policy_by_count() -> None:
+    backend = InMemoryBackend()
     policy = RetentionPolicy(max_entries=1)
     manager = CacheManager(backend, retention=policy)
+
     manager.store("task1", "log", "a", {})
     manager.store("task2", "log", "b", {})
+
     assert not manager.lookup_by_signature("task1")
     assert manager.lookup_by_signature("task2")
 
 
-def test_sqlite_backend(tmp_path: Path):
-    db_path = tmp_path / "cache.db"
-    backend = SQLiteCacheBackend(db_path)
-    manager = CacheManager(backend)
+def test_retention_policy_by_age() -> None:
+    backend = InMemoryBackend()
+    policy = RetentionPolicy(max_age_seconds=5)
+    manager = CacheManager(backend, retention=policy)
+
     manager.store("task1", "log", "a", {})
-    assert manager.lookup_by_signature("task1")
+    manager.store("task2", "log", "b", {})
+
+    # Simulate aging of first artifact
+    manager._artifacts[0].timestamp -= 10
+    manager._prune()
+
+    assert not manager.lookup_by_signature("task1")
+    assert manager.lookup_by_signature("task2")
+
