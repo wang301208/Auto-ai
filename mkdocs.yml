@@ -10,6 +10,7 @@ nav:
       - 选项: configuration/options.md
       - 搜索: configuration/search.md
       - 记忆: configuration/memory.md
+      - 消息队列: configuration/message_queue.md
       - 语音: configuration/voice.md
       - 图像生成: configuration/imagegen.md
 
