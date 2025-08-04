@@ -154,6 +154,7 @@ Always review plugin code for security before enabling it.
 * [🔌 Plugins][docs/plugins]
 * [🔧 Self Improvement](docs/self_improvement.md)
 * [🧬 Strategy Evolution](docs/evolve_population.md)
+* [🧰 Git Command Guide](docs/commands/git_operations.md)
 * Configuration
   * [🔍 Web Search](https://docs.agpt.co/configuration/search/)
   * [🧠 Memory](https://docs.agpt.co/configuration/memory/)
