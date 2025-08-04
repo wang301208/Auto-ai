@@ -13,6 +13,8 @@ from autogpt.llm.api_manager import ApiManager
 from autogpt.logs import logger
 from autogpt.memory.vector import get_supported_memory_backends
 
+from .i18n import _
+
 
 def create_config(
     config: Config,
@@ -179,9 +181,10 @@ def check_model(
         return model_name
 
     logger.typewriter_log(
-        "WARNING: ",
+        _("WARNING: "),
         Fore.YELLOW,
-        f"You do not have access to {model_name}. Setting {model_type} to "
-        f"gpt-3.5-turbo.",
+        _(
+            "You do not have access to {model_name}. Setting {model_type} to gpt-3.5-turbo."
+        ).format(model_name=model_name, model_type=model_type),
     )
     return "gpt-3.5-turbo"

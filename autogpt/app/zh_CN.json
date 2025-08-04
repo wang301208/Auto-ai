@@ -59,5 +59,7 @@
   "ERROR: ": "错误：",
   "The Agent failed to select an action. Error message: {command_name}": "代理未能选择操作。错误信息：{command_name}",
   "NO ACTION SELECTED: ": "未选择操作：",
-  "The Agent failed to select an action.": "代理未能选择操作。"
+  "The Agent failed to select an action.": "代理未能选择操作。",
+  "WARNING: ": "警告：",
+  "You do not have access to {model_name}. Setting {model_type} to gpt-3.5-turbo.": "您无权访问 {model_name}。将 {model_type} 设置为 gpt-3.5-turbo。"
 }
