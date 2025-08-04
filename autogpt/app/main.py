@@ -549,9 +549,9 @@ def construct_main_ai_config(
         )
     elif all([ai_config.ai_name, ai_config.ai_role, ai_config.ai_goals]):
         logger.typewriter_log(
-            "Welcome back! ",
+            "欢迎回来！",
             Fore.GREEN,
-            f"Would you like me to return to being {ai_config.ai_name}?",
+            f"你希望我继续作为{ai_config.ai_name}吗？",
             speak_text=True,
         )
         should_continue = clean_input(
@@ -581,7 +581,7 @@ Continue ({authorise}/{exit}): """
 
     if config.restrict_to_workspace:
         logger.typewriter_log(
-            "NOTE:All files/directories created by this agent can be found inside its workspace at:",
+            "注意：该代理创建的所有文件/目录都位于其工作区：",
             Fore.YELLOW,
             f"{config.workspace_path}",
         )
