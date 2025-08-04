@@ -79,3 +79,68 @@ Investigate compatibility issues in: some_dependency
 Other components subscribed to `DIAGNOSIS_COMPLETE` can display the message to
 users or log it for further analysis.
 
+## TDDDeveloperAgent
+
+`TDDDeveloperAgent` automates test‑driven fixes. After diagnostics are
+available it creates a regression test, guides the user toward a solution and
+signals when a candidate fix is ready.
+
+### Workflow
+
+1. **Subscribe** – The agent listens for `DIAGNOSIS_COMPLETE` events on the
+   shared `MessageQueue`.
+2. **Prepare branch** – It creates a working branch using
+   `git_create_branch` and checks it out.
+3. **Create regression test** – A failing test file is generated with
+   `create_test_file` using the supplied diagnostics.
+4. **Run tests** – It executes `run_tests` on the new file to confirm the
+   failure and again on the repository once the user applies a fix.
+5. **Commit and publish** – When the test suite passes, the agent commits the
+   changes and emits a `CODE_FIX_PROPOSED` event summarising the branch and
+   commit hash.
+
+### Event bus and configuration
+
+```python
+from autogpt.agents import TDDDeveloper
+from autogpt.event_bus import DIAGNOSIS_COMPLETE, MessageQueue
+
+message_queue = MessageQueue()
+tdd = TDDDeveloper(agent, message_queue)
+```
+
+Ensure the runtime has access to Git and a working test runner. The commands
+`git_create_branch`, `create_test_file` and `run_tests` must be available in the
+agent's command registry.
+
+### Example flow
+
+The archaeology step has produced diagnostics and published a
+`DIAGNOSIS_COMPLETE` event:
+
+```python
+message_queue.publish(
+    EventMessage(
+        DIAGNOSIS_COMPLETE,
+        payload={
+            "issue_id": "123",
+            "repo_path": "/path/to/repo",
+            "diagnostics": "stack trace",
+        },
+    )
+)
+```
+
+`TDDDeveloperAgent` responds automatically:
+
+```python
+git_create_branch("/path/to/repo", "fix/123", agent)
+create_test_file("/path/to/repo/tests/test_issue_123.py", "...", agent)
+run_tests("/path/to/repo/tests/test_issue_123.py", agent)  # -> '1 failed'
+# user implements fix
+run_tests("/path/to/repo", agent)  # -> '1 passed'
+```
+
+When the tests succeed the agent commits the changes and broadcasts
+`CODE_FIX_PROPOSED` so other components can review the fix.
+
