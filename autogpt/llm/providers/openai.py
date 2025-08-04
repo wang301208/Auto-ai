@@ -30,6 +30,7 @@ from autogpt.llm.base import (
     TText,
 )
 from autogpt.logs import logger
+from autogpt.app.i18n import _
 from autogpt.models.command_registry import CommandRegistry
 from autogpt.models.command_parameter import ParameterType
 
@@ -179,7 +180,9 @@ def meter_api(func: Callable):
             )
         except Exception as err:
             logger.warn(
-                f"Failed to update API costs: {err.__class__.__name__}: {err}"
+                _(
+                    "Failed to update API costs: {err_type}: {err}"
+                ).format(err_type=err.__class__.__name__, err=err)
             )
         return response
 
