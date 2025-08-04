@@ -1,7 +1,7 @@
 from .agent import Agent, CommandRepetitionError
-from autogpt.event_bus import DIAGNOSIS_COMPLETE
+from autogpt.event_bus import CODE_FIX_PROPOSED, DIAGNOSIS_COMPLETE
 from .archaeologist import ISSUE_DETECTED, Archaeologist
-from .tdd_developer import CODE_FIX_PROPOSED, TDDDeveloper
+from .tdd_developer import TDDDeveloper
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
 
 __all__ = [

@@ -5,6 +5,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from git import Repo
+
 from autogpt.agents.agent import Agent
 from autogpt.commands.git_operations import (
     git_checkout,
@@ -12,10 +14,13 @@ from autogpt.commands.git_operations import (
     git_create_branch,
 )
 from autogpt.commands.testing import create_test_file, run_tests
-from autogpt.event_bus import DIAGNOSIS_COMPLETE, EventMessage, MessageQueue
-
-CODE_FIX_PROPOSED = "CODE_FIX_PROPOSED"
-"""Event type emitted when a code fix has been proposed."""
+from autogpt.event_bus import (
+    CODE_FIX_PROPOSED,
+    DIAGNOSIS_COMPLETE,
+    CodeFixProposed,
+    EventMessage,
+    MessageQueue,
+)
 
 
 class TDDDeveloper:
@@ -61,16 +66,16 @@ class TDDDeveloper:
             return
 
         git_commit(repo_path, f"Fix issue {issue_id}", self.agent)
+        try:
+            commit_hash = Repo(repo_path).head.commit.hexsha
+        except Exception:
+            commit_hash = ""
 
         self.message_queue.publish(
-            EventMessage(
-                event_type=CODE_FIX_PROPOSED,
-                payload={
-                    "issue_id": issue_id,
-                    "repo_path": repo_path,
-                    "test_file": str(test_file),
-                    "diagnostics": diagnostics,
-                },
+            CodeFixProposed(
+                branch_name=branch,
+                commit_hash=commit_hash,
+                summary=f"Fix issue {issue_id}",
                 source_agent="tdd_developer",
             )
         )

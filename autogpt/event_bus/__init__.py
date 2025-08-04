@@ -6,7 +6,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-from .message_types import DIAGNOSIS_COMPLETE, DiagnosisComplete, EventMessage
+from .message_types import (
+    CODE_FIX_PROPOSED,
+    DIAGNOSIS_COMPLETE,
+    CodeFixProposed,
+    DiagnosisComplete,
+    EventMessage,
+)
 
 
 class EventBus:
@@ -69,6 +75,14 @@ class EventBus:
                     source_agent=source_agent,
                     timestamp=ts,
                 )
+            elif et == CODE_FIX_PROPOSED and isinstance(payload_obj, dict):
+                yield CodeFixProposed(
+                    branch_name=str(payload_obj.get("branch_name", "")),
+                    commit_hash=str(payload_obj.get("commit_hash", "")),
+                    summary=str(payload_obj.get("summary", "")),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
             else:
                 yield EventMessage(
                     event_type=et,
@@ -85,5 +99,7 @@ __all__ = [
     "MessageQueue",
     "EventMessage",
     "DiagnosisComplete",
+    "CodeFixProposed",
     "DIAGNOSIS_COMPLETE",
+    "CODE_FIX_PROPOSED",
 ]
