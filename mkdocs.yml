@@ -6,6 +6,8 @@ nav:
   - 安装: setup.md
   - 用法: usage.md
   - 插件: plugins.md
+  - 架构:
+      - 代理: architecture/agents.md
   - 配置:
       - 选项: configuration/options.md
       - 搜索: configuration/search.md
