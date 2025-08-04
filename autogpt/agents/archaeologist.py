@@ -3,9 +3,10 @@ from __future__ import annotations
 """Event-driven diagnostic agent for plugin issues."""
 
 import ast
+import re
 import subprocess
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 from autogpt.event_bus import EventMessage, MessageQueue
 
@@ -37,6 +38,13 @@ class Archaeologist:
             k: v for k, v in payload.items() if k not in {"plugin", "error_log"}
         }
 
+        if error_log and ("file" not in metadata or "line" not in metadata):
+            file, line = next(self._parse_log(error_log), (None, None))
+            if "file" not in metadata and file:
+                metadata["file"] = file
+            if "line" not in metadata and line is not None:
+                metadata["line"] = line
+
         analysis = {
             "checkout": self._checkout_commit(metadata.get("commit")),
             "blame": self._git_blame(metadata.get("file"), metadata.get("line")),
@@ -58,6 +66,28 @@ class Archaeologist:
                 source_agent="archaeologist",
             )
         )
+
+    # ------------------------------------------------------------------
+    def _parse_log(self, log: str) -> Iterator[tuple[str, int]]:
+        """Yield ``(file, line)`` pairs parsed from *log*.
+
+        Supports common Python tracebacks and generic ``path:line`` formats
+        often used by plugins. Gracefully yields nothing if no matches are
+        found so callers can fall back to other metadata.
+        """
+
+        patterns = [
+            re.compile(r'File "(?P<file>[^"\n]+)", line (?P<line>\d+)'),
+            re.compile(r'(?P<file>[\w./\\-]+):(?P<line>\d+)'),
+        ]
+        for entry in log.splitlines():
+            for pattern in patterns:
+                match = pattern.search(entry)
+                if match:
+                    try:
+                        yield match.group("file"), int(match.group("line"))
+                    except (ValueError, AttributeError):
+                        continue
 
     # ------------------------------------------------------------------
     def _checkout_commit(self, commit: str | None) -> str | None:
