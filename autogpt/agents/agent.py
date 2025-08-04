@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from autogpt.llm.base import ChatModelResponse, ChatSequence
     from autogpt.memory.vector import VectorMemory
     from autogpt.models.command_registry import CommandRegistry
-    from autogpt.event_bus import EventBus
+    from autogpt.event_bus import MessageQueue
 
 from autogpt.json_utils.utilities import extract_dict_from_response, validate_dict
 from autogpt.llm.api_manager import ApiManager
@@ -49,7 +49,7 @@ class Agent(BaseAgent):
         config: Config,
         cycle_budget: Optional[int] = None,
         plugin_queue: PluginTodoQueue | None = None,
-        event_bus: EventBus | None = None,
+        message_queue: MessageQueue | None = None,
         db: DatabaseManager | None = None,
     ):
         super().__init__(
@@ -80,7 +80,7 @@ class Agent(BaseAgent):
         """LogCycleHandler for structured debug logging."""
 
         self.plugin_queue = plugin_queue
-        self.event_bus = event_bus
+        self.message_queue = message_queue
         self.db = db
 
         # Track recently executed commands to detect loops
@@ -227,14 +227,16 @@ class Agent(BaseAgent):
 
         self.long_term_memory.maybe_transfer(self.history)
 
-        if self.event_bus:
-            self.event_bus.emit(
-                "command_result",
+        if self.message_queue:
+            self.message_queue.publish(
                 {
-                    "command_name": command_name,
-                    "command_args": command_args,
-                    "result": result,
-                },
+                    "type": "command_result",
+                    "payload": {
+                        "command_name": command_name,
+                        "command_args": command_args,
+                        "result": result,
+                    },
+                }
             )
 
         return result

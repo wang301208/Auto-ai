@@ -1,13 +1,14 @@
 from pathlib import Path
 
-from autogpt.event_bus import EventBus
+from autogpt.event_bus import EventBus, MessageQueue
 from autogpt.self_improve import PluginTodoQueue
 
 
 def test_plugin_todo_queue(tmp_path: Path) -> None:
     event_bus = EventBus(tmp_path / "events.db")
+    message_queue = MessageQueue(event_bus)
     queue_file = tmp_path / "todo_queue.json"
-    queue = PluginTodoQueue(queue_file, event_bus)
+    queue = PluginTodoQueue(queue_file, message_queue)
 
     gap = "test-gap"
     context = "some context"

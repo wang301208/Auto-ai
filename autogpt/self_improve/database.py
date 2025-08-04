@@ -7,15 +7,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Tuple
 
-from autogpt.event_bus import EventBus
+from autogpt.event_bus import MessageQueue
 
 
 class DatabaseManager:
     """Small wrapper around sqlite3 for storing improvement data."""
 
-    def __init__(self, db_path: Path | str, event_bus: EventBus | None = None) -> None:
+    def __init__(self, db_path: Path | str, message_queue: MessageQueue | None = None) -> None:
         self.db_path = Path(db_path)
-        self.event_bus = event_bus
+        self.message_queue = message_queue
         self.connection = sqlite3.connect(self.db_path)
         self.init_db()
 
@@ -81,10 +81,9 @@ class DatabaseManager:
             (datetime.utcnow().isoformat(), exception, traceback_str),
         )
         self.connection.commit()
-        if self.event_bus:
-            self.event_bus.emit(
-                "error",
-                {"exception": exception, "traceback": traceback_str},
+        if self.message_queue:
+            self.message_queue.publish(
+                {"type": "error", "payload": {"exception": exception, "traceback": traceback_str}}
             )
 
     def log_profile(self, name: str, duration: float) -> None:
@@ -94,10 +93,9 @@ class DatabaseManager:
             (datetime.utcnow().isoformat(), name, duration),
         )
         self.connection.commit()
-        if self.event_bus:
-            self.event_bus.emit(
-                "profile",
-                {"name": name, "duration": duration},
+        if self.message_queue:
+            self.message_queue.publish(
+                {"type": "profile", "payload": {"name": name, "duration": duration}}
             )
 
     def log_execution(self, description: str, result: str) -> None:
@@ -107,10 +105,9 @@ class DatabaseManager:
             (datetime.utcnow().isoformat(), description, result),
         )
         self.connection.commit()
-        if self.event_bus:
-            self.event_bus.emit(
-                "execution",
-                {"description": description, "result": result},
+        if self.message_queue:
+            self.message_queue.publish(
+                {"type": "execution", "payload": {"description": description, "result": result}}
             )
 
     def log_profile_detail(
@@ -122,15 +119,17 @@ class DatabaseManager:
             (datetime.utcnow().isoformat(), name, function, ncalls, cumtime),
         )
         self.connection.commit()
-        if self.event_bus:
-            self.event_bus.emit(
-                "profile_detail",
+        if self.message_queue:
+            self.message_queue.publish(
                 {
-                    "name": name,
-                    "function": function,
-                    "ncalls": ncalls,
-                    "cumtime": cumtime,
-                },
+                    "type": "profile_detail",
+                    "payload": {
+                        "name": name,
+                        "function": function,
+                        "ncalls": ncalls,
+                        "cumtime": cumtime,
+                    },
+                }
             )
 
     def get_errors(self) -> Iterable[Tuple]:
@@ -165,10 +164,9 @@ class DatabaseManager:
             (datetime.utcnow().isoformat(), int(success)),
         )
         self.connection.commit()
-        if self.event_bus:
-            self.event_bus.emit(
-                "patch_attempt",
-                {"success": bool(success)},
+        if self.message_queue:
+            self.message_queue.publish(
+                {"type": "patch_attempt", "payload": {"success": bool(success)}}
             )
 
     def get_last_patch_attempts(self, count: int) -> Iterable[Tuple]:

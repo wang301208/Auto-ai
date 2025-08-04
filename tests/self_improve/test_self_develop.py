@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Any
 
-from autogpt.event_bus import EventBus
+from autogpt.event_bus import EventBus, MessageQueue
 from autogpt.self_improve import (
     DatabaseManager,
     PatchAgent,
@@ -13,7 +13,8 @@ from autogpt.self_improve import (
 def test_self_develop_processes_plugin_todo(tmp_path: Path, monkeypatch: Any) -> None:
     db = DatabaseManager(tmp_path / "improvement.db")
     event_bus = EventBus(tmp_path / "events.db")
-    plugin_queue = PluginTodoQueue(tmp_path / "todo.json", event_bus)
+    message_queue = MessageQueue(event_bus)
+    plugin_queue = PluginTodoQueue(tmp_path / "todo.json", message_queue)
     patch_agent = PatchAgent(db=db)
 
     file_path = tmp_path / "target.py"
@@ -47,7 +48,7 @@ def test_self_develop_processes_plugin_todo(tmp_path: Path, monkeypatch: Any) ->
         plugin_queue=plugin_queue,
         patch_agent=patch_agent,
         db=db,
-        event_bus=event_bus,
+        message_queue=message_queue,
         workspace=tmp_path,
     )
     mgr.review_repository()

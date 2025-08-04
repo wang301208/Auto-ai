@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Event, Thread
 from typing import List
 
-from autogpt.event_bus import EventBus
+from autogpt.event_bus import MessageQueue
 
 from .database import DatabaseManager
 from .patcher import PatchAgent
@@ -35,7 +35,7 @@ class SelfDevelopManager:
         plugin_queue: PluginTodoQueue,
         patch_agent: PatchAgent,
         db: DatabaseManager,
-        event_bus: EventBus | None,
+        message_queue: MessageQueue | None,
         workspace: Path,
         interval: float = 300.0,
         coverage_threshold: float = 80.0,
@@ -45,7 +45,7 @@ class SelfDevelopManager:
         self.plugin_queue = plugin_queue
         self.patch_agent = patch_agent
         self.db = db
-        self.event_bus = event_bus
+        self.message_queue = message_queue
         self.workspace = workspace
         self.interval = interval
         self.coverage_threshold = coverage_threshold
@@ -98,8 +98,8 @@ class SelfDevelopManager:
             issues.append(Issue(f"Plugin TODO {todo.gap}", todo.context))
 
         # Event log failures
-        if self.event_bus:
-            events = list(self.event_bus.get_events())
+        if self.message_queue:
+            events = list(self.message_queue.get_events())
             new_events = events[self._events_processed :]
             self._events_processed = len(events)
             for event in new_events:
@@ -167,21 +167,25 @@ class SelfDevelopManager:
             self.patch_agent.verify(files)
             export_prompt_config(self.workspace)
             self.db.log_execution(f"Self develop {issue.description}", "success")
-            if self.event_bus:
-                self.event_bus.emit(
-                    "self_develop",
-                    {"issue": issue.description, "result": "success"},
+            if self.message_queue:
+                self.message_queue.publish(
+                    {
+                        "type": "self_develop",
+                        "payload": {"issue": issue.description, "result": "success"},
+                    }
                 )
         except Exception as err:  # pragma: no cover - error path
             self.db.log_execution(
                 f"Self develop {issue.description}",
                 f"failure: {err}",
             )
-            if self.event_bus:
-                self.event_bus.emit(
-                    "self_develop",
+            if self.message_queue:
+                self.message_queue.publish(
                     {
-                        "issue": issue.description,
-                        "result": f"failure: {err}",
-                    },
+                        "type": "self_develop",
+                        "payload": {
+                            "issue": issue.description,
+                            "result": f"failure: {err}",
+                        },
+                    }
                 )
