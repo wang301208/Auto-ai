@@ -181,7 +181,6 @@ def check_model(
     logger.typewriter_log(
         "WARNING: ",
         Fore.YELLOW,
-        f"You do not have access to {model_name}. Setting {model_type} to "
-        f"gpt-3.5-turbo.",
+        f"您没有权限使用 {model_name}。将 {model_type} 设置为 gpt-3.5-turbo。",
     )
     return "gpt-3.5-turbo"
