@@ -1,17 +1,20 @@
+from typing import Iterator
+
 import numpy
 import pytest
 from pytest_mock import MockerFixture
 
 import autogpt.memory.vector.memory_item as vector_memory_item
 import autogpt.memory.vector.providers.base as memory_provider_base
+import autogpt.memory.vector.providers.chroma as chroma_provider
 from autogpt.config.config import Config
 from autogpt.llm.providers.openai import OPEN_AI_EMBEDDING_MODELS
-from autogpt.memory.vector import get_memory
+from autogpt.memory.vector import VectorMemory, get_memory
 from autogpt.memory.vector.utils import Embedding
 
 
 @pytest.fixture
-def embedding_dimension(config: Config):
+def embedding_dimension(config: Config) -> int:
     return OPEN_AI_EMBEDDING_MODELS[config.embedding_model].embedding_dimensions
 
 
@@ -21,7 +24,7 @@ def mock_embedding(embedding_dimension: int) -> Embedding:
 
 
 @pytest.fixture
-def mock_get_embedding(mocker: MockerFixture, embedding_dimension: int):
+def mock_get_embedding(mocker: MockerFixture, embedding_dimension: int) -> None:
     mocker.patch.object(
         vector_memory_item,
         "get_embedding",
@@ -32,10 +35,17 @@ def mock_get_embedding(mocker: MockerFixture, embedding_dimension: int):
         "get_embedding",
         return_value=[0.0255] * embedding_dimension,
     )
+    mocker.patch.object(
+        chroma_provider,
+        "get_embedding",
+        return_value=[0.0255] * embedding_dimension,
+    )
 
 
 @pytest.fixture
-def memory_none(agent_test_config: Config, mock_get_embedding):
+def memory_none(
+    agent_test_config: Config, mock_get_embedding: None
+) -> Iterator[VectorMemory]:
     was_memory_backend = agent_test_config.memory_backend
 
     agent_test_config.memory_backend = "no_memory"

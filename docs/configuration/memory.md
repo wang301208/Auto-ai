@@ -9,6 +9,7 @@
 若要切换到其他后端，可在 `.env` 中将 `MEMORY_BACKEND` 修改为你想要的值：
 
 * `json_file` 使用本地 JSON 缓存文件
+* `chroma` 使用 [Chroma](https://www.trychroma.com/) 向量数据库
 * `pinecone` 使用在环境变量中配置的 Pinecone.io 账户
 * `redis` 使用你配置的 redis 缓存
 * `milvus` 使用你配置的 milvus 缓存
@@ -22,6 +23,7 @@
 
 记忆后端链接：
 
+- [Chroma](https://www.trychroma.com/)
 - [Pinecone](https://www.pinecone.io/)
 - [Milvus](https://milvus.io/) &ndash; [自托管](https://milvus.io/docs)，或使用 [Zilliz Cloud](https://zilliz.com/)
 - [Redis](https://redis.io)
@@ -30,6 +32,22 @@
 !!! warning
     Pinecone、Milvus、Redis 和 Weaviate 记忆后端因记忆系统的改动而变得不兼容，已被移除。
     是否在未来重新添加支持仍在讨论中，欢迎在 https://github.com/Significant-Gravitas/Auto-GPT/discussions/4280 参与讨论。
+
+### Chroma 设置
+
+1. 安装依赖：
+
+    ```shell
+    pip install chromadb
+    ```
+
+2. 在 `.env` 中设置：
+
+    ```ini
+    MEMORY_BACKEND=chroma
+    ```
+
+   数据默认保存在工作空间下的 `chroma` 目录。
 
 ### Redis 设置
 
