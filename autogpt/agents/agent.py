@@ -29,6 +29,7 @@ from autogpt.logs.log_cycle import (
 )
 from autogpt.memory.long_term import LongTermMemory
 from autogpt.self_improve import NEED_TOOL, DatabaseManager, PluginTodoQueue, Profiler
+from autogpt.skills import get_library
 from autogpt.workspace import Workspace
 
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
@@ -129,6 +130,55 @@ class Agent(BaseAgent):
             kwargs["append_messages"].append(budget_msg)
 
         return super().construct_base_prompt(*args, **kwargs)
+
+    def think(
+        self,
+        instruction: Optional[str] = None,
+        thought_process_id: BaseAgent.ThoughtProcessID = "one-shot",
+    ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
+        """Run one agent cycle, checking the skill library before planning."""
+
+        query = instruction or self.default_cycle_instruction
+        library = get_library()
+        matches = library.search(query, top_k=1)
+
+        if matches:
+            skill = matches[0]
+            logger.info(f"Skill match found for task '{query}': {skill.name}")
+            if self.message_queue:
+                self.message_queue.publish(
+                    EventMessage(
+                        event_type="skill_match",
+                        payload={"query": query, "skill": skill.name},
+                        source_agent=self.ai_config.ai_name,
+                    )
+                )
+
+            command_name = "execute_python_code"
+            command_args = {"code": skill.code, "name": f"{skill.name}.py"}
+            assistant_reply_dict: AgentThoughts = {
+                "thoughts": {
+                    "text": f"Using existing skill {skill.name}.",
+                    "reasoning": "Found matching skill; no new code generation required.",
+                    "plan": "- Execute the skill",
+                    "criticism": "",
+                    "speak": f"Executing skill {skill.name}.",
+                },
+                "command": {"name": command_name, "args": command_args},
+            }
+            return command_name, command_args, assistant_reply_dict
+
+        logger.info(f"No skill match found for task '{query}'")
+        if self.message_queue:
+            self.message_queue.publish(
+                EventMessage(
+                    event_type="skill_miss",
+                    payload={"query": query},
+                    source_agent=self.ai_config.ai_name,
+                )
+            )
+
+        return super().think(instruction, thought_process_id)
 
     def on_before_think(self, *args: Any, **kwargs: Any) -> ChatSequence:
         prompt = super().on_before_think(*args, **kwargs)
