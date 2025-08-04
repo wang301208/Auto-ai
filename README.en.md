@@ -148,6 +148,24 @@ example-plugin:
 See the [official plugin repository](https://github.com/Significant-Gravitas/Auto-GPT-Plugins) and the [plugin template](https://github.com/Significant-Gravitas/Auto-GPT-Plugin-Template) for examples.
 Always review plugin code for security before enabling it.
 
+## Testing
+
+Install the test dependencies:
+
+```bash
+pip install -e .[test]
+# or
+pip install pytest
+```
+
+Run tests:
+
+```bash
+agpt run_tests <path>
+# or
+pytest
+```
+
 ## 📖 Documentation
 * [⚙️ Setup][docs/setup]
 * [💻 Usage][docs/usage]
