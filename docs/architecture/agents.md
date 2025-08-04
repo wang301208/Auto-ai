@@ -144,3 +144,53 @@ run_tests("/path/to/repo", agent)  # -> '1 passed'
 When the tests succeed the agent commits the changes and broadcasts
 `CODE_FIX_PROPOSED` so other components can review the fix.
 
+## QAAgent
+
+`QAAgent` validates proposed fixes and coordinates their integration. It
+manages the final review cycle by chaining
+`CODE_FIX_PROPOSED` → `HUMAN_APPROVAL_REQUIRED` → `ISSUE_RESOLVED` events on
+the shared message bus.
+
+### Workflow
+
+1. **Subscribe** – The agent listens for `CODE_FIX_PROPOSED` events.
+2. **Verify** – It checks out the proposed branch and runs `run_tests` to
+   ensure the regression is solved.
+3. **Request approval** – If tests pass, `QAAgent` emits a
+   `HUMAN_APPROVAL_REQUIRED` event to optionally pause for manual review.
+4. **Merge and deploy** – Once approved, the agent merges the branch with
+   `git_merge` and can invoke a deployment script before broadcasting
+   `ISSUE_RESOLVED`.
+
+### Event bus and command requirements
+
+```python
+from autogpt.agents import QAAgent, CODE_FIX_PROPOSED
+from autogpt.event_bus import MessageQueue
+
+message_queue = MessageQueue()
+qa = QAAgent(message_queue)
+```
+
+The commands `run_tests` and `git_merge` must exist in the agent's registry so
+it can verify changes and integrate them.
+
+### Example flow
+
+```python
+# TDDDeveloperAgent publishes CODE_FIX_PROPOSED
+message_queue.publish(EventMessage(CODE_FIX_PROPOSED, payload={"branch": "fix/123"}))
+
+# QAAgent responds
+run_tests("/path/to/repo", agent)  # -> 'all passed'
+message_queue.publish(EventMessage(HUMAN_APPROVAL_REQUIRED, payload={"branch": "fix/123"}))
+# optional human approval received
+git_merge("/path/to/repo", "fix/123", "main", agent)
+subprocess.run(["./deploy.sh", "fix/123"])
+message_queue.publish(EventMessage(ISSUE_RESOLVED, payload={"branch": "fix/123"}))
+```
+
+The human approval step may be automated or skipped in trusted environments,
+and invoking the deployment script is optional depending on the project's
+release process.
+
