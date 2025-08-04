@@ -1,3 +1,6 @@
+from typing import Any
+
+
 def parse_agent_name_and_goals(name_and_goals: dict) -> str:
     parsed_response = f"Agent Name: {name_and_goals['agent_name']}\n"
     parsed_response += f"Agent Role: {name_and_goals['agent_role']}\n"
@@ -24,19 +27,22 @@ def parse_agent_plan(plan: dict) -> str:
     return parsed_response
 
 
-def parse_next_ability(current_task, next_ability: dict) -> str:
+def parse_next_ability(current_task: Any, next_ability: dict) -> str:
     parsed_response = f"Current Task: {current_task.objective}\n"
     ability_args = ", ".join(
         f"{k}={v}" for k, v in next_ability["ability_arguments"].items()
     )
     parsed_response += f"Next Ability: {next_ability['next_ability']}({ability_args})\n"
     parsed_response += f"Motivation: {next_ability['motivation']}\n"
-    parsed_response += f"Self-criticism: {next_ability['self_criticism']}\n"
+    parsed_response += (
+        "Self-criticism (Is this action similar to an earlier one?): "
+        f"{next_ability['self_criticism']}\n"
+    )
     parsed_response += f"Reasoning: {next_ability['reasoning']}\n"
     return parsed_response
 
 
-def parse_ability_result(ability_result) -> str:
+def parse_ability_result(ability_result: dict) -> str:
     parsed_response = f"Ability: {ability_result['ability_name']}\n"
     parsed_response += f"Ability Arguments: {ability_result['ability_args']}\n"
     parsed_response += f"Ability Result: {ability_result['success']}\n"
