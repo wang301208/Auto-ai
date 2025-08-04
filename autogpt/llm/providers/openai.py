@@ -4,24 +4,25 @@ import functools
 import time
 from dataclasses import dataclass
 from typing import Callable, List, Optional
-from unittest.mock import patch
 
-import openai
 from openai import (
-    OpenAI,
+    APIError,
+    AsyncAzureOpenAI,
     AsyncOpenAI,
     AzureOpenAI,
-    AsyncAzureOpenAI,
-    APIError,
+    OpenAI,
     RateLimitError,
     Timeout,
 )
+
 try:
     from openai import ServiceUnavailableError
 except ImportError:  # openai>=1 does not expose this error
     from openai import InternalServerError as ServiceUnavailableError
+
 from colorama import Fore, Style
 
+from autogpt.app.i18n import _
 from autogpt.llm.base import (
     ChatModelInfo,
     EmbeddingModelInfo,
@@ -30,8 +31,8 @@ from autogpt.llm.base import (
     TText,
 )
 from autogpt.logs import logger
-from autogpt.models.command_registry import CommandRegistry
 from autogpt.models.command_parameter import ParameterType
+from autogpt.models.command_registry import CommandRegistry
 
 OPEN_AI_CHAT_MODELS = {
     info.name: info
@@ -169,9 +170,7 @@ def meter_api(func: Callable):
         response = func(*args, **kwargs)
         try:
             usage = response.usage
-            logger.debug(
-                f"Reported usage from call to model {response.model}: {usage}"
-            )
+            logger.debug(f"Reported usage from call to model {response.model}: {usage}")
             api_manager.update_cost(
                 usage.prompt_tokens,
                 getattr(usage, "completion_tokens", 0),
@@ -179,7 +178,9 @@ def meter_api(func: Callable):
             )
         except Exception as err:
             logger.warn(
-                f"Failed to update API costs: {err.__class__.__name__}: {err}"
+                _("Failed to update API costs: {err_class}: {err}").format(
+                    err_class=err.__class__.__name__, err=err
+                )
             )
         return response
 
@@ -422,9 +423,7 @@ class OpenAIFunctionSpec:
         """
 
         def param_signature(p_spec: OpenAIFunctionSpec.ParameterSpec) -> str:
-            return (
-                f"// {p_spec.description}\n" if p_spec.description else ""
-            ) + (
+            return (f"// {p_spec.description}\n" if p_spec.description else "") + (
                 f"{p_spec.name}{'' if p_spec.required else '?'}: {p_spec.type.value},"
             )
 
