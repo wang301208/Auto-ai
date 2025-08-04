@@ -1,8 +1,19 @@
+"""General-purpose utilities for AutoGPT."""
+
+from __future__ import annotations
+
 import yaml
 from colorama import Fore
 
+from .git import git_checkout, git_blame
+
 
 def validate_yaml_file(file: str):
+    """Validate a YAML file.
+
+    Returns a tuple ``(bool, message)`` indicating validity and a human readable
+    message describing the result.
+    """
     try:
         with open(file, encoding="utf-8") as fp:
             yaml.load(fp.read(), Loader=yaml.FullLoader)
@@ -15,3 +26,6 @@ def validate_yaml_file(file: str):
         )
 
     return (True, f"Successfully validated {Fore.CYAN}`{file}`{Fore.RESET}!")
+
+
+__all__ = ["git_checkout", "git_blame", "validate_yaml_file"]
