@@ -83,6 +83,8 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     # Run loop configuration
     continuous_mode: bool = False
     continuous_limit: int = 0
+    max_repeated_commands: int = 3
+    repeat_window: float = 30.0
     # Self development loop
     self_develop_enabled: bool = False
     self_develop_interval: float = 300.0
@@ -123,9 +125,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     # Web browsing
     selenium_web_browser: str = "chrome"
     selenium_headless: bool = True
-    user_agent: str = (
-        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
-    )
+    user_agent: str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
 
     ###################
     # Plugin Settings #

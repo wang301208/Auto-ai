@@ -11,9 +11,13 @@ from typing import Optional
 
 from colorama import Fore, Style
 
-from .i18n import _
-
-from autogpt.agents import Agent, AgentThoughts, CommandArgs, CommandName
+from autogpt.agents import (
+    Agent,
+    AgentThoughts,
+    CommandArgs,
+    CommandName,
+    CommandRepetitionError,
+)
 from autogpt.app.configurator import create_config
 from autogpt.app.setup import prompt_user
 from autogpt.app.spinner import Spinner
@@ -46,6 +50,8 @@ from autogpt.self_improve import (
 from autogpt.speech import say_text
 from autogpt.workspace import Workspace
 from scripts.install_plugin_deps import install_plugin_dependencies
+
+from .i18n import _
 
 
 def run_auto_gpt(
@@ -286,9 +292,7 @@ def run_interaction_loop(
                 spinner.stop()
 
             logger.typewriter_log(
-                _(
-                    "Interrupt signal received. Stopping continuous command execution."
-                ),
+                _("Interrupt signal received. Stopping continuous command execution."),
                 Fore.RED,
             )
             cycles_remaining = 1
@@ -352,9 +356,7 @@ def run_interaction_loop(
                     # Case 2: The agent used up its cycle budget -> reset
                     cycles_remaining = cycle_budget + 1
                 logger.typewriter_log(
-                    _(
-                        "-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-="
-                    ),
+                    _("-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-="),
                     Fore.MAGENTA,
                     "",
                 )
@@ -384,7 +386,11 @@ def run_interaction_loop(
         # and then having the decrement set it to 0, exiting the application.
         if command_name != "human_feedback":
             cycles_remaining -= 1
-        result = agent.execute_step(command_name, command_args, user_input)
+        try:
+            result = agent.execute_step(command_name, command_args, user_input)
+        except CommandRepetitionError as e:
+            result = str(e)
+            cycles_remaining = 1
 
         if result is not None:
             logger.typewriter_log(_("SYSTEM: "), Fore.YELLOW, result)

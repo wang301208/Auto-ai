@@ -3,7 +3,7 @@ from pathlib import Path
 from agent_protocol import StepHandler, StepResult
 from colorama import Fore
 
-from autogpt.agents import Agent
+from autogpt.agents import Agent, CommandRepetitionError
 from autogpt.app.main import UserFeedback
 from autogpt.commands import COMMAND_CATEGORIES
 from autogpt.config import AIConfig, ConfigBuilder
@@ -62,7 +62,11 @@ async def interaction_step(
     result: str | None = None
 
     if command_name is not None:
-        result = agent.execute_step(command_name, command_args, user_input)
+        try:
+            result = agent.execute_step(command_name, command_args, user_input)
+        except CommandRepetitionError as e:
+            logger.typewriter_log("SYSTEM: ", Fore.YELLOW, str(e))
+            return
         if result is None:
             logger.typewriter_log("SYSTEM: ", Fore.YELLOW, "Unable to execute command")
             return
