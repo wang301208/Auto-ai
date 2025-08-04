@@ -53,6 +53,7 @@ PLAN_PROMPT_PERFORMANCE_EVALUATIONS = (
     "Continuously review and analyze your actions to ensure you are performing to"
     " the best of your abilities.",
     "Constructively self-criticize your big-picture behavior constantly.",
+    "During the criticism phase, explicitly assess whether the action repeats a previous one and justify continuing or changing course.",
     "Reflect on past decisions and strategies to refine your approach.",
     "Every command has a cost, so be smart and efficient. Aim to complete tasks in"
     " the least number of steps.",
@@ -65,7 +66,7 @@ PLAN_PROMPT_RESPONSE_DICT = {
         "text": "thought",
         "reasoning": "reasoning",
         "plan": "- short bulleted\n- list that conveys\n- long-term plan",
-        "criticism": "constructive self-criticism",
+        "criticism": "constructive self-criticism. State whether this action is similar to an earlier one and justify continuing or changing course",
         "speak": "thoughts summary to say to user",
     },
     "command": {"name": "command name", "args": {"arg name": "value"}},

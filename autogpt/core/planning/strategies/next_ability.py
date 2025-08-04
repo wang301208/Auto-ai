@@ -1,3 +1,5 @@
+from typing import Any
+
 from autogpt.core.configuration import SystemConfiguration, UserConfigurable
 from autogpt.core.planning.base import PromptStrategy
 from autogpt.core.planning.schema import (
@@ -53,7 +55,7 @@ class NextAbility(PromptStrategy):
         },
         "self_criticism": {
             "type": "string",
-            "description": "Thoughtful self-criticism that explains why this function may not be the best choice.",
+            "description": "Thoughtful self-criticism that explains why this function may not be the best choice and states whether this action is similar to an earlier one, justifying continuing or changing course.",
         },
         "reasoning": {
             "type": "string",
@@ -94,7 +96,7 @@ class NextAbility(PromptStrategy):
         os_info: str,
         api_budget: float,
         current_time: str,
-        **kwargs,
+        **kwargs: Any,
     ) -> LanguageModelPrompt:
         template_kwargs = {
             "os_info": os_info,

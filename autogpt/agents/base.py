@@ -253,7 +253,7 @@ class BaseAgent(metaclass=ABCMeta):
                 reasoning: string;
                 // Short markdown-style bullet list that conveys the long-term plan
                 plan: string;
-                // Constructive self-criticism
+                // Constructive self-criticism. State whether this action is similar to an earlier one and justify continuing or changing course.
                 criticism: string;
                 // Summary of thoughts to say to the user
                 speak: string;
@@ -273,7 +273,7 @@ class BaseAgent(metaclass=ABCMeta):
                 reasoning: string;
                 // Short markdown-style bullet list that conveys the long-term plan
                 plan: string;
-                // Constructive self-criticism
+                // Constructive self-criticism. State whether this action is similar to an earlier one and justify continuing or changing course.
                 criticism: string;
                 // Summary of thoughts to say to the user
                 speak: string;
@@ -296,7 +296,7 @@ class BaseAgent(metaclass=ABCMeta):
             f"Respond strictly with JSON{', and also specify a command to use through a function_call' if use_functions else ''}. "
             "The JSON should be compatible with the TypeScript type `Response` from the following:\n"
             f"{response_format}\n"
-            "You must respond with a JSON object containing **all** the keys specified in the 'thoughts' type, including 'text', 'reasoning', 'plan', 'criticism', and 'speak'."
+            "You must respond with a JSON object containing **all** the keys specified in the 'thoughts' type, including 'text', 'reasoning', 'plan', 'criticism', and 'speak'. In the 'criticism' field, explicitly assess whether this action repeats a previous one and justify continuing or changing course."
         )
 
     def on_before_think(

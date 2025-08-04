@@ -18,7 +18,7 @@
                 },
                 "criticism": {
                     "type": "string",
-                    "description": "constructive self-criticism"
+                    "description": "constructive self-criticism, including whether the action repeats a previous one and justification for continuing or changing course"
                 },
                 "speak": {
                     "type": "string",
