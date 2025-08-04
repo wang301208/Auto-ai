@@ -1,4 +1,5 @@
 from .agent import Agent, CommandRepetitionError
+from .archaeologist import DIAGNOSIS_COMPLETE, ISSUE_DETECTED, Archaeologist
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
 
 __all__ = [
@@ -8,4 +9,7 @@ __all__ = [
     "CommandArgs",
     "AgentThoughts",
     "CommandRepetitionError",
+    "Archaeologist",
+    "ISSUE_DETECTED",
+    "DIAGNOSIS_COMPLETE",
 ]
