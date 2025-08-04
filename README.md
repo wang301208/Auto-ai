@@ -97,6 +97,50 @@ cp .env.template .env
 若使用 Azure OpenAI，请设置 `USE_AZURE=true` 并将 `azure.yaml.template` 复制为
 `azure.yaml`，然后填写所需字段。
 
+## 消息队列
+
+Auto-GPT 包含用于代理之间通信的轻量级消息队列与事件总线。
+
+- **MessageQueue**：若安装了 [PyPubSub](https://github.com/schollii/pypubsub) 将使用该
+  后端，否则回退到内存实现。
+- **EventBus**：可选组件，将事件写入工作区中的 `events.db` 以便调试和追踪。
+
+### 安装默认后端
+
+```bash
+pip install pypubsub
+```
+
+也可以运行 Redis、RabbitMQ 等外部消息代理并实现自定义后端：
+
+```bash
+docker run -p 6379:6379 redis
+docker run -p 5672:5672 rabbitmq
+```
+
+### 事件格式
+
+事件使用 `EventMessage` 数据类：
+
+```python
+EventMessage(event_type="example", payload={"foo": "bar"}, source_agent="agent-1")
+```
+
+### 发布与订阅示例
+
+```python
+from autogpt.event_bus import EventBus, MessageQueue, EventMessage
+
+bus = EventBus("events.db")
+queue = MessageQueue(bus)
+
+def handler(event: EventMessage):
+    print(event.payload)
+
+queue.subscribe("example", handler)
+queue.publish(EventMessage(event_type="example", payload={"foo": "bar"}, source_agent="demo"))
+```
+
 ## 运行应用
 
 ```bash
