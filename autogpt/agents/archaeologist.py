@@ -9,6 +9,8 @@ from typing import Any
 
 from autogpt.event_bus import EventMessage, MessageQueue
 
+from .archaeologist_dependency import analyze_dependency
+
 ISSUE_DETECTED = "ISSUE_DETECTED"
 """Event type indicating that a plugin issue was detected."""
 
@@ -89,22 +91,28 @@ class Archaeologist:
         result = subprocess.run(cmd, capture_output=True, text=True)
         return result.stdout.strip()
 
-    def _review_dependencies(self, file: str | None) -> list[str]:
-        """Collect imported modules from ``file``."""
+    def _review_dependencies(self, file: str | None) -> list[dict[str, Any]]:
+        """Analyze imported modules from ``file`` for compatibility issues."""
 
         if not file or not Path(file).exists():
             return []
         try:
-            tree = ast.parse(Path(file).read_text())
+            source_path = Path(file)
+            tree = ast.parse(source_path.read_text())
         except Exception:
             return []
+
         deps: list[str] = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 deps.extend(alias.name.split(".")[0] for alias in node.names)
             elif isinstance(node, ast.ImportFrom) and node.module:
                 deps.append(node.module.split(".")[0])
-        return sorted(set(deps))
+
+        analyses: list[dict[str, Any]] = []
+        for dep in sorted(set(deps)):
+            analyses.append(analyze_dependency(dep, source_path))
+        return analyses
 
     def _recommendations(self, analysis: dict[str, Any]) -> str:
         """Create a simple recommendation string from analysis data."""
@@ -114,5 +122,14 @@ class Archaeologist:
             recs.append("Review the blamed lines for potential fixes.")
         deps = analysis.get("dependencies") or []
         if deps:
-            recs.append("Check versions of dependencies: " + ", ".join(deps))
+            problematic = [d["dependency"] for d in deps if d.get("findings")]
+            if problematic:
+                recs.append(
+                    "Investigate compatibility issues in: " + ", ".join(problematic)
+                )
+            else:
+                recs.append(
+                    "Check versions of dependencies: "
+                    + ", ".join(d["dependency"] for d in deps)
+                )
         return " ".join(recs) if recs else "No recommendations."
