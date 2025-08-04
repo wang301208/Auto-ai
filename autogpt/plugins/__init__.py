@@ -48,6 +48,7 @@ if TYPE_CHECKING:
     from autogpt.config import Config
 
 from autogpt.logs import logger
+from autogpt.app.i18n import _
 from autogpt.models.base_open_ai_plugin import BaseOpenAIPlugin
 from autogpt.models.command_registry import CommandRegistry
 
@@ -338,11 +339,11 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoGPTPluginTempl
 
         if not plugins_config.is_enabled(plugin_module_name):
             logger.warn(
-                f"Plugin folder {plugin_module_name} found but not configured. If this is a legitimate plugin, please add it to plugins_config.yaml (key: {plugin_module_name})."
+                _("Plugin folder {plugin_module_name} found but not configured. If this is a legitimate plugin, please add it to plugins_config.yaml (key: {plugin_module_name}).").format(plugin_module_name=plugin_module_name)
             )
             continue
 
-        for _, class_obj in inspect.getmembers(plugin):
+        for member_name, class_obj in inspect.getmembers(plugin):
             if (
                 hasattr(class_obj, "_abc_impl")
                 and AutoGPTPluginTemplate in class_obj.__bases__
@@ -413,7 +414,7 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoGPTPluginTempl
             for url, openai_plugin_meta in manifests_specs_clients.items():
                 if not plugins_config.is_enabled(url):
                     logger.warn(
-                        f"OpenAI Plugin {plugin_module_name} found but not configured"
+                        _("OpenAI Plugin {plugin_module_name} found but not configured").format(plugin_module_name=plugin_module_name)
                     )
                     continue
 
