@@ -9,7 +9,7 @@ from pathlib import Path
 from threading import Event, Thread
 from typing import List
 
-from autogpt.event_bus import MessageQueue
+from autogpt.event_bus import EventMessage, MessageQueue
 
 from .database import DatabaseManager
 from .patcher import PatchAgent
@@ -103,11 +103,11 @@ class SelfDevelopManager:
             new_events = events[self._events_processed :]
             self._events_processed = len(events)
             for event in new_events:
-                if event["event_type"] in {"error", "lint_failure", "test_failure"}:
+                if event.event_type in {"error", "lint_failure", "test_failure"}:
                     issues.append(
                         Issue(
-                            f"Event {event['event_type']}",
-                            json.dumps(event["payload"]),
+                            f"Event {event.event_type}",
+                            json.dumps(event.payload),
                         )
                     )
 
@@ -169,10 +169,11 @@ class SelfDevelopManager:
             self.db.log_execution(f"Self develop {issue.description}", "success")
             if self.message_queue:
                 self.message_queue.publish(
-                    {
-                        "type": "self_develop",
-                        "payload": {"issue": issue.description, "result": "success"},
-                    }
+                    EventMessage(
+                        event_type="self_develop",
+                        payload={"issue": issue.description, "result": "success"},
+                        source_agent="self_develop",
+                    )
                 )
         except Exception as err:  # pragma: no cover - error path
             self.db.log_execution(
@@ -181,11 +182,12 @@ class SelfDevelopManager:
             )
             if self.message_queue:
                 self.message_queue.publish(
-                    {
-                        "type": "self_develop",
-                        "payload": {
+                    EventMessage(
+                        event_type="self_develop",
+                        payload={
                             "issue": issue.description,
                             "result": f"failure: {err}",
                         },
-                    }
+                        source_agent="self_develop",
+                    )
                 )

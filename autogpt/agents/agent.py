@@ -14,6 +14,7 @@ if TYPE_CHECKING:
     from autogpt.models.command_registry import CommandRegistry
     from autogpt.event_bus import MessageQueue
 
+from autogpt.event_bus import EventMessage
 from autogpt.json_utils.utilities import extract_dict_from_response, validate_dict
 from autogpt.llm.api_manager import ApiManager
 from autogpt.llm.base import Message
@@ -229,14 +230,15 @@ class Agent(BaseAgent):
 
         if self.message_queue:
             self.message_queue.publish(
-                {
-                    "type": "command_result",
-                    "payload": {
+                EventMessage(
+                    event_type="command_result",
+                    payload={
                         "command_name": command_name,
                         "command_args": command_args,
                         "result": result,
                     },
-                }
+                    source_agent=self.ai_config.ai_name,
+                )
             )
 
         return result

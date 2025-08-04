@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-from autogpt.event_bus import MessageQueue
+from autogpt.event_bus import EventMessage, MessageQueue
 
 NEED_TOOL = "NEED_TOOL"
 
@@ -68,10 +68,11 @@ class PluginTodoQueue:
                 self._counters[gap] = 0  # reset counter after enqueue
                 if self.message_queue:
                     self.message_queue.publish(
-                        {
-                            "type": "plugin_gap",
-                            "payload": {"gap": gap, "context": context, "goal": goal},
-                        }
+                        EventMessage(
+                            event_type="plugin_gap",
+                            payload={"gap": gap, "context": context, "goal": goal},
+                            source_agent="plugin_todo_queue",
+                        )
                     )
             elif is_duplicate:
                 # Already queued, reset counter but don't enqueue another

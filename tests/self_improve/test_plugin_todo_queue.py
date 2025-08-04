@@ -29,9 +29,9 @@ def test_plugin_todo_queue(tmp_path: Path) -> None:
     assert todo.context == context
     assert todo.goal == goal
 
-    events = [e for e in event_bus.get_events() if e["event_type"] == "plugin_gap"]
+    events = [e for e in event_bus.get_events() if e.event_type == "plugin_gap"]
     assert len(events) == 1
-    assert events[0]["payload"] == {"gap": gap, "context": context, "goal": goal}
+    assert events[0].payload == {"gap": gap, "context": context, "goal": goal}
 
     # queue persists after reload
     reloaded = PluginTodoQueue(queue_file)
