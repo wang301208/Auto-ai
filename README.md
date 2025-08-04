@@ -151,6 +151,7 @@ example-plugin:
 * [🔌 插件][docs/plugins]
 * [🔧 自我改进](docs/self_improvement.md)
 * [🧬 策略演化](docs/evolve_population.md)
+* [🧰 Git 命令指南](docs/commands/git_operations.md)
 * 配置
   * [🔍 Web 搜索](https://docs.agpt.co/configuration/search/)
   * [🧠 记忆](https://docs.agpt.co/configuration/memory/)
