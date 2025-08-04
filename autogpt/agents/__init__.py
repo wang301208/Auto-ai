@@ -1,6 +1,7 @@
 from .agent import Agent, CommandRepetitionError
 from autogpt.event_bus import CODE_FIX_PROPOSED, DIAGNOSIS_COMPLETE
 from .archaeologist import ISSUE_DETECTED, Archaeologist
+from .qa_agent import HUMAN_APPROVAL_REQUIRED, ISSUE_RESOLVED, QAAgent
 from .tdd_developer import TDDDeveloper
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
 
@@ -15,5 +16,8 @@ __all__ = [
     "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "TDDDeveloper",
+    "QAAgent",
+    "HUMAN_APPROVAL_REQUIRED",
+    "ISSUE_RESOLVED",
     "CODE_FIX_PROPOSED",
 ]
