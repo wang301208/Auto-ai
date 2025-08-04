@@ -1,7 +1,7 @@
 import pytest
 
 from autogpt.agents.agent import Agent
-from autogpt.commands.testing import run_tests
+from autogpt.commands.testing import create_test_file, run_tests
 
 
 def test_run_tests_success(workspace, agent: Agent):
@@ -16,3 +16,33 @@ def test_run_tests_success(workspace, agent: Agent):
 def test_run_tests_invalid_path(agent: Agent):
     with pytest.raises(ValueError, match="outside of workspace"):
         run_tests("../outside/test_sample.py", agent=agent)
+
+
+def test_create_test_file_success(workspace, agent: Agent):
+    test_file = workspace.get_path("tests/test_generated.py")
+    content = "def test_example():\n    assert True\n"
+
+    result = create_test_file(str(test_file), content, agent=agent)
+
+    assert result == "File written to successfully."
+    assert test_file.exists()
+    with open(test_file, "r", encoding="utf-8") as f:
+        assert content == f.read()
+
+
+def test_create_test_file_invalid_path(workspace, agent: Agent):
+    test_file = workspace.get_path("test_generated.py")
+
+    result = create_test_file(str(test_file), "content", agent=agent)
+
+    assert result.startswith("Error")
+    assert not test_file.exists()
+
+
+def test_create_test_file_invalid_name(workspace, agent: Agent):
+    test_file = workspace.get_path("tests/generated.py")
+
+    result = create_test_file(str(test_file), "content", agent=agent)
+
+    assert result.startswith("Error")
+    assert not test_file.exists()
