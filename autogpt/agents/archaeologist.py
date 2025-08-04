@@ -8,15 +8,12 @@ import subprocess
 from pathlib import Path
 from typing import Any, Iterator
 
-from autogpt.event_bus import EventMessage, MessageQueue
+from autogpt.event_bus import DiagnosisComplete, EventMessage, MessageQueue
 
 from .archaeologist_dependency import analyze_dependency
 
 ISSUE_DETECTED = "ISSUE_DETECTED"
 """Event type indicating that a plugin issue was detected."""
-
-DIAGNOSIS_COMPLETE = "DIAGNOSIS_COMPLETE"
-"""Event type emitted after diagnostic analysis is completed."""
 
 
 class Archaeologist:
@@ -53,18 +50,22 @@ class Archaeologist:
             "dependencies": self._review_dependencies(metadata.get("file")),
         }
 
-        diagnosis = {
-            "plugin": plugin_id,
-            "error_log": error_log,
-            "metadata": metadata,
-            "analysis": analysis,
-            "recommendations": self._recommendations(analysis),
-        }
+        recommendations = self._recommendations(analysis)
+
+        summary_parts = [
+            f"Diagnostics for plugin {plugin_id}" if plugin_id else "Diagnostics"
+        ]
+        if metadata.get("file"):
+            location = metadata["file"]
+            if metadata.get("line") is not None:
+                location += f":{metadata['line']}"
+            summary_parts.append(f"at {location}")
+        summary = " ".join(summary_parts)
 
         self.message_queue.publish(
-            EventMessage(
-                event_type=DIAGNOSIS_COMPLETE,
-                payload=diagnosis,
+            DiagnosisComplete(
+                summary=summary,
+                actionable_recommendations=recommendations,
                 source_agent="archaeologist",
             )
         )
@@ -80,7 +81,7 @@ class Archaeologist:
 
         patterns = [
             re.compile(r'File "(?P<file>[^"\n]+)", line (?P<line>\d+)'),
-            re.compile(r'(?P<file>[\w./\\-]+):(?P<line>\d+)'),
+            re.compile(r"(?P<file>[\w./\\-]+):(?P<line>\d+)"),
         ]
         for entry in log.splitlines():
             for pattern in patterns:
