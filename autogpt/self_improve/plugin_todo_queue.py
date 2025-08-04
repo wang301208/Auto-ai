@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, List, Optional
 
-from autogpt.event_bus import EventBus
+from autogpt.event_bus import MessageQueue
 
 NEED_TOOL = "NEED_TOOL"
 
@@ -25,11 +25,11 @@ class PluginTodoQueue:
     def __init__(
         self,
         file_path: Path | str,
-        event_bus: EventBus | None = None,
+        message_queue: MessageQueue | None = None,
         max_queue_size: Optional[int] = None,
     ) -> None:
         self.file_path = Path(file_path)
-        self.event_bus = event_bus
+        self.message_queue = message_queue
         self.max_queue_size = max_queue_size
         if not self.file_path.exists():
             self.file_path.write_text(json.dumps({"counters": {}, "queue": []}))
@@ -66,10 +66,12 @@ class PluginTodoQueue:
             if not is_duplicate and has_space:
                 self._queue.append(todo)
                 self._counters[gap] = 0  # reset counter after enqueue
-                if self.event_bus:
-                    self.event_bus.emit(
-                        "plugin_gap",
-                        {"gap": gap, "context": context, "goal": goal},
+                if self.message_queue:
+                    self.message_queue.publish(
+                        {
+                            "type": "plugin_gap",
+                            "payload": {"gap": gap, "context": context, "goal": goal},
+                        }
                     )
             elif is_duplicate:
                 # Already queued, reset counter but don't enqueue another

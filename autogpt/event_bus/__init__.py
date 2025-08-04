@@ -57,5 +57,7 @@ class EventBus:
                 "payload": json.loads(payload),
             }
 
+from .message_queue import EventMessage, MessageQueue
 
-__all__ = ["EventBus"]
+
+__all__ = ["EventBus", "MessageQueue", "EventMessage"]

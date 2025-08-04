@@ -31,7 +31,7 @@ from autogpt.app.utils import (
 from autogpt.commands import COMMAND_CATEGORIES
 from autogpt.config import AIConfig, Config, ConfigBuilder, check_openai_api_key
 from autogpt.config_injector import apply_strategy
-from autogpt.event_bus import EventBus
+from autogpt.event_bus import EventBus, MessageQueue
 from autogpt.llm.api_manager import ApiManager
 from autogpt.logs import logger
 from autogpt.memory.vector import get_memory
@@ -159,9 +159,12 @@ def run_auto_gpt(
 
     # Set up self-improvement infrastructure
     event_bus = EventBus(config.workspace_path / "events.db")
-    db = DatabaseManager(config.workspace_path / "improvement.db", event_bus)
+    message_queue = MessageQueue(event_bus)
+    db = DatabaseManager(config.workspace_path / "improvement.db", message_queue)
     install_exception_logger(db, config.workspace_path / "self_improve.log")
-    plugin_queue = PluginTodoQueue(config.workspace_path / "todo_queue.json", event_bus)
+    plugin_queue = PluginTodoQueue(
+        config.workspace_path / "todo_queue.json", message_queue
+    )
     _patch_agent = PatchAgent(
         db=db, pause_file=config.workspace_path / "self_improve.pause"
     )
@@ -174,7 +177,7 @@ def run_auto_gpt(
             plugin_queue=plugin_queue,
             patch_agent=_patch_agent,
             db=db,
-            event_bus=event_bus,
+            message_queue=message_queue,
             workspace=config.workspace_path,
             interval=config.self_develop_interval,
         )
@@ -223,7 +226,7 @@ def run_auto_gpt(
         ai_config=ai_config,
         config=config,
         plugin_queue=plugin_queue,
-        event_bus=event_bus,
+        message_queue=message_queue,
         db=db,
     )
 

@@ -1,6 +1,6 @@
 """Self improvement utilities."""
 
-from autogpt.event_bus import EventBus
+from autogpt.event_bus import MessageQueue
 
 from .critic import CriticAgent
 from .database import DatabaseManager
@@ -21,5 +21,5 @@ __all__ = [
     "start_plugin_queue_processor",
     "SelfDevelopManager",
     "NEED_TOOL",
-    "EventBus",
+    "MessageQueue",
 ]
