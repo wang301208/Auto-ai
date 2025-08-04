@@ -25,6 +25,7 @@ from autogpt.logs.log_cycle import (
     USER_INPUT_FILE_NAME,
     LogCycleHandler,
 )
+from autogpt.memory.long_term import LongTermMemory
 from autogpt.self_improve import NEED_TOOL, DatabaseManager, PluginTodoQueue, Profiler
 from autogpt.workspace import Workspace
 
@@ -54,8 +55,15 @@ class Agent(BaseAgent):
             cycle_budget=cycle_budget,
         )
 
-        self.memory = memory
-        """VectorMemoryProvider used to manage the agent's context (TODO)"""
+        self.vector_memory = memory
+        self.long_term_memory = LongTermMemory(
+            memory,
+            config,
+            enabled=config.use_long_term_memory,
+            threshold=config.long_term_memory_threshold,
+        )
+        self.memory = self.long_term_memory
+        """Long-term memory manager"""
 
         self.workspace = Workspace(config.workspace_path, config.restrict_to_workspace)
         """Workspace that the agent has access to, e.g. for reading/writing files."""
@@ -196,6 +204,8 @@ class Agent(BaseAgent):
             self.history.add("system", "Unable to execute command", "action_result")
         else:
             self.history.add("system", result, "action_result")
+
+        self.long_term_memory.maybe_transfer(self.history)
 
         if self.event_bus:
             self.event_bus.emit(
