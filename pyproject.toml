@@ -54,6 +54,7 @@ dependencies = [
     "fastapi",
     "uvicorn",
     "chromadb",
+    "pytest",
 ]
 
 [project.urls]
@@ -88,7 +89,7 @@ dev = [
 ]
 
 test = [
-    "pytest",
+    # pytest is part of core dependencies
     "asynctest",
     "pytest-asyncio",
     "pytest-benchmark",

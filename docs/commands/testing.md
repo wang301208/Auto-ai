@@ -2,6 +2,26 @@
 
 Auto-GPT provides commands for creating and running tests during development.
 
+## Installation
+
+Install the test dependencies:
+
+```bash
+pip install -e .[test]
+# or
+pip install pytest
+```
+
+## Usage
+
+Run tests with either the built-in command or directly with pytest:
+
+```bash
+agpt run_tests <path>
+# or
+pytest
+```
+
 ## create_test_file
 
 Create a new test file inside the `tests/` directory. The filename must begin with `test_`.

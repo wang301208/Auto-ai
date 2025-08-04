@@ -145,6 +145,24 @@ example-plugin:
 参见 [官方插件仓库](https://github.com/Significant-Gravitas/Auto-GPT-Plugins) 和 [插件模板](https://github.com/Significant-Gravitas/Auto-GPT-Plugin-Template) 以获取示例。
 启用前请务必检查插件代码以确保安全。
 
+## 测试
+
+安装测试依赖：
+
+```bash
+pip install -e .[test]
+# 或
+pip install pytest
+```
+
+运行测试：
+
+```bash
+agpt run_tests <path>
+# 或
+pytest
+```
+
 ## 📖 文档
 * [⚙️ 设置][docs/setup]
 * [💻 用法][docs/usage]
