@@ -30,6 +30,15 @@ agpt --use-memory <记忆后端>
 !!! note
     某些选项有简写，例如 `-m` 对应 `--use-memory`。更多信息请运行 `agpt --help`。
 
+### 启用长期记忆
+
+可在环境变量中开启长期记忆并设置阈值，将较早的消息从短期摘要移入长期向量库：
+
+```shell
+export USE_LONG_TERM_MEMORY=True
+export LONG_TERM_MEMORY_THRESHOLD=10
+```
+
 ### 语音模式
 
 启用 TTS（文本转语音）：

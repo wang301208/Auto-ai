@@ -92,6 +92,8 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     ##########
     memory_backend: str = "json_file"
     memory_index: str = "auto-gpt-memory"
+    use_long_term_memory: bool = False
+    long_term_memory_threshold: int = 10
     redis_host: str = "localhost"
     redis_port: int = 6379
     redis_password: str = ""
@@ -121,7 +123,9 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     # Web browsing
     selenium_web_browser: str = "chrome"
     selenium_headless: bool = True
-    user_agent: str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
+    user_agent: str = (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
+    )
 
     ###################
     # Plugin Settings #
@@ -309,6 +313,9 @@ class ConfigBuilder(Configurable[Config]):
             "user_agent": os.getenv("USER_AGENT"),
             "memory_backend": os.getenv("MEMORY_BACKEND"),
             "memory_index": os.getenv("MEMORY_INDEX"),
+            "use_long_term_memory": os.getenv("USE_LONG_TERM_MEMORY", "False")
+            == "True",
+            "long_term_memory_threshold": os.getenv("LONG_TERM_MEMORY_THRESHOLD"),
             "redis_host": os.getenv("REDIS_HOST"),
             "redis_password": os.getenv("REDIS_PASSWORD"),
             "wipe_redis_on_start": os.getenv("WIPE_REDIS_ON_START", "True") == "True",
@@ -358,6 +365,10 @@ class ConfigBuilder(Configurable[Config]):
             config_dict["redis_port"] = int(cast(str, os.getenv("REDIS_PORT")))
         with contextlib.suppress(TypeError):
             config_dict["temperature"] = float(cast(str, os.getenv("TEMPERATURE")))
+        with contextlib.suppress(TypeError):
+            config_dict["long_term_memory_threshold"] = int(
+                cast(str, config_dict["long_term_memory_threshold"])
+            )
         with contextlib.suppress(TypeError):
             interval_val = os.getenv("SELF_DEVELOP_INTERVAL")
             if interval_val is not None:

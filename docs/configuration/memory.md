@@ -158,6 +158,19 @@ USE_WEAVIATE_EMBEDDED=False # 设为 True 以运行嵌入式 Weaviate
 MEMORY_INDEX="Autogpt" # 为应用创建的索引名称
 ```
 
+## 长期记忆
+
+`MessageHistory` 负责短期对话，但你现在可以启用长期向量记忆，将总结后的内容写入长期库并在构建提示时自动检索。
+
+在 `.env` 中添加：
+
+```ini
+USE_LONG_TERM_MEMORY=True
+LONG_TERM_MEMORY_THRESHOLD=10  # 超过多少条消息后转移
+```
+
+当短期记忆中的消息数量超过阈值时，其摘要会被保存到长期记忆中并从短期记忆清除。随后每轮对话都会先读取短期摘要，再在长期记忆中进行语义检索并合并结果。
+
 ## 查看记忆使用情况
 
 使用 `--debug` 标志可查看记忆使用情况 :)

@@ -31,8 +31,18 @@ agpt --use-memory  <memory-backend>
 ```
 
 !!! note
-    There are shorthands for some of these flags, for example `-m` for `--use-memory`.  
+    There are shorthands for some of these flags, for example `-m` for `--use-memory`.
     Use `agpt --help` for more information.
+
+### Enable long-term memory
+
+You can enable long-term vector memory via environment variables and set when to transfer
+messages from short-term history:
+
+```shell
+export USE_LONG_TERM_MEMORY=True
+export LONG_TERM_MEMORY_THRESHOLD=10
+```
 
 ### Speak Mode
 

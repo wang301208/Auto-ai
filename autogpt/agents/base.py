@@ -112,9 +112,11 @@ class BaseAgent(metaclass=ABCMeta):
         raw_response = create_chat_completion(
             prompt,
             self.config,
-            functions=get_openai_command_specs(self.command_registry)
-            if self.config.openai_functions
-            else None,
+            functions=(
+                get_openai_command_specs(self.command_registry)
+                if self.config.openai_functions
+                else None
+            ),
         )
         self.cycle_count += 1
 
@@ -179,9 +181,20 @@ class BaseAgent(metaclass=ABCMeta):
         trimmed_history = add_history_upto_token_limit(
             prompt, self.history, self.send_token_limit - reserve_tokens
         )
+        insert_index = history_start_index
         if trimmed_history:
             new_summary_msg, _ = self.history.trim_messages(list(prompt), self.config)
-            prompt.insert(history_start_index, new_summary_msg)
+            prompt.insert(insert_index, new_summary_msg)
+            insert_index += 1
+
+        if hasattr(self, "long_term_memory"):
+            long_term = self.long_term_memory.search(self.history.summary)
+            if long_term:
+                long_term_msg = Message(
+                    "system", "Long-term memory:\n" + "\n".join(long_term)
+                )
+                prompt.insert(insert_index, long_term_msg)
+                insert_index += 1
 
         if append_messages:
             prompt.extend(append_messages)
@@ -271,9 +284,11 @@ class BaseAgent(metaclass=ABCMeta):
         response_format = re.sub(
             r"\n\s+",
             "\n",
-            RESPONSE_FORMAT_WITHOUT_COMMAND
-            if self.config.openai_functions
-            else RESPONSE_FORMAT_WITH_COMMAND,
+            (
+                RESPONSE_FORMAT_WITHOUT_COMMAND
+                if self.config.openai_functions
+                else RESPONSE_FORMAT_WITH_COMMAND
+            ),
         )
 
         use_functions = self.config.openai_functions and self.command_registry.commands
@@ -283,6 +298,7 @@ class BaseAgent(metaclass=ABCMeta):
             f"{response_format}\n"
             "You must respond with a JSON object containing **all** the keys specified in the 'thoughts' type, including 'text', 'reasoning', 'plan', 'criticism', and 'speak'."
         )
+
     def on_before_think(
         self,
         prompt: ChatSequence,
