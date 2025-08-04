@@ -36,7 +36,7 @@ archaeologist = Archaeologist(message_queue)
 To receive the agent's output, subscribe to `DIAGNOSIS_COMPLETE` events:
 
 ```python
-from autogpt.agents import DIAGNOSIS_COMPLETE
+from autogpt.event_bus import DIAGNOSIS_COMPLETE
 
 message_queue.subscribe(DIAGNOSIS_COMPLETE, handle_diagnostics)
 ```

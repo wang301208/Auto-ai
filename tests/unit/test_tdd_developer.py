@@ -3,7 +3,13 @@ import sys
 import types
 from pathlib import Path
 
-from autogpt.event_bus import DIAGNOSIS_COMPLETE, EventBus, EventMessage, MessageQueue
+from autogpt.event_bus import (
+    CODE_FIX_PROPOSED,
+    DIAGNOSIS_COMPLETE,
+    EventBus,
+    EventMessage,
+    MessageQueue,
+)
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -12,7 +18,6 @@ sys.modules.setdefault("autogpt.agents", agents_pkg)
 
 tdd_module = importlib.import_module("autogpt.agents.tdd_developer")
 TDDDeveloper = tdd_module.TDDDeveloper
-CODE_FIX_PROPOSED = tdd_module.CODE_FIX_PROPOSED
 
 def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
     event_bus = EventBus(tmp_path / "events.db")
@@ -54,4 +59,6 @@ def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
     commit.assert_called_once_with(repo_path, "Fix issue 123", agent)
     assert len(received) == 1
     assert received[0].event_type == CODE_FIX_PROPOSED
-    assert received[0].payload["issue_id"] == "123"
+    assert received[0].payload["branch_name"] == "fix/123"
+    assert received[0].payload["summary"] == "Fix issue 123"
+    assert "commit_hash" in received[0].payload
