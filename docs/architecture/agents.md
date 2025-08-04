@@ -194,3 +194,90 @@ The human approval step may be automated or skipped in trusted environments,
 and invoking the deployment script is optional depending on the project's
 release process.
 
+## Skill Library
+
+Auto-GPT agents maintain a **skill library** of reusable tool scripts. Each
+skill is stored with an embedding that allows semantic search so an agent can
+reuse existing code instead of creating a new implementation.
+
+```mermaid
+graph TD
+    A[Agent] -->|query| B{Skill Library}
+    B -->|embedding search| C[(Vector DB)]
+    C -->|matching skills| B
+    B -->|code| D[Execute Skill]
+```
+
+### Setup
+
+The library indexes skills in a vector database. The default
+`MemoryVectorDB` stores embeddings in memory, but you can plug in any backend
+by implementing `VectorDBProvider`:
+
+1. Install and configure your vector DB, e.g. `pip install chromadb` for
+   Chroma or `pip install weaviate-client` for Weaviate.
+2. Implement a subclass of `VectorDBProvider` that wraps the database's API.
+3. Create the library with your provider:
+
+```python
+from autogpt.skills import SkillLibrary
+from my_vectors import ChromaVectorDB
+
+library = SkillLibrary(config, vector_db=ChromaVectorDB())
+```
+
+### Example usage
+
+```python
+from autogpt import skills
+
+query = "parse CSV into JSON"
+matches = skills.search(query)
+if matches:
+    run_tool(matches[0])
+```
+
+## Artifact Cache
+
+Agents cache artifacts such as generated code to avoid repeating work. The
+`CacheManager` stores artifacts on disk or in SQLite and can retrieve them by
+task signature or semantic similarity.
+
+```mermaid
+graph TD
+    A[Agent] -->|lookup| B{Cache}
+    B -->|hit| C[Reuse Artifact]
+    B -->|miss| D[Generate Code]
+    D -->|store| B
+```
+
+### Setup
+
+Choose a storage backend for artifacts:
+
+```python
+from pathlib import Path
+from autogpt.cache import CacheManager, DiskCacheBackend, SQLiteCacheBackend
+
+# JSON files on disk
+cache = CacheManager(DiskCacheBackend(Path("data/cache")))
+
+# or SQLite database
+cache = CacheManager(SQLiteCacheBackend(Path("data/cache.db")))
+```
+
+### Example usage
+
+```python
+task = "format report"
+arts = cache.lookup_by_similarity(task)
+if arts:
+    result = arts[0].content
+else:
+    result = generate_code(task)
+    cache.store(task, "code", result, {})
+```
+
+Agents typically query the skill library first and then the cache before
+creating new code, minimising duplicate effort and API usage.
+
