@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import time
 import traceback
+from collections import deque
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Optional
 
@@ -30,6 +31,10 @@ from autogpt.self_improve import NEED_TOOL, DatabaseManager, PluginTodoQueue, Pr
 from autogpt.workspace import Workspace
 
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
+
+
+class CommandRepetitionError(RuntimeError):
+    """Raised when the same command is executed too many times."""
 
 
 class Agent(BaseAgent):
@@ -77,6 +82,9 @@ class Agent(BaseAgent):
         self.plugin_queue = plugin_queue
         self.event_bus = event_bus
         self.db = db
+
+        # Track recently executed commands to detect loops
+        self._recent_commands: deque[tuple[str, float]] = deque()
 
     def construct_base_prompt(self, *args: Any, **kwargs: Any) -> ChatSequence:
         if kwargs.get("prepend_messages") is None:
@@ -140,6 +148,18 @@ class Agent(BaseAgent):
             CURRENT_CONTEXT_FILE_NAME,
         )
         return prompt
+
+    def _record_command(self, signature: str) -> int:
+        """Record a command execution and return the count in the recent window."""
+        now = time.time()
+        self._recent_commands.append((signature, now))
+        # Discard commands outside the repeat window
+        while (
+            self._recent_commands
+            and now - self._recent_commands[0][1] > self.config.repeat_window
+        ):
+            self._recent_commands.popleft()
+        return sum(1 for s, _ in self._recent_commands if s == signature)
 
     def execute(
         self,
@@ -226,6 +246,16 @@ class Agent(BaseAgent):
         user_input: str | None,
     ) -> str:
         """Execute a command and emit an event with the result."""
+        signature = None
+        if command_name is not None:
+            signature = command_name
+            if command_args:
+                signature = f"{command_name}:{json.dumps(command_args, sort_keys=True)}"
+            count = self._record_command(signature)
+            if count > self.config.max_repeated_commands:
+                raise CommandRepetitionError(
+                    f"Command '{command_name}' was repeated {count} times."
+                )
         try:
             if self.db:
                 with Profiler(self.db, "execute"):
