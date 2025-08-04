@@ -53,6 +53,7 @@ dependencies = [
     "agent-protocol>=0.1.1",
     "fastapi",
     "uvicorn",
+    "chromadb",
 ]
 
 [project.urls]

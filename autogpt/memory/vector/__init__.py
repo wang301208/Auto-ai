@@ -3,12 +3,13 @@ from autogpt.logs import logger
 
 from .memory_item import MemoryItem, MemoryItemRelevance
 from .providers.base import VectorMemoryProvider as VectorMemory
+from .providers.chroma import ChromaMemory
 from .providers.json_file import JSONFileMemory
 from .providers.no_memory import NoMemory
 
 # List of supported memory backends
 # Add a backend to this list if the import attempt is successful
-supported_memory = ["json_file", "no_memory"]
+supported_memory = ["json_file", "no_memory", "chroma"]
 
 # try:
 #     from .providers.redis import RedisMemory
@@ -60,6 +61,9 @@ def get_memory(config: Config) -> VectorMemory:
     match config.memory_backend:
         case "json_file":
             memory = JSONFileMemory(config)
+
+        case "chroma":
+            memory = ChromaMemory(config)
 
         case "pinecone":
             raise NotImplementedError(
@@ -135,7 +139,7 @@ def get_memory(config: Config) -> VectorMemory:
     return memory
 
 
-def get_supported_memory_backends():
+def get_supported_memory_backends() -> list[str]:
     return supported_memory
 
 
@@ -145,6 +149,7 @@ __all__ = [
     "MemoryItemRelevance",
     "JSONFileMemory",
     "NoMemory",
+    "ChromaMemory",
     "VectorMemory",
     # "RedisMemory",
     # "PineconeMemory",

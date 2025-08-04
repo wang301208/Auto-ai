@@ -28,7 +28,7 @@
 - `HUGGINGFACE_IMAGE_MODEL`：用于图像生成的 HuggingFace 模型。默认值：CompVis/stable-diffusion-v1-4
 - `IMAGE_PROVIDER`：图像提供方。可选值：`dalle`、`huggingface`、`sdwebui`。默认值：dalle
 - `IMAGE_SIZE`：生成图像的默认尺寸。默认值：256
-- `MEMORY_BACKEND`：使用的记忆后端。目前仅支持并启用 `json_file`。默认值：json_file
+- `MEMORY_BACKEND`：使用的记忆后端。目前支持 `json_file` 和 `chroma`。默认值：json_file
 - `MEMORY_INDEX`：在记忆后端中用于作用域、命名或索引的值。默认值：auto-gpt
 - `OPENAI_API_KEY`：**必填**——你的 [OpenAI API Key](https://platform.openai.com/account/api-keys)。
 - `OPENAI_ORGANIZATION`：OpenAI 组织 ID。可选。

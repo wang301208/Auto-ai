@@ -116,7 +116,7 @@ agpt
 - `-w, --workspace-directory PATH` – 代理工作区目录（默认为工作目录下的 `auto_gpt_workspace`）
 - `--ai-settings FILE` – AI 配置的 YAML 文件路径
 - `--prompt-settings FILE` – 提示设置的 YAML 文件路径
-- `--use-memory BACKEND` – 选择记忆后端，如 `local`、`redis`
+- `--use-memory BACKEND` – 选择记忆后端，如 `json_file`、`chroma`
 - `--speak` – 启用文本转语音
 - `--continuous` – 无需用户确认持续运行
 - `--gpt3only` – 全部使用 GPT‑3.5
@@ -126,7 +126,7 @@ agpt
 示例：
 
 ```bash
-agpt --ai-settings ai_settings.yaml --use-memory redis
+agpt --ai-settings ai_settings.yaml --use-memory chroma
 ```
 
 执行 `agpt --help` 查看完整参数列表。
