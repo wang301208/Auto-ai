@@ -6,7 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable
 
-from .message_types import EventMessage
+from .message_types import DIAGNOSIS_COMPLETE, DiagnosisComplete, EventMessage
 
 
 class EventBus:
@@ -59,14 +59,31 @@ class EventBus:
                 payload_obj = json.loads(payload)
             except Exception:
                 payload_obj = payload
-            yield EventMessage(
-                event_type=et,
-                payload=payload_obj,
-                source_agent=source_agent,
-                timestamp=ts,
-            )
+
+            if et == DIAGNOSIS_COMPLETE and isinstance(payload_obj, dict):
+                yield DiagnosisComplete(
+                    summary=str(payload_obj.get("summary", "")),
+                    actionable_recommendations=str(
+                        payload_obj.get("actionable_recommendations", "")
+                    ),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
+            else:
+                yield EventMessage(
+                    event_type=et,
+                    payload=payload_obj,
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
 
 
 from .message_queue import MessageQueue
 
-__all__ = ["EventBus", "MessageQueue", "EventMessage"]
+__all__ = [
+    "EventBus",
+    "MessageQueue",
+    "EventMessage",
+    "DiagnosisComplete",
+    "DIAGNOSIS_COMPLETE",
+]

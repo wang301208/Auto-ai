@@ -2,7 +2,13 @@ from pathlib import Path
 
 import pytest
 
-from autogpt.event_bus import EventBus, EventMessage, MessageQueue
+from autogpt.event_bus import (
+    DIAGNOSIS_COMPLETE,
+    DiagnosisComplete,
+    EventBus,
+    EventMessage,
+    MessageQueue,
+)
 
 
 @pytest.fixture
@@ -30,6 +36,27 @@ def test_event_bus_emit_and_read(event_bus: EventBus) -> None:
     assert isinstance(events[0].payload, dict)
     assert events[0].payload["foo"] == "bar"
     assert events[0].source_agent == "test"
+
+
+def test_message_queue_diagnosis_complete(message_queue: MessageQueue) -> None:
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    event = DiagnosisComplete(
+        summary="Diagnostics complete",
+        actionable_recommendations="Fix it",
+        source_agent="archaeologist",
+    )
+    message_queue.publish(event)
+
+    assert len(received) == 1
+    assert isinstance(received[0], DiagnosisComplete)
+    assert received[0].summary == "Diagnostics complete"
+
+    events = list(message_queue.get_events())
+    assert len(events) == 1
+    assert isinstance(events[0], DiagnosisComplete)
+    assert events[0].summary == "Diagnostics complete"
 
 
 def test_message_queue_publish_from_multiple_sources(
