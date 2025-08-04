@@ -7,13 +7,15 @@ from datetime import datetime
 from pathlib import Path
 from typing import Iterable, Tuple
 
-from autogpt.event_bus import MessageQueue
+from autogpt.event_bus import EventMessage, MessageQueue
 
 
 class DatabaseManager:
     """Small wrapper around sqlite3 for storing improvement data."""
 
-    def __init__(self, db_path: Path | str, message_queue: MessageQueue | None = None) -> None:
+    def __init__(
+        self, db_path: Path | str, message_queue: MessageQueue | None = None
+    ) -> None:
         self.db_path = Path(db_path)
         self.message_queue = message_queue
         self.connection = sqlite3.connect(self.db_path)
@@ -83,7 +85,11 @@ class DatabaseManager:
         self.connection.commit()
         if self.message_queue:
             self.message_queue.publish(
-                {"type": "error", "payload": {"exception": exception, "traceback": traceback_str}}
+                EventMessage(
+                    event_type="error",
+                    payload={"exception": exception, "traceback": traceback_str},
+                    source_agent="database_manager",
+                )
             )
 
     def log_profile(self, name: str, duration: float) -> None:
@@ -95,7 +101,11 @@ class DatabaseManager:
         self.connection.commit()
         if self.message_queue:
             self.message_queue.publish(
-                {"type": "profile", "payload": {"name": name, "duration": duration}}
+                EventMessage(
+                    event_type="profile",
+                    payload={"name": name, "duration": duration},
+                    source_agent="database_manager",
+                )
             )
 
     def log_execution(self, description: str, result: str) -> None:
@@ -107,7 +117,11 @@ class DatabaseManager:
         self.connection.commit()
         if self.message_queue:
             self.message_queue.publish(
-                {"type": "execution", "payload": {"description": description, "result": result}}
+                EventMessage(
+                    event_type="execution",
+                    payload={"description": description, "result": result},
+                    source_agent="database_manager",
+                )
             )
 
     def log_profile_detail(
@@ -121,15 +135,16 @@ class DatabaseManager:
         self.connection.commit()
         if self.message_queue:
             self.message_queue.publish(
-                {
-                    "type": "profile_detail",
-                    "payload": {
+                EventMessage(
+                    event_type="profile_detail",
+                    payload={
                         "name": name,
                         "function": function,
                         "ncalls": ncalls,
                         "cumtime": cumtime,
                     },
-                }
+                    source_agent="database_manager",
+                )
             )
 
     def get_errors(self) -> Iterable[Tuple]:
@@ -166,7 +181,11 @@ class DatabaseManager:
         self.connection.commit()
         if self.message_queue:
             self.message_queue.publish(
-                {"type": "patch_attempt", "payload": {"success": bool(success)}}
+                EventMessage(
+                    event_type="patch_attempt",
+                    payload={"success": bool(success)},
+                    source_agent="database_manager",
+                )
             )
 
     def get_last_patch_attempts(self, count: int) -> Iterable[Tuple]:
