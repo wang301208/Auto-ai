@@ -49,12 +49,6 @@ Demo made by <a href=https://twitter.com/BlakeWerlinger>Blake Werlinger</a>
    agpt
    ```
 
-   or with Docker:
-
-   ```bash
-   docker compose run --rm auto-gpt
-   ```
-
    The first run creates `auto_gpt_workspace` and other files in your working directory.
    Use `agpt --help` to see all available parameters.
 
@@ -73,13 +67,6 @@ git clone -b stable https://github.com/Significant-Gravitas/Auto-GPT.git
 cd Auto-GPT
 ```
 
-### Docker
-
-```bash
-docker compose build auto-gpt  # optional; pulls a prebuilt image if skipped
-docker compose run --rm auto-gpt
-```
-
 ### From source
 
 ```bash
@@ -88,6 +75,14 @@ source venv/bin/activate  # On Windows use `venv\\Scripts\\activate`
 pip install -e .
 # Optional extras for AlphaEvolve
 pip install -e .[alphaevolve]
+```
+
+Or with [Poetry](https://python-poetry.org/):
+
+```bash
+poetry install
+# Optional extras for AlphaEvolve
+poetry install --with alphaevolve
 ```
 
 ## Configuration
@@ -105,17 +100,6 @@ For Azure OpenAI, set `USE_AZURE=true` and copy `azure.yaml.template` to
 `azure.yaml`, then fill in the required fields.
 
 ## Running the app
-
-### Docker
-
-```bash
-docker compose build auto-gpt
-docker compose run --rm auto-gpt
-```
-
-The Docker configuration enables Redis by default. Comment out the Redis service in `docker-compose.yml` if you do not need it.
-
-### Local environment
 
 ```bash
 agpt

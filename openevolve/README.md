@@ -244,13 +244,6 @@ In the visualization UI, you can
 
 ![OpenEvolve Visualizer](openevolve-visualizer.png)
 
-### Docker
-
-You can also install and execute via Docker:
-```bash
-docker build -t openevolve .
-docker run --rm -v $(pwd):/app --network="host" openevolve examples/function_minimization/initial_program.py examples/function_minimization/evaluator.py --config examples/function_minimization/config.yaml --iterations 1000
-```
 
 ## Configuration
 
