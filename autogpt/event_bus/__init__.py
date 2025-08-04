@@ -7,11 +7,17 @@ from pathlib import Path
 from typing import Iterable
 
 from .message_types import (
+    APPROVAL_GRANTED,
     CODE_FIX_PROPOSED,
     DIAGNOSIS_COMPLETE,
+    HUMAN_APPROVAL_REQUIRED,
+    ISSUE_RESOLVED,
+    ApprovalGranted,
     CodeFixProposed,
     DiagnosisComplete,
     EventMessage,
+    HumanApprovalRequired,
+    IssueResolved,
 )
 
 
@@ -83,6 +89,30 @@ class EventBus:
                     source_agent=source_agent,
                     timestamp=ts,
                 )
+            elif et == HUMAN_APPROVAL_REQUIRED and isinstance(payload_obj, dict):
+                yield HumanApprovalRequired(
+                    branch_name=str(payload_obj.get("branch_name", "")),
+                    test_output=str(payload_obj.get("test_output", "")),
+                    summary=str(payload_obj.get("summary", "")),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
+            elif et == APPROVAL_GRANTED and isinstance(payload_obj, dict):
+                yield ApprovalGranted(
+                    branch_name=str(payload_obj.get("branch_name", "")),
+                    commit_hash=str(payload_obj.get("commit_hash", "")),
+                    summary=str(payload_obj.get("summary", "")),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
+            elif et == ISSUE_RESOLVED and isinstance(payload_obj, dict):
+                yield IssueResolved(
+                    branch_name=str(payload_obj.get("branch_name", "")),
+                    commit_hash=str(payload_obj.get("commit_hash", "")),
+                    summary=str(payload_obj.get("summary", "")),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
             else:
                 yield EventMessage(
                     event_type=et,
@@ -100,6 +130,12 @@ __all__ = [
     "EventMessage",
     "DiagnosisComplete",
     "CodeFixProposed",
+    "HumanApprovalRequired",
+    "ApprovalGranted",
+    "IssueResolved",
     "DIAGNOSIS_COMPLETE",
     "CODE_FIX_PROPOSED",
+    "HUMAN_APPROVAL_REQUIRED",
+    "APPROVAL_GRANTED",
+    "ISSUE_RESOLVED",
 ]
