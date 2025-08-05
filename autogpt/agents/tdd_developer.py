@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any
 import re
 import json
+import logging
 
 from git import Repo  # type: ignore[import-not-found]
 
@@ -21,6 +22,8 @@ from autogpt.event_bus import (
 )
 from autogpt.skills.librarian import LibrarianAgent
 
+
+logger = logging.getLogger(__name__)
 
 class TDDDeveloper:
     """Agent that creates failing tests and proposes fixes based on diagnostics.
@@ -86,8 +89,6 @@ class TDDDeveloper:
             "if __name__ == '__main__':\n"
             "    main()\n"
         )
-        write_to_file(str(script_path), script_content, self.agent)
-
         test_path = Path(repo_path) / "tests" / f"test_use_{name}.py"
         assert_line = (
             f"    mock_run.assert_called_once_with({arg_str})\n"
@@ -111,8 +112,19 @@ class TDDDeveloper:
             "        script.main()\n"
             f"{assert_line}"
         )
-        create_test_file(str(test_path), test_content, self.agent)
-        result = run_tests(str(test_path), self.agent)
+        try:
+            write_to_file(str(script_path), script_content, self.agent)
+            create_test_file(str(test_path), test_content, self.agent)
+        except Exception:
+            logger.exception(
+                "Failed to generate script or test for skill %s", name
+            )
+            return
+        try:
+            result = run_tests(str(test_path), self.agent)
+        except Exception:
+            logger.exception("Failed to run tests for skill %s", name)
+            return
         if result.get("exit_code", 1) != 0:
             return
 
@@ -157,7 +169,6 @@ class TDDDeveloper:
 
             skill_dir = Path(repo_path) / "skill_library" / f"{name}_{version}"
             code = new_skill.get("code", "")
-            write_to_file(str(skill_dir / "main.py"), code, self.agent)
             metadata = {
                 "skill_name": name,
                 "version": version,
@@ -174,11 +185,24 @@ class TDDDeveloper:
             ]:
                 if new_skill.get(key) is not None:
                     metadata[key] = new_skill[key]
-            write_to_file(
-                str(skill_dir / "skill.json"), json.dumps(metadata, indent=2), self.agent
-            )
+            try:
+                write_to_file(str(skill_dir / "main.py"), code, self.agent)
+                write_to_file(
+                    str(skill_dir / "skill.json"),
+                    json.dumps(metadata, indent=2),
+                    self.agent,
+                )
+            except Exception:
+                logger.exception("Failed to generate files for new skill %s", name)
+                return
             if self.librarian:
-                self.librarian.add_skill(metadata, str(skill_dir / "main.py"))
+                try:
+                    self.librarian.add_skill(metadata, str(skill_dir / "main.py"))
+                except Exception:
+                    logger.exception(
+                        "Failed to add new skill %s to librarian", name
+                    )
+                    return
             git_commit(repo_path, f"Add new skill {name}", self.agent)
             try:
                 commit_hash = Repo(repo_path).head.commit.hexsha
@@ -236,9 +260,17 @@ class TDDDeveloper:
         test_content = (
             f"# Auto-generated regression test for issue {issue_id}\n" f"{test_body}\n"
         )
-        create_test_file(str(test_file), test_content, self.agent)
+        try:
+            create_test_file(str(test_file), test_content, self.agent)
+        except Exception:
+            logger.exception("Failed to create test for issue %s", issue_id)
+            return
 
-        initial_result = run_tests(str(test_file), self.agent)
+        try:
+            initial_result = run_tests(str(test_file), self.agent)
+        except Exception:
+            logger.exception("Failed to run initial tests for issue %s", issue_id)
+            return
         if initial_result.get("exit_code", 1) == 0:
             return
 
@@ -254,7 +286,11 @@ class TDDDeveloper:
                     file_path = Path(repo_path) / rel_path
                     write_to_file(str(file_path), new_content, self.agent)
 
-            result = run_tests(repo_path, self.agent)
+            try:
+                result = run_tests(repo_path, self.agent)
+            except Exception:
+                logger.exception("Failed to run tests for issue %s", issue_id)
+                return
             if result.get("exit_code", 1) == 0:
                 git_commit(repo_path, f"Fix issue {issue_id}", self.agent)
                 try:
