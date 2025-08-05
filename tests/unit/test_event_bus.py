@@ -52,11 +52,13 @@ def test_message_queue_diagnosis_complete(message_queue: MessageQueue) -> None:
     assert len(received) == 1
     assert isinstance(received[0], DiagnosisComplete)
     assert received[0].summary == "Diagnostics complete"
+    assert received[0].details["recommended_skill"] is None
 
     events = list(message_queue.get_events())
     assert len(events) == 1
     assert isinstance(events[0], DiagnosisComplete)
     assert events[0].summary == "Diagnostics complete"
+    assert events[0].details["recommended_skill"] is None
 
 
 def test_message_queue_publish_from_multiple_sources(

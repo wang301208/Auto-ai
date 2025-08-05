@@ -57,6 +57,7 @@ def test_archaeologist_handles_issue(tmp_path: Path) -> None:
     assert diag.details["blame"]["author"]
     assert any(c["line"] == 10 for c in diag.details["context"])
     assert isinstance(diag.details["dependencies"], list)
+    assert diag.details["recommended_skill"] is None
 
 
 def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:

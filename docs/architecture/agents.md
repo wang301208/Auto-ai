@@ -82,10 +82,11 @@ Expected `ISSUE_DETECTED` payload fields:
 ### Librarian integration and event payload
 
 `LibrarianAgent.find_skill` enables the archaeologist to reuse prior work. The
-agent includes the raw search results in the `skill_search` field of the
-`DIAGNOSIS_COMPLETE` event's `details`. When a match is found the event's
-`actionable_recommendations` directs consumers to invoke the suggested skill;
-otherwise it signals that a new skill may be needed.
+agent includes the raw search results in the `skill_search` field and the top
+match in `recommended_skill` within the `DIAGNOSIS_COMPLETE` event's
+`details`. When a match is found the event's `actionable_recommendations`
+directs consumers to invoke the suggested skill; otherwise it signals that a
+new skill may be needed.
 
 ### Event bus and tool requirements
 
@@ -106,9 +107,9 @@ archaeologist.librarian = librarian
 
 
 def handle_diagnostics(event: DiagnosisComplete) -> None:
-    skills = event.details.get("skill_search", [])
-    if skills:
-        print(f"Matched skill: {skills[0]['skill_name']}")
+    rec = event.details["recommended_skill"]
+    if rec:
+        print(f"Matched skill: {rec['name']}")
     else:
         print("No matching skill found")
 
@@ -120,7 +121,14 @@ handle_diagnostics(
     DiagnosisComplete(
         summary="",
         actionable_recommendations="",
-        details={"skill_search": [{"skill_name": "skill_example", "version": 1}]},
+        details={
+            "skill_search": [{"skill_name": "skill_example", "version": "1"}],
+            "recommended_skill": {
+                "name": "skill_example",
+                "version": "1",
+                "parameters": {},
+            },
+        },
         source_agent="archaeologist",
     )
 )  # -> Matched skill: skill_example
@@ -128,7 +136,7 @@ handle_diagnostics(
     DiagnosisComplete(
         summary="",
         actionable_recommendations="",
-        details={"skill_search": []},
+        details={"skill_search": [], "recommended_skill": None},
         source_agent="archaeologist",
     )
 )  # -> No matching skill found
@@ -179,10 +187,10 @@ Diagnostics for plugin example-plugin at example.py:10
 Invoke skill_example_v1 with parameters: no parameters.
 ```
 
-The event's `details` include a `skill_search` array with the raw result so
-other components can decide whether to call the skill directly or craft a new
-one. Other components subscribed to `DIAGNOSIS_COMPLETE` can display the
-message to users or log it for further analysis.
+The event's `details` include a `skill_search` array with the raw result and a
+`recommended_skill` entry containing the suggested skill (or `None`). Other
+components subscribed to `DIAGNOSIS_COMPLETE` can display the message to users
+or log it for further analysis.
 
 ## TDDDeveloperAgent
 

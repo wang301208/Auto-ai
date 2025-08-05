@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, TypedDict
 
 
 @dataclass
@@ -76,17 +76,37 @@ class IssueDetected(EventMessage):
         self.payload = {k: v for k, v in self.payload.items() if v is not None}
 
 
+class RecommendedSkill(TypedDict):
+    """Metadata describing a skill suggestion."""
+
+    name: str
+    version: str
+    parameters: dict[str, Any]
+
+
+class DiagnosisDetails(TypedDict, total=False):
+    """Extra information included with :class:`DiagnosisComplete`."""
+
+    recommended_skill: RecommendedSkill | None
+    # other optional fields such as ``skill_search`` or ``metadata`` may appear
+
+
 @dataclass(kw_only=True)
 class DiagnosisComplete(EventMessage):
     """Schema for :data:`DIAGNOSIS_COMPLETE` events."""
 
     summary: str
     actionable_recommendations: str
-    details: dict[str, Any] | None = None
+    details: DiagnosisDetails | None = None
     event_type: str = field(init=False, default=DIAGNOSIS_COMPLETE)
     payload: dict[str, Any] | str | None = field(init=False)
 
     def __post_init__(self) -> None:
+        if self.details is None:
+            self.details = {"recommended_skill": None}
+        else:
+            self.details.setdefault("recommended_skill", None)
+
         self.payload = {
             "summary": self.summary,
             "actionable_recommendations": self.actionable_recommendations,
