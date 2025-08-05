@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 
 from autogpt.config import Config
 from autogpt.logs import logger
+from autogpt.telemetry import telemetry
 
 from .library import SkillLibrary, SkillMetadata
 
@@ -33,7 +34,11 @@ class LibrarianAgent:
 
         cache_key = (query, top_k)
         if cache_key in self._search_cache:
-            return self._search_cache[cache_key]
+            results = self._search_cache[cache_key]
+            telemetry.increment(
+                "find_skill.success" if results else "find_skill.failure"
+            )
+            return results
 
         skills = self.skill_library.search(query, top_k=top_k)
         top_metadata = asdict(skills[0].metadata) if skills else None
@@ -67,6 +72,7 @@ class LibrarianAgent:
             results.append(meta_dict)
 
         self._search_cache[cache_key] = results
+        telemetry.increment("find_skill.success" if results else "find_skill.failure")
         return results
 
     # ------------------------------------------------------------------

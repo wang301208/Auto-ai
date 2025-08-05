@@ -9,6 +9,7 @@ import pytest
 from autogpt.config import Config
 from autogpt.skills import library as library_module
 from autogpt.skills.librarian import LibrarianAgent
+from autogpt.telemetry import telemetry
 
 
 def _setup_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> LibrarianAgent:
@@ -142,3 +143,29 @@ def test_find_skill_skips_non_mapping_metadata(
     results = agent.find_skill("Test skill")
 
     assert results == [asdict(valid_meta)]
+
+
+def test_find_skill_records_telemetry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+    code_file = tmp_path / "skill.py"
+    code_file.write_text("def run():\n    return 'hello'\n")
+
+    metadata = _metadata()
+    assert agent.add_skill(metadata, str(code_file)) is True
+
+    telemetry.reset()
+
+    # Successful search
+    agent.find_skill("Test skill")
+
+    # Failed search: force library search to return no results
+    monkeypatch.setattr(
+        library_module.SkillLibrary, "search", lambda self, q, top_k=3: []
+    )
+    agent.find_skill("Missing skill")
+
+    counts = telemetry.get_counts()
+    assert counts.get("find_skill.success", 0) == 1
+    assert counts.get("find_skill.failure", 0) == 1
