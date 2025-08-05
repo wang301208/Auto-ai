@@ -8,12 +8,14 @@ import subprocess
 from pathlib import Path
 from typing import Any, Iterator
 
-from autogpt.event_bus import DiagnosisComplete, EventMessage, MessageQueue
+from autogpt.event_bus import (
+    DiagnosisComplete,
+    EventMessage,
+    MessageQueue,
+    ISSUE_DETECTED,
+)
 
 from .archaeologist_dependency import analyze_dependency
-
-ISSUE_DETECTED = "ISSUE_DETECTED"
-"""Event type indicating that a plugin issue was detected."""
 
 
 class Archaeologist:
