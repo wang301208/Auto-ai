@@ -77,6 +77,7 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
     repo_mock = mocker.MagicMock()
     repo_mock.git.checkout.return_value = ""
     repo_mock.git.merge.return_value = ""
+    repo_mock.git.diff.return_value = "diff content"
     origin_mock = mocker.MagicMock()
     origin_mock.url = "https://example.com/repo.git"
     remotes_mock = mocker.MagicMock()
@@ -111,6 +112,7 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
     assert published_event.branch_name == "fix/123"
     assert published_event.test_output == "tests passed"
     assert published_event.summary == "Fix bug"
+    assert published_event.diff == "diff content"
 
     message_queue.publish.reset_mock()
 
