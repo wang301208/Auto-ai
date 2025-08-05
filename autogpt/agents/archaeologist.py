@@ -8,6 +8,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Iterator, cast
 
+from autogpt.app.i18n import _
+from autogpt.config import Config
 from autogpt.event_bus import (
     ISSUE_DETECTED,
     TICKET_RECEIVED,
@@ -15,11 +17,9 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
-from autogpt.app.i18n import _
-from autogpt.config import Config
 from autogpt.event_bus.message_types import DiagnosisDetails
-from autogpt.skills.librarian import LibrarianAgent
 from autogpt.logs import logger
+from autogpt.skills.librarian import LibrarianAgent
 
 from .archaeologist_dependency import analyze_dependency
 
@@ -181,14 +181,21 @@ class Archaeologist:
         recommendations = " ".join(recs)
         details["skill_search"] = skills
 
-        self.message_queue.publish(
-            DiagnosisComplete(
-                summary=summary,
-                actionable_recommendations=recommendations,
-                details=cast(DiagnosisDetails, details),
-                source_agent="archaeologist",
-            )
+        event = DiagnosisComplete(
+            summary=summary,
+            actionable_recommendations=recommendations,
+            details=cast(DiagnosisDetails, details),
+            source_agent="archaeologist",
         )
+
+        try:
+            self.message_queue.publish(event)
+        except Exception as err:  # noqa: BLE001
+            logger.error(f"Failed to publish diagnosis: {err}")
+            try:
+                self.message_queue.publish(event)
+            except Exception:  # noqa: BLE001
+                logger.exception("Retrying diagnosis publish failed")
 
     # ------------------------------------------------------------------
     def _generate_query(self, payload: dict) -> str:
