@@ -8,6 +8,10 @@ from unittest.mock import patch
 
 import pytest
 
+import autogpt.skills.librarian as librarian_module
+import autogpt.skills.library as library_module
+from autogpt.app.i18n import _
+from autogpt.config import Config
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
@@ -16,10 +20,6 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
-from autogpt.app.i18n import _
-from autogpt.config import Config
-import autogpt.skills.library as library_module
-import autogpt.skills.librarian as librarian_module
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -252,7 +252,9 @@ def test_on_issue_detected_recommends_new_skill_when_none_found(
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
-def test_on_issue_detected_with_missing_index(event_type: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_on_issue_detected_with_missing_index(
+    event_type: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     message_queue = MessageQueue()
     received: list[DiagnosisComplete] = []
     message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -312,9 +314,7 @@ def test_on_issue_detected_handles_skill_exception(event_type: str) -> None:
 
     assert len(received) == 1
     diag = received[0]
-    assert diag.actionable_recommendations == _(
-        "New skill development recommended."
-    )
+    assert diag.actionable_recommendations == _("New skill development recommended.")
     assert diag.details is not None
     assert diag.details["recommended_skill"] is None
     assert mock_error.called
@@ -325,3 +325,44 @@ def test_archaeologist_agent_respects_config_flag() -> None:
     with patch.object(arch_module, "LibrarianAgent") as MockLib:
         Archaeologist(message_queue, config=Config(use_librarian=False))
         assert not MockLib.called
+
+
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_on_issue_detected_publish_retry(event_type: str) -> None:
+    message_queue = MessageQueue()
+    Archaeologist(message_queue, config=Config(use_librarian=False))
+
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    original_publish = message_queue.publish
+
+    def publish_side_effect(event: EventMessage, call: list[int] = [0]) -> None:
+        if call[0] == 0:
+            call[0] += 1
+            return original_publish(event)
+        if call[0] == 1:
+            call[0] += 1
+            raise RuntimeError("boom")
+        call[0] += 1
+        return original_publish(event)
+
+    with (
+        patch.object(
+            message_queue, "publish", side_effect=publish_side_effect
+        ) as mock_publish,
+        patch.object(arch_module.logger, "error") as mock_error,
+    ):
+        payload = {
+            "plugin": "test_plugin",
+            "issue_type": "bug",
+            "error_log": "runtime error",
+            "description": "runtime error",
+        }
+        message_queue.publish(
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
+        )
+
+    assert len(received) == 1
+    assert mock_publish.call_count == 3
+    mock_error.assert_called_once()
