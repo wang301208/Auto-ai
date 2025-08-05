@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List
 
 from autogpt.config import Config
+from autogpt.logs import logger
 
 from .library import SkillLibrary, SkillMetadata
 
@@ -23,6 +24,8 @@ class LibrarianAgent:
         """Search for skills matching ``query`` and return their metadata."""
 
         skills = self.skill_library.search(query, top_k=top_k)
+        top_metadata = asdict(skills[0].metadata) if skills else None
+        logger.debug(f"Skill search query: {query}, top result: {top_metadata}")
         return [asdict(skill.metadata) for skill in skills]
 
     # ------------------------------------------------------------------
