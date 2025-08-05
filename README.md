@@ -150,6 +150,10 @@ queue.subscribe("example", handler)
 queue.publish(EventMessage(event_type="example", payload={"foo": "bar"}, source_agent="demo"))
 ```
 
+## Librarian 诊断
+
+`ArchaeologistAgent` 现可借助 `LibrarianAgent` 搜索技能库，为插件或运行时问题提供修复建议，形成 Librarian 驱动的诊断流程。更多架构细节请参阅 [docs/architecture/agents.md](docs/architecture/agents.md)。
+
 ## 编排器与仪表盘
 
 仓库包含一个简易的编排器，用于启动并监督这些事件驱动的代理：
