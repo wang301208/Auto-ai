@@ -1,5 +1,24 @@
 # Agents
 
+## Master Orchestrator and Issue Lifecycle
+
+Auto‑GPT ships with a lightweight orchestrator that coordinates the helper
+agents over the shared event bus. It supervises the lifecycle of an issue from
+detection to resolution:
+
+1. **Detection** – A component emits `ISSUE_DETECTED` when a problem occurs.
+2. **Diagnosis** – `ArchaeologistAgent` analyses the repository and publishes
+   `DIAGNOSIS_COMPLETE`.
+3. **Development** – `TDDDeveloperAgent` creates a regression test, guides the
+   fix and reports `CODE_FIX_PROPOSED`.
+4. **Quality assurance** – `QAAgent` runs the test suite and requests manual
+   review via `HUMAN_APPROVAL_REQUIRED`.
+5. **Resolution** – After approval, the fix is merged and `ISSUE_RESOLVED`
+   finalises the cycle.
+
+The orchestrator ensures each agent is running and relays events between them,
+providing a full end‑to‑end workflow for addressing issues.
+
 ## ArchaeologistAgent
 
 `ArchaeologistAgent` is an event‑driven diagnostic helper that assists plugin
