@@ -38,11 +38,14 @@ def test_archaeologist_handles_issue(tmp_path: Path) -> None:
             "file": "autogpt/agents/agent.py",
             "line": 10,
             "extra": "meta",
+            "description": "traceback",
             "issue_type": "bug",
         }
 
         message_queue.publish(
-            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
         )
 
     assert len(received) == 1
@@ -72,11 +75,14 @@ def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:
                 '  File "autogpt/agents/agent.py", line 42, in <module>\n'
                 "    raise Exception()\n"
             ),
+            "description": "traceback",
             "issue_type": "bug",
         }
 
         message_queue.publish(
-            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
         )
 
     assert "autogpt/agents/agent.py:42" in received[0].summary
@@ -94,11 +100,14 @@ def test_archaeologist_parses_plugin_log(tmp_path: Path) -> None:
         payload = {
             "plugin": "test_plugin",
             "error_log": "ERROR at autogpt/agents/agent.py:50 something went wrong",
+            "description": "plugin log error",
             "issue_type": "bug",
         }
 
         message_queue.publish(
-            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
         )
 
     assert "autogpt/agents/agent.py:50" in received[0].summary
@@ -116,11 +125,14 @@ def test_archaeologist_parsing_fails_gracefully(tmp_path: Path) -> None:
         payload = {
             "plugin": "test_plugin",
             "error_log": "unstructured log message",
+            "description": "unstructured log message",
             "issue_type": "bug",
         }
 
         message_queue.publish(
-            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
         )
 
     assert "autogpt/agents/agent.py" not in received[0].summary
