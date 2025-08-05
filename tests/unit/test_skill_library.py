@@ -8,6 +8,8 @@ from typing import Dict, List
 import pytest
 
 from autogpt.config import Config
+from autogpt.skills import library as library_module
+from autogpt.skills.librarian import LibrarianAgent
 
 
 def make_embedding_map() -> Dict[str, List[float]]:
@@ -248,3 +250,70 @@ def test_git_commit_reports_push_failure(
     library.add_skill("s", "1.0", "code", {}, "d", ["t"])
 
     assert any("Error: push failed" in p for p in printed)
+
+
+# ---------------------------------------------------------------------------
+def _setup_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> LibrarianAgent:
+    monkeypatch.setattr(
+        "autogpt.skills.library.get_embedding", lambda _text, _config: [0.1, 0.2, 0.3]
+    )
+    monkeypatch.setattr(
+        "autogpt.skills.librarian.SkillLibrary",
+        lambda config: library_module.SkillLibrary(config, storage_path=tmp_path),
+    )
+    return LibrarianAgent(Config())
+
+
+def _metadata() -> dict:
+    return {
+        "skill_name": "test_skill",
+        "version": "1.0",
+        "description": "Test skill",
+        "tags": ["test"],
+        "parameters": {"param": "value"},
+        "dependencies_file": "requirements.txt",
+        "entry_point": "main:run",
+        "return_type": "str",
+        "author_agent": "tester",
+        "creation_timestamp": "2024-01-01T00:00:00Z",
+    }
+
+
+def test_librarian_add_skill_invalid_metadata_logs_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+    code_file = tmp_path / "skill.py"
+    code_file.write_text("def run():\n    return 'hello'\n")
+
+    metadata = _metadata()
+    metadata.pop("skill_name")
+
+    with caplog.at_level("ERROR"):
+        with pytest.raises(ValueError):
+            agent.add_skill(metadata, str(code_file))
+    assert any("Invalid skill metadata" in rec.title for rec in caplog.records)
+
+
+def test_librarian_add_skill_copy_failure_logs_error(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+    code_file = tmp_path / "skill.py"
+    code_file.write_text("def run():\n    return 'hello'\n")
+
+    metadata = _metadata()
+
+    def boom(*_args, **_kwargs) -> None:
+        raise OSError("copy failed")
+
+    monkeypatch.setattr("autogpt.skills.librarian.shutil.copy2", boom)
+
+    with caplog.at_level("ERROR"):
+        with pytest.raises(OSError):
+            agent.add_skill(metadata, str(code_file))
+    assert any("Failed to copy skill code" in rec.title for rec in caplog.records)

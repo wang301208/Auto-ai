@@ -51,8 +51,8 @@ def test_add_and_find_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
     assert results == [metadata]
 
 
-def test_add_skill_invalid_metadata_returns_false(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_add_skill_invalid_metadata_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     agent = _setup_agent(tmp_path, monkeypatch)
     code_file = tmp_path / "skill.py"
@@ -61,18 +61,24 @@ def test_add_skill_invalid_metadata_returns_false(
     metadata = _metadata()
     metadata.pop("skill_name")
 
-    assert agent.add_skill(metadata, str(code_file)) is False
+    with caplog.at_level("ERROR"):
+        with pytest.raises(ValueError):
+            agent.add_skill(metadata, str(code_file))
+    assert any("Invalid skill metadata" in rec.title for rec in caplog.records)
 
 
-def test_add_skill_missing_code_path_returns_false(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+def test_add_skill_missing_code_path_raises(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
 ) -> None:
     agent = _setup_agent(tmp_path, monkeypatch)
 
     metadata = _metadata()
     missing_path = tmp_path / "missing.py"
 
-    assert agent.add_skill(metadata, str(missing_path)) is False
+    with caplog.at_level("ERROR"):
+        with pytest.raises(FileNotFoundError):
+            agent.add_skill(metadata, str(missing_path))
+    assert any("Skill code path is not a file" in rec.title for rec in caplog.records)
 
 
 def test_find_skill_caches_results(

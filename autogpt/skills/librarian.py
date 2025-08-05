@@ -95,13 +95,14 @@ class LibrarianAgent:
 
         try:
             metadata = SkillMetadata(**skill_metadata)
-        except TypeError:
-            # Provided metadata does not match the expected schema
-            return False
+        except TypeError as err:
+            logger.error(f"Invalid skill metadata: {err}")
+            raise ValueError("Invalid skill metadata") from err
 
         source = Path(skill_code_path)
         if not source.is_file():
-            return False
+            logger.error(f"Skill code path is not a file: {source}")
+            raise FileNotFoundError(f"Skill code path is not a file: {source}")
 
         # Copy the code into the skill library directory
         dest_dir = (
@@ -113,8 +114,11 @@ class LibrarianAgent:
             dest_file = dest_dir / "main.py"
             shutil.copy2(source, dest_file)
             code = dest_file.read_text(encoding="utf-8")
-        except OSError:
-            return False
+        except OSError as err:
+            logger.error(
+                f"Failed to copy skill code from {source} to {dest_dir}: {err}"
+            )
+            raise
 
         try:
             self.skill_library.add_skill(
@@ -131,5 +135,10 @@ class LibrarianAgent:
                 creation_timestamp=metadata.creation_timestamp,
             )
             return True
-        except Exception:
-            return False
+        except Exception as err:
+            logger.error(
+                f"Failed to register skill {metadata.skill_name}: {err}"
+            )
+            raise RuntimeError(
+                f"Failed to register skill {metadata.skill_name}"
+            ) from err
