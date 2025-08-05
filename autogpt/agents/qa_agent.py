@@ -3,12 +3,13 @@ from __future__ import annotations
 """QA agent that validates proposed code fixes before deployment."""
 
 import subprocess
+import tempfile
 from typing import Any
 
 from git import Repo
 
 from autogpt.agents.agent import Agent
-from autogpt.commands.git_operations import git_checkout
+from autogpt.commands.git_operations import git_checkout, git_clone
 from autogpt.commands.testing import run_tests
 from autogpt.event_bus import (
     APPROVAL_GRANTED,
@@ -43,9 +44,12 @@ class QAAgent:
         if not branch or not repo_path:
             return
 
-        git_checkout(repo_path, branch, self.agent)
+        repo_url = Repo(repo_path).remotes.origin.url
 
-        test_result = run_tests(repo_path, self.agent)
+        with tempfile.TemporaryDirectory() as tmp_repo_path:
+            git_clone(repo_url, tmp_repo_path, self.agent)
+            git_checkout(tmp_repo_path, branch, self.agent)
+            test_result = run_tests(tmp_repo_path, self.agent)
 
         self.message_queue.publish(
             HumanApprovalRequired(
