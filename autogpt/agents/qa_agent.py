@@ -16,9 +16,11 @@ from autogpt.event_bus import (
     CODE_FIX_PROPOSED,
     ApprovalGranted,
     CodeFixProposed,
+    DeploymentFailed,
     HumanApprovalRequired,
     IssueResolved,
     MessageQueue,
+    TestsFailed,
 )
 
 
@@ -51,14 +53,28 @@ class QAAgent:
             git_checkout(tmp_repo_path, branch, self.agent)
             test_result = run_tests(tmp_repo_path, self.agent)
 
-        self.message_queue.publish(
-            HumanApprovalRequired(
-                branch_name=branch,
-                test_output=test_result["logs"],
-                summary=event.summary,
-                source_agent="qa_agent",
+        if (
+            test_result.get("status") == "passed"
+            and test_result.get("failures", 0) == 0
+            and test_result.get("errors", 0) == 0
+        ):
+            self.message_queue.publish(
+                HumanApprovalRequired(
+                    branch_name=branch,
+                    test_output=test_result["logs"],
+                    summary=event.summary,
+                    source_agent="qa_agent",
+                )
             )
-        )
+        else:
+            self.message_queue.publish(
+                TestsFailed(
+                    branch_name=branch,
+                    test_output=test_result.get("logs", ""),
+                    summary=event.summary,
+                    source_agent="qa_agent",
+                )
+            )
 
     def _on_approval_granted(self, event: ApprovalGranted) -> None:
         """Handle an ``APPROVAL_GRANTED`` event."""
@@ -77,9 +93,23 @@ class QAAgent:
         repo.git.merge(branch)
 
         try:
-            subprocess.run(["bash", "scripts/deploy.sh"], cwd=repo_path, check=False)
+            result = subprocess.run(
+                ["bash", "scripts/deploy.sh"], cwd=repo_path, check=False
+            )
         except Exception:
-            pass
+            result = subprocess.CompletedProcess([], returncode=1)  # type: ignore[arg-type]
+
+        if result.returncode != 0:
+            self.message_queue.publish(
+                DeploymentFailed(
+                    branch_name=branch,
+                    commit_hash=event.commit_hash,
+                    summary=event.summary,
+                    return_code=result.returncode,
+                    source_agent="qa_agent",
+                )
+            )
+            return
 
         self.message_queue.publish(
             IssueResolved(
