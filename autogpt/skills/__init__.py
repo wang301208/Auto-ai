@@ -24,11 +24,16 @@ def get_library() -> SkillLibrary:
 
 
 def add(
-    name: str, version: str, code: str, parameters: Dict, description: str
+    name: str,
+    version: str,
+    code: str,
+    parameters: Dict,
+    description: str,
+    tags: List[str],
 ) -> Skill:
     """Add a new skill to the library."""
 
-    return get_library().add_skill(name, version, code, parameters, description)
+    return get_library().add_skill(name, version, code, parameters, description, tags)
 
 
 def get(name: str, version: str) -> Optional[Skill]:
@@ -43,10 +48,11 @@ def update(
     code: str | None = None,
     parameters: Dict | None = None,
     description: str | None = None,
+    tags: List[str] | None = None,
 ) -> Optional[Skill]:
     """Update an existing skill."""
 
-    return get_library().update_skill(name, version, code, parameters, description)
+    return get_library().update_skill(name, version, code, parameters, description, tags)
 
 
 def delete(name: str, version: str) -> None:

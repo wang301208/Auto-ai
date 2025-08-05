@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Dict, List
 
+import json
 import pytest
 
 from autogpt.config import Config
@@ -11,10 +12,12 @@ from autogpt.config import Config
 
 def make_embedding_map() -> Dict[str, List[float]]:
     return {
-        "description1\ncode1": [1.0, 0.0, 0.0],
-        "description2\ncode2": [0.0, 1.0, 0.0],
+        "description1\ntag1": [1.0, 0.0, 0.0],
+        "description2\ntag2": [0.0, 1.0, 0.0],
         "description1": [1.0, 0.0, 0.0],
         "description2": [0.0, 1.0, 0.0],
+        "tag1": [1.0, 0.0, 0.0],
+        "tag2": [0.0, 1.0, 0.0],
     }
 
 
@@ -46,12 +49,16 @@ def test_skill_library_save_and_search(
 
     library = SkillLibrary(config, storage_path=storage, vector_db=vector_db)
 
-    library.add_skill("skill1", "1.0", "code1", {"a": 1}, "description1")
-    library.add_skill("skill2", "1.0", "code2", {"b": 2}, "description2")
+    library.add_skill("skill1", "1.0", "code1", {"a": 1}, "description1", ["tag1"])
+    library.add_skill("skill2", "1.0", "code2", {"b": 2}, "description2", ["tag2"])
 
     # Ensure skills are persisted and retrievable
     assert storage.exists()
     assert (storage / "skill1_1.0" / "main.py").exists()
+    with (storage / "skill1_1.0" / "skill.json").open() as f:
+        meta = json.load(f)
+    assert meta["skill_name"] == "skill1"
+    assert meta["tags"] == ["tag1"]
     assert library.get_skill("skill1", "1.0")
 
     # Reload from disk to verify save/load cycle
@@ -59,3 +66,6 @@ def test_skill_library_save_and_search(
 
     results = new_library.search("description1", top_k=1)
     assert results and results[0].name == "skill1"
+
+    tag_results = new_library.search("tag2", top_k=1)
+    assert tag_results and tag_results[0].name == "skill2"

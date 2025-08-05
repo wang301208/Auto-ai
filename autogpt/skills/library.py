@@ -16,15 +16,43 @@ from .vector_db import Embedding, MemoryVectorDB, VectorDBProvider
 
 
 @dataclass
-class Skill:
-    """Representation of an executable tool script."""
+class SkillMetadata:
+    """Metadata describing a skill."""
 
-    name: str
+    skill_name: str
     version: str
-    code: str
-    parameters: Dict
     description: str
+    tags: List[str]
+    parameters: Dict
+
+
+@dataclass
+class Skill:
+    """Representation of an executable tool script with metadata."""
+
+    metadata: SkillMetadata
+    code: str
     embedding: Embedding | None = None
+
+    @property
+    def name(self) -> str:  # pragma: no cover - simple delegation
+        return self.metadata.skill_name
+
+    @property
+    def version(self) -> str:  # pragma: no cover - simple delegation
+        return self.metadata.version
+
+    @property
+    def description(self) -> str:  # pragma: no cover - simple delegation
+        return self.metadata.description
+
+    @property
+    def tags(self) -> List[str]:  # pragma: no cover - simple delegation
+        return self.metadata.tags
+
+    @property
+    def parameters(self) -> Dict:  # pragma: no cover - simple delegation
+        return self.metadata.parameters
 
 
 class SkillLibrary:
@@ -54,18 +82,26 @@ class SkillLibrary:
             if not meta_file.exists() or not code_file.exists():
                 continue
             with meta_file.open("r", encoding="utf-8") as f:
-                data = json.load(f)
+                metadata_dict = json.load(f)
+            metadata = SkillMetadata(**metadata_dict)
             with code_file.open("r", encoding="utf-8") as f:
                 code = f.read()
-            skill = Skill(code=code, **data)
+            skill = Skill(metadata=metadata, code=code)
+
             key = f"{skill.name}_{skill.version}"
+            text = f"{skill.description}\n{' '.join(skill.tags)}"
+            embedding = get_embedding(text, self.config)
+            skill.embedding = list(map(float, embedding))
             self._skills[key] = skill
-            if skill.embedding is not None:
-                self.vector_db.add(
-                    key,
-                    skill.embedding,
-                    {"description": skill.description, "parameters": skill.parameters},
-                )
+            self.vector_db.add(
+                key,
+                skill.embedding,
+                {
+                    "description": skill.description,
+                    "tags": skill.tags,
+                    "parameters": skill.parameters,
+                },
+            )
 
     def _skill_dir(self, name: str, version: str) -> Path:
         return self.storage_path / f"{name}_{version}"
@@ -79,11 +115,11 @@ class SkillLibrary:
         with (skill_dir / "skill.json").open("w", encoding="utf-8") as f:
             json.dump(
                 {
-                    "name": skill.name,
+                    "skill_name": skill.name,
                     "version": skill.version,
-                    "parameters": skill.parameters,
                     "description": skill.description,
-                    "embedding": skill.embedding,
+                    "tags": skill.tags,
+                    "parameters": skill.parameters,
                 },
                 f,
                 indent=2,
@@ -105,12 +141,19 @@ class SkillLibrary:
 
     # ------------------------------------------------------------------
     def add_skill(
-        self, name: str, version: str, code: str, parameters: Dict, description: str
+        self,
+        name: str,
+        version: str,
+        code: str,
+        parameters: Dict,
+        description: str,
+        tags: List[str],
     ) -> Skill:
         """Create and persist a new skill."""
 
-        skill = Skill(name, version, code, parameters, description)
-        text = f"{description}\n{code}"
+        metadata = SkillMetadata(name, version, description, tags, parameters)
+        skill = Skill(metadata=metadata, code=code)
+        text = f"{description}\n{' '.join(tags)}"
         embedding = get_embedding(text, self.config)
         skill.embedding = list(map(float, embedding))
 
@@ -119,7 +162,7 @@ class SkillLibrary:
         self.vector_db.add(
             key,
             skill.embedding,
-            {"description": description, "parameters": parameters},
+            {"description": description, "tags": tags, "parameters": parameters},
         )
         skill_dir = self._write_skill(skill)
         self._git_commit(skill_dir, f"Add skill {name} {version}")
@@ -135,6 +178,7 @@ class SkillLibrary:
         code: str | None = None,
         parameters: Dict | None = None,
         description: str | None = None,
+        tags: List[str] | None = None,
     ) -> Optional[Skill]:
         key = f"{name}_{version}"
         skill = self._skills.get(key)
@@ -144,17 +188,23 @@ class SkillLibrary:
         if code is not None:
             skill.code = code
         if parameters is not None:
-            skill.parameters = parameters
+            skill.metadata.parameters = parameters
         if description is not None:
-            skill.description = description
+            skill.metadata.description = description
+        if tags is not None:
+            skill.metadata.tags = tags
 
-        text = f"{skill.description}\n{skill.code}"
+        text = f"{skill.description}\n{' '.join(skill.tags)}"
         embedding = get_embedding(text, self.config)
         skill.embedding = list(map(float, embedding))
         self.vector_db.add(
             key,
             skill.embedding,
-            {"description": skill.description, "parameters": skill.parameters},
+            {
+                "description": skill.description,
+                "tags": skill.tags,
+                "parameters": skill.parameters,
+            },
         )
         skill_dir = self._write_skill(skill)
         self._git_commit(skill_dir, f"Update skill {name} {version}")
