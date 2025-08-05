@@ -37,6 +37,12 @@ ISSUE_RESOLVED = "ISSUE_RESOLVED"
 ISSUE_DETECTED = "ISSUE_DETECTED"
 """Event type emitted when a plugin issue is detected."""
 
+TESTS_FAILED = "TESTS_FAILED"
+"""Event type emitted when verification tests fail."""
+
+DEPLOYMENT_FAILED = "DEPLOYMENT_FAILED"
+"""Event type emitted when deployment fails."""
+
 
 @dataclass(kw_only=True)
 class DiagnosisComplete(EventMessage):
@@ -105,6 +111,24 @@ class HumanApprovalRequired(EventMessage):
 
 
 @dataclass(kw_only=True)
+class TestsFailed(EventMessage):
+    """Schema for :data:`TESTS_FAILED` events."""
+
+    branch_name: str
+    test_output: str
+    summary: str
+    event_type: str = field(init=False, default=TESTS_FAILED)
+    payload: dict[str, Any] | str | None = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.payload = {
+            "branch_name": self.branch_name,
+            "test_output": self.test_output,
+            "summary": self.summary,
+        }
+
+
+@dataclass(kw_only=True)
 class ApprovalGranted(EventMessage):
     """Schema for :data:`APPROVAL_GRANTED` events.
 
@@ -152,17 +176,41 @@ class IssueResolved(EventMessage):
         }
 
 
+@dataclass(kw_only=True)
+class DeploymentFailed(EventMessage):
+    """Schema for :data:`DEPLOYMENT_FAILED` events."""
+
+    branch_name: str
+    commit_hash: str
+    summary: str
+    return_code: int
+    event_type: str = field(init=False, default=DEPLOYMENT_FAILED)
+    payload: dict[str, Any] | str | None = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.payload = {
+            "branch_name": self.branch_name,
+            "commit_hash": self.commit_hash,
+            "summary": self.summary,
+            "return_code": self.return_code,
+        }
+
+
 __all__ = [
     "EventMessage",
     "DiagnosisComplete",
     "CodeFixProposed",
     "HumanApprovalRequired",
+    "TestsFailed",
     "ApprovalGranted",
     "IssueResolved",
+    "DeploymentFailed",
     "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "CODE_FIX_PROPOSED",
     "HUMAN_APPROVAL_REQUIRED",
+    "TESTS_FAILED",
     "APPROVAL_GRANTED",
     "ISSUE_RESOLVED",
+    "DEPLOYMENT_FAILED",
 ]
