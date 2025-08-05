@@ -3,15 +3,18 @@ from __future__ import annotations
 """Simple orchestrator that starts core AutoGPT agents."""
 
 import os
-import time
 import threading
+import time
 from dataclasses import dataclass
-from multiprocessing import Event, Process, Queue
+from multiprocessing import Event as MpEvent
+from multiprocessing import Process, Queue
+from multiprocessing.synchronize import Event
 from pathlib import Path
 from queue import Empty
 from typing import Callable, Dict, Iterable, Mapping
 
 from autogpt.agents import Archaeologist, QAAgent, SentryAgent, TDDDeveloper
+from autogpt.dashboard import run_dashboard
 from autogpt.event_bus import EventBus, MessageQueue
 
 
@@ -27,7 +30,9 @@ class DummyAgent:
         self.config = type("Config", (), {"workspace_path": str(workspace_path)})()
 
 
-def _run_archaeologist(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+def _run_archaeologist(
+    db_path: str, heartbeat: Queue, stop_event: Event, workdir: str
+) -> None:
     """Entry point for the Archaeologist agent process."""
 
     os.chdir(workdir)
@@ -38,7 +43,9 @@ def _run_archaeologist(db_path: str, heartbeat: Queue, stop_event: Event, workdi
         time.sleep(1)
 
 
-def _run_tdd_developer(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+def _run_tdd_developer(
+    db_path: str, heartbeat: Queue, stop_event: Event, workdir: str
+) -> None:
     os.chdir(workdir)
     message_queue = MessageQueue(EventBus(db_path))
     agent = DummyAgent(workdir)
@@ -48,7 +55,9 @@ def _run_tdd_developer(db_path: str, heartbeat: Queue, stop_event: Event, workdi
         time.sleep(1)
 
 
-def _run_qa_agent(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+def _run_qa_agent(
+    db_path: str, heartbeat: Queue, stop_event: Event, workdir: str
+) -> None:
     os.chdir(workdir)
     message_queue = MessageQueue(EventBus(db_path))
     agent = DummyAgent(workdir)
@@ -58,7 +67,9 @@ def _run_qa_agent(db_path: str, heartbeat: Queue, stop_event: Event, workdir: st
         time.sleep(1)
 
 
-def _run_sentry_agent(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+def _run_sentry_agent(
+    db_path: str, heartbeat: Queue, stop_event: Event, workdir: str
+) -> None:
     os.chdir(workdir)
     message_queue = MessageQueue(EventBus(db_path))
     agent = SentryAgent(message_queue=message_queue, stop_event=stop_event)
@@ -70,6 +81,21 @@ def _run_sentry_agent(db_path: str, heartbeat: Queue, stop_event: Event, workdir
 
     threading.Thread(target=_beat, daemon=True).start()
     agent.run()
+
+
+def _run_dashboard(
+    db_path: str, heartbeat: Queue, stop_event: Event, workdir: str
+) -> None:
+    os.chdir(workdir)
+    message_queue = MessageQueue(EventBus(db_path))
+
+    def _beat() -> None:
+        while not stop_event.is_set():
+            heartbeat.put(time.time())
+            time.sleep(1)
+
+    threading.Thread(target=_beat, daemon=True).start()
+    run_dashboard(message_queue)
 
 
 AGENT_TARGETS: Dict[str, Callable[[str, Queue, Event, str], None]] = {
@@ -102,7 +128,7 @@ class Orchestrator:
         heartbeat_timeout: float = 5.0,
     ) -> None:
         self.db_path = str(db_path)
-        self.stop_event = Event()
+        self.stop_event = MpEvent()
         self.heartbeat_timeout = heartbeat_timeout
         self.agents = list(agents) if agents is not None else list(AGENT_TARGETS.keys())
         self.workdirs = {name: str(path) for name, path in (workdirs or {}).items()}
@@ -132,6 +158,26 @@ class Orchestrator:
     def start_agents(self) -> None:
         for name in self.agents:
             self._start_process(name)
+        self._start_dashboard()
+
+    # ------------------------------------------------------------------
+    def _start_dashboard(self) -> None:
+        workdir = self.workdirs.get("dashboard", ".")
+        queue: Queue = Queue()
+        process = Process(
+            target=_run_dashboard,
+            name="dashboard",
+            args=(self.db_path, queue, self.stop_event, workdir),
+            daemon=True,
+        )
+        process.start()
+        self.processes["dashboard"] = ProcessInfo(
+            process=process,
+            target=_run_dashboard,
+            queue=queue,
+            last_heartbeat=time.time(),
+            workdir=workdir,
+        )
 
     # ------------------------------------------------------------------
     def monitor(self) -> None:
@@ -149,7 +195,10 @@ class Orchestrator:
                         if alive:
                             info.process.terminate()
                             info.process.join(timeout=1)
-                        self._start_process(name)
+                        if name == "dashboard":
+                            self._start_dashboard()
+                        else:
+                            self._start_process(name)
                 time.sleep(1)
         except KeyboardInterrupt:
             self.stop()
