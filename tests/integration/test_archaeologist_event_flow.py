@@ -77,6 +77,7 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librari
     assert calls == []
     assert len(received) == 1
     diag = received[0]
+    assert diag.details["plugin"] == "example_plugin"
     if use_librarian:
         assert diag.details["recommended_skill"] == {
             "name": "sample_high",

@@ -65,6 +65,7 @@ def test_archaeologist_handles_issue(
     assert any(c["line"] == 10 for c in details["context"])
     assert isinstance(details["dependencies"], list)
     assert details["recommended_skill"] is None
+    assert details["plugin"] == "test_plugin"
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
