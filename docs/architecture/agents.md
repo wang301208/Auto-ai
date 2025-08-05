@@ -75,8 +75,7 @@ Expected `ISSUE_DETECTED`/`TICKET_RECEIVED` payload fields:
 2. **Query librarian** – Build a search string from the issue details and call
    `LibrarianAgent.find_skill` to look for existing remediation skills.
 3. **Branch on results** – If a relevant skill is found, recommend invoking it;
-    otherwise advise creating a new skill, start the skill development process,
-    or apply manual fixes.
+    otherwise recommend developing a new skill or apply manual fixes.
 4. **Publish `DIAGNOSIS_COMPLETE`** – Emit diagnostics summarising the issue
    and the skill search outcome for downstream agents.
 
@@ -86,8 +85,8 @@ Expected `ISSUE_DETECTED`/`TICKET_RECEIVED` payload fields:
 agent includes the raw search results in the `skill_search` field and the top
 match in `recommended_skill` within the `DIAGNOSIS_COMPLETE` event's
 `details`. When a match is found the event's `actionable_recommendations`
-directs consumers to invoke the suggested skill; otherwise it signals that a
-new skill may be needed and to start the skill development process.
+directs consumers to invoke the suggested skill; otherwise it signals that new
+skill development is recommended.
 
 ### Event bus and tool requirements
 

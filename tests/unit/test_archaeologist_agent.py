@@ -16,6 +16,7 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
+from autogpt.app.i18n import _
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -242,9 +243,6 @@ def test_on_issue_detected_recommends_new_skill_when_none_found(
 
     assert len(received) == 1
     diag = received[0]
-    assert (
-        diag.actionable_recommendations
-        == "No suitable skill found; consider developing a new skill. Start new skill development process."
-    )
+    assert diag.actionable_recommendations == _("New skill development recommended.")
     assert diag.details is not None
     assert diag.details["recommended_skill"] is None

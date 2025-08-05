@@ -1,6 +1,6 @@
-from __future__ import annotations
-
 """Event-driven diagnostic agent for plugin issues."""
+
+from __future__ import annotations
 
 import ast
 import re
@@ -15,6 +15,7 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
+from autogpt.app.i18n import _
 from autogpt.event_bus.message_types import DiagnosisDetails
 from autogpt.skills.librarian import LibrarianAgent
 
@@ -151,17 +152,16 @@ class Archaeologist:
             call_name = f"skill_{skill['skill_name']}_v{skill['version']}"
             params = skill.get("parameters", {})
             param_list = ", ".join(params.keys()) if params else "no parameters"
-            skill_rec = f"Invoke {call_name} with parameters: {param_list}."
+            skill_rec = _(
+                "Issue can be solved by invoking {call_name} with parameters: {param_list}."
+            ).format(call_name=call_name, param_list=param_list)
             details["recommended_skill"] = {
                 "name": skill["skill_name"],
                 "version": skill["version"],
                 "parameters": params,
             }
         else:
-            skill_rec = (
-                "No suitable skill found; consider developing a new skill. "
-                "Start new skill development process."
-            )
+            skill_rec = _("New skill development recommended.")
             details["recommended_skill"] = None
 
         base_rec = self._recommendations(analysis)
