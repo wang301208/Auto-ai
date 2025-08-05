@@ -16,6 +16,7 @@ from autogpt.event_bus import (
     MessageQueue,
 )
 from autogpt.event_bus.message_types import DiagnosisDetails
+from autogpt.logs import logger
 from autogpt.skills.librarian import LibrarianAgent
 
 from .archaeologist_dependency import analyze_dependency
@@ -145,8 +146,11 @@ class Archaeologist:
                     query_parts.append(f"{k} {v}")
             query = " ".join(query_parts)
 
+        logger.debug(f"Skill search query: {query}")
+
         skills = self.librarian.find_skill(query)
         if skills:
+            logger.debug(f"Top skill match: {skills[0]}")
             skill = skills[0]
             call_name = f"skill_{skill['skill_name']}_v{skill['version']}"
             params = skill.get("parameters", {})
@@ -158,6 +162,7 @@ class Archaeologist:
                 "parameters": params,
             }
         else:
+            logger.debug("No skill match found")
             skill_rec = (
                 "No suitable skill found; consider developing a new skill. "
                 "Start new skill development process."
