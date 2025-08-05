@@ -2,6 +2,7 @@ import importlib
 import sys
 import types
 from pathlib import Path
+from unittest.mock import patch
 
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
@@ -24,24 +25,25 @@ Archaeologist = arch_module.Archaeologist
 def test_archaeologist_handles_issue(tmp_path: Path) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
-    Archaeologist(message_queue)
+    with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
+        Archaeologist(message_queue)
 
-    received: list[DiagnosisComplete] = []
-    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+        received: list[DiagnosisComplete] = []
+        message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
 
-    payload = {
-        "plugin": "test_plugin",
-        "error_log": "traceback",
-        "commit": "HEAD",
-        "file": "autogpt/agents/agent.py",
-        "line": 10,
-        "extra": "meta",
-        "issue_type": "bug",
-    }
+        payload = {
+            "plugin": "test_plugin",
+            "error_log": "traceback",
+            "commit": "HEAD",
+            "file": "autogpt/agents/agent.py",
+            "line": 10,
+            "extra": "meta",
+            "issue_type": "bug",
+        }
 
-    message_queue.publish(
-        EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
-    )
+        message_queue.publish(
+            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+        )
 
     assert len(received) == 1
     diag = received[0]
@@ -57,24 +59,25 @@ def test_archaeologist_handles_issue(tmp_path: Path) -> None:
 def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
-    Archaeologist(message_queue)
+    with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
+        Archaeologist(message_queue)
 
-    received: list[DiagnosisComplete] = []
-    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+        received: list[DiagnosisComplete] = []
+        message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
 
-    payload = {
-        "plugin": "test_plugin",
-        "error_log": (
-            "Traceback (most recent call last):\n"
-            '  File "autogpt/agents/agent.py", line 42, in <module>\n'
-            "    raise Exception()\n"
-        ),
-        "issue_type": "bug",
-    }
+        payload = {
+            "plugin": "test_plugin",
+            "error_log": (
+                "Traceback (most recent call last):\n"
+                '  File "autogpt/agents/agent.py", line 42, in <module>\n'
+                "    raise Exception()\n"
+            ),
+            "issue_type": "bug",
+        }
 
-    message_queue.publish(
-        EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
-    )
+        message_queue.publish(
+            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+        )
 
     assert "autogpt/agents/agent.py:42" in received[0].summary
 
@@ -82,20 +85,21 @@ def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:
 def test_archaeologist_parses_plugin_log(tmp_path: Path) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
-    Archaeologist(message_queue)
+    with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
+        Archaeologist(message_queue)
 
-    received: list[DiagnosisComplete] = []
-    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+        received: list[DiagnosisComplete] = []
+        message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
 
-    payload = {
-        "plugin": "test_plugin",
-        "error_log": "ERROR at autogpt/agents/agent.py:50 something went wrong",
-        "issue_type": "bug",
-    }
+        payload = {
+            "plugin": "test_plugin",
+            "error_log": "ERROR at autogpt/agents/agent.py:50 something went wrong",
+            "issue_type": "bug",
+        }
 
-    message_queue.publish(
-        EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
-    )
+        message_queue.publish(
+            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+        )
 
     assert "autogpt/agents/agent.py:50" in received[0].summary
 
@@ -103,19 +107,20 @@ def test_archaeologist_parses_plugin_log(tmp_path: Path) -> None:
 def test_archaeologist_parsing_fails_gracefully(tmp_path: Path) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
-    Archaeologist(message_queue)
+    with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
+        Archaeologist(message_queue)
 
-    received: list[DiagnosisComplete] = []
-    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+        received: list[DiagnosisComplete] = []
+        message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
 
-    payload = {
-        "plugin": "test_plugin",
-        "error_log": "unstructured log message",
-        "issue_type": "bug",
-    }
+        payload = {
+            "plugin": "test_plugin",
+            "error_log": "unstructured log message",
+            "issue_type": "bug",
+        }
 
-    message_queue.publish(
-        EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
-    )
+        message_queue.publish(
+            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+        )
 
     assert "autogpt/agents/agent.py" not in received[0].summary

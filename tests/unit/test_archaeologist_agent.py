@@ -60,6 +60,17 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
             "analyze_dependency",
             wraps=arch_module.analyze_dependency,
         ) as mock_analyze,
+        patch.object(
+            arch_module.LibrarianAgent,
+            "find_skill",
+            return_value=[
+                {
+                    "skill_name": "sample_skill",
+                    "version": "1",
+                    "parameters": {"path": "str"},
+                }
+            ],
+        ),
     ):
         payload = {
             "plugin": "test_plugin",
@@ -89,6 +100,7 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
         "Investigate compatibility issues in: sample_dep"
         in diag.actionable_recommendations
     )
+    assert "skill_sample_skill_v1" in diag.actionable_recommendations
     assert diag.details is not None
     blame = diag.details["blame"]
     assert blame["commit"] == "^123"
@@ -130,6 +142,7 @@ def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None
         patch.object(arch_module.subprocess, "run", side_effect=fake_run),
         patch.object(dep_module.metadata, "version", return_value="1.0"),
         patch.object(dep_module, "fetch_release_notes", side_effect=fake_fetch),
+        patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]),
     ):
         payload = {
             "plugin": "test_plugin",
