@@ -31,6 +31,40 @@ dep_module = importlib.import_module("autogpt.agents.archaeologist_dependency")
 Archaeologist = arch_module.Archaeologist
 
 
+def make_agent() -> Archaeologist:
+    """Create Archaeologist with default config for query generation tests."""
+    return Archaeologist(MessageQueue(), config=Config(use_librarian=False))
+
+
+@pytest.mark.parametrize(
+    "payload, expected",
+    [
+        # Error log missing -> description is returned as-is
+        ({"description": "runtime error", "plugin": "test"}, "runtime error"),
+        # Description missing -> include error log and metadata
+        (
+            {
+                "plugin": "test_plugin",
+                "issue_type": "bug",
+                "error_log": "ValueError: bad",
+                "file": "mod.py",
+                "line": 10,
+            },
+            "bug in plugin test_plugin, ValueError: bad, file mod.py, line 10",
+        ),
+        # Description and error log missing -> fall back to other metadata
+        (
+            {"plugin": "p", "issue_type": "dependency_update", "file": "mod.py"},
+            "dependency update in plugin p, file mod.py",
+        ),
+        ({}, ""),
+    ],
+)
+def test_generate_query(payload: dict, expected: str) -> None:
+    agent = make_agent()
+    assert agent._generate_query(payload) == expected
+
+
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
 def test_archaeologist_agent_diagnosis_complete(
     tmp_path: Path, event_type: str
