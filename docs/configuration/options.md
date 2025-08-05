@@ -50,6 +50,7 @@
 - `TEXT_TO_SPEECH_PROVIDER`：文本转语音提供方。可选值：`gtts`、`macos`、`elevenlabs`、`streamelements`。默认值：gtts
 - `USER_AGENT`：浏览网站时使用的 User-Agent。默认值："Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
 - `USE_AZURE`：是否使用 Azure 的 LLM。默认值：False
+- `USE_LIBRARIAN`：是否使用 LibrarianAgent 进行技能推荐。默认值：True
 - `USE_WEB_BROWSER`：使用的网页浏览器，选项有 `chrome`、`firefox`、`safari`、`edge`。默认值：chrome
 - `WIPE_REDIS_ON_START`：启动时是否清空数据/索引。默认值：True
 - `SELF_DEVELOP`：启用后台自我开发循环。默认值：False

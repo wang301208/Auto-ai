@@ -16,6 +16,7 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
+from autogpt.config import Config
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -27,11 +28,14 @@ Archaeologist = arch_module.Archaeologist
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
-def test_archaeologist_handles_issue(tmp_path: Path, event_type: str) -> None:
+@pytest.mark.parametrize("use_librarian", [True, False])
+def test_archaeologist_handles_issue(
+    tmp_path: Path, event_type: str, use_librarian: bool
+) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
-        Archaeologist(message_queue)
+        Archaeologist(message_queue, config=Config(use_librarian=use_librarian))
 
         received: list[DiagnosisComplete] = []
         message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -65,11 +69,14 @@ def test_archaeologist_handles_issue(tmp_path: Path, event_type: str) -> None:
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
-def test_archaeologist_parses_python_traceback(tmp_path: Path, event_type: str) -> None:
+@pytest.mark.parametrize("use_librarian", [True, False])
+def test_archaeologist_parses_python_traceback(
+    tmp_path: Path, event_type: str, use_librarian: bool
+) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
-        Archaeologist(message_queue)
+        Archaeologist(message_queue, config=Config(use_librarian=use_librarian))
 
         received: list[DiagnosisComplete] = []
         message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -93,11 +100,14 @@ def test_archaeologist_parses_python_traceback(tmp_path: Path, event_type: str) 
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
-def test_archaeologist_parses_plugin_log(tmp_path: Path, event_type: str) -> None:
+@pytest.mark.parametrize("use_librarian", [True, False])
+def test_archaeologist_parses_plugin_log(
+    tmp_path: Path, event_type: str, use_librarian: bool
+) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
-        Archaeologist(message_queue)
+        Archaeologist(message_queue, config=Config(use_librarian=use_librarian))
 
         received: list[DiagnosisComplete] = []
         message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -117,13 +127,14 @@ def test_archaeologist_parses_plugin_log(tmp_path: Path, event_type: str) -> Non
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("use_librarian", [True, False])
 def test_archaeologist_parsing_fails_gracefully(
-    tmp_path: Path, event_type: str
+    tmp_path: Path, event_type: str, use_librarian: bool
 ) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
-        Archaeologist(message_queue)
+        Archaeologist(message_queue, config=Config(use_librarian=use_librarian))
 
         received: list[DiagnosisComplete] = []
         message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
