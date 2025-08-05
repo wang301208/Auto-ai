@@ -3,6 +3,7 @@ from __future__ import annotations
 """Agent wrapper around :class:`SkillLibrary` for managing skills."""
 
 from dataclasses import asdict
+import shutil
 from pathlib import Path
 from typing import List
 
@@ -39,10 +40,20 @@ class LibrarianAgent:
         try:
             metadata = SkillMetadata(**skill_metadata)
         except TypeError:
+            # Provided metadata does not match the expected schema
             return False
 
+        source = Path(skill_code_path)
+        if not source.is_file():
+            return False
+
+        # Copy the code into the skill library directory
+        dest_dir = self.skill_library.storage_path / f"{metadata.skill_name}_{metadata.version}"
         try:
-            code = Path(skill_code_path).read_text(encoding="utf-8")
+            dest_dir.mkdir(parents=True, exist_ok=True)
+            dest_file = dest_dir / "main.py"
+            shutil.copy2(source, dest_file)
+            code = dest_file.read_text(encoding="utf-8")
         except OSError:
             return False
 
@@ -54,6 +65,11 @@ class LibrarianAgent:
                 parameters=metadata.parameters,
                 description=metadata.description,
                 tags=metadata.tags,
+                dependencies_file=metadata.dependencies_file,
+                entry_point=metadata.entry_point,
+                return_type=metadata.return_type,
+                author_agent=metadata.author_agent,
+                creation_timestamp=metadata.creation_timestamp,
             )
             return True
         except Exception:

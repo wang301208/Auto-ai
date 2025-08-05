@@ -8,6 +8,7 @@ from typing import Dict, List, Optional
 from autogpt.config import ConfigBuilder
 
 from .library import Skill, SkillLibrary
+from .librarian import LibrarianAgent
 from .vector_db import ChromaVectorDB, MemoryVectorDB, VectorDBProvider
 
 _default_library: SkillLibrary | None = None
@@ -116,6 +117,7 @@ def search(query: str, top_k: int = 5) -> List[Skill]:
 __all__ = [
     "Skill",
     "SkillLibrary",
+    "LibrarianAgent",
     "VectorDBProvider",
     "MemoryVectorDB",
     "ChromaVectorDB",
