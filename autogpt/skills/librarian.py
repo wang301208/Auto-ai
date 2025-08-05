@@ -54,6 +54,11 @@ class LibrarianAgent:
                 parameters=metadata.parameters,
                 description=metadata.description,
                 tags=metadata.tags,
+                dependencies_file=metadata.dependencies_file,
+                entry_point=metadata.entry_point,
+                return_type=metadata.return_type,
+                author_agent=metadata.author_agent,
+                creation_timestamp=metadata.creation_timestamp,
             )
             return True
         except Exception:
