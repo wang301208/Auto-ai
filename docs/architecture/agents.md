@@ -90,19 +90,57 @@ otherwise it signals that a new skill may be needed.
 ### Event bus and tool requirements
 
 ```python
-from autogpt.event_bus import EventMessage, MessageQueue
+from autogpt.event_bus import (
+    DIAGNOSIS_COMPLETE,
+    DiagnosisComplete,
+    EventMessage,
+    MessageQueue,
+)
 from autogpt.agents import Archaeologist, ISSUE_DETECTED
+from autogpt.skills import LibrarianAgent
 
 message_queue = MessageQueue()
+librarian = LibrarianAgent()
 archaeologist = Archaeologist(message_queue)
-```
+archaeologist.librarian = librarian
 
-To receive the agent's output, subscribe to `DIAGNOSIS_COMPLETE` events:
 
-```python
-from autogpt.event_bus import DIAGNOSIS_COMPLETE
+def handle_diagnostics(event: DiagnosisComplete) -> None:
+    skills = event.details.get("skill_search", [])
+    if skills:
+        print(f"Matched skill: {skills[0]['skill_name']}")
+    else:
+        print("No matching skill found")
+
 
 message_queue.subscribe(DIAGNOSIS_COMPLETE, handle_diagnostics)
+
+# Demonstrate both matched and unmatched outcomes
+handle_diagnostics(
+    DiagnosisComplete(
+        summary="",
+        actionable_recommendations="",
+        details={"skill_search": [{"skill_name": "skill_example", "version": 1}]},
+        source_agent="archaeologist",
+    )
+)  # -> Matched skill: skill_example
+handle_diagnostics(
+    DiagnosisComplete(
+        summary="",
+        actionable_recommendations="",
+        details={"skill_search": []},
+        source_agent="archaeologist",
+    )
+)  # -> No matching skill found
+```
+
+To receive the agent's output in real use, publish issues and let the
+queue dispatch `DIAGNOSIS_COMPLETE` events to `handle_diagnostics`:
+
+```python
+message_queue.publish(
+    EventMessage(ISSUE_DETECTED, payload={"plugin": "example", "issue_type": "bug"})
+)
 ```
 
 The agent requires the following tools to operate:
