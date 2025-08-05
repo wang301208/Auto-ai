@@ -23,33 +23,36 @@ def get_library() -> SkillLibrary:
     return _default_library
 
 
-def add(name: str, code: str, parameters: Dict, description: str) -> Skill:
+def add(
+    name: str, version: str, code: str, parameters: Dict, description: str
+) -> Skill:
     """Add a new skill to the library."""
 
-    return get_library().add_skill(name, code, parameters, description)
+    return get_library().add_skill(name, version, code, parameters, description)
 
 
-def get(name: str) -> Optional[Skill]:
-    """Return a skill by name if it exists."""
+def get(name: str, version: str) -> Optional[Skill]:
+    """Return a skill by name/version if it exists."""
 
-    return get_library().get_skill(name)
+    return get_library().get_skill(name, version)
 
 
 def update(
     name: str,
+    version: str,
     code: str | None = None,
     parameters: Dict | None = None,
     description: str | None = None,
 ) -> Optional[Skill]:
     """Update an existing skill."""
 
-    return get_library().update_skill(name, code, parameters, description)
+    return get_library().update_skill(name, version, code, parameters, description)
 
 
-def delete(name: str) -> None:
+def delete(name: str, version: str) -> None:
     """Remove a skill from the library."""
 
-    get_library().delete_skill(name)
+    get_library().delete_skill(name, version)
 
 
 def list_skills() -> List[Skill]:
