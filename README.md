@@ -268,6 +268,10 @@ python scripts/skill_cli.py test my_skill
 
 请阅读 [贡献指南](CONTRIBUTING-zh.md) 与 [行为准则](CODE_OF_CONDUCT-zh.md) 了解如何参与本项目。
 
+在提交新的技能（包含 `skill.json`）时，CI 流程将在测试通过后暂停，等待维护者人工批准。
+批准后会运行 `python scripts/register_new_skills.py` 自动注册新增技能。
+请确保元数据与代码文件正确，以便顺利完成注册。
+
 ## 💖 资助 Auto-GPT 的开发
 
 如果你愿意请我们喝杯咖啡，你的支持将帮助我们承担 Auto-GPT 的开发成本并推动全自动 AI 的边界！
