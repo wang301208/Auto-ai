@@ -231,6 +231,51 @@ how to proceed.
 4. **Publish** – Once a usage script or new skill passes its tests, the agent
    commits the result and emits `CODE_FIX_PROPOSED` for downstream review.
 
+### Example wrapper and test
+
+The wrapper script uses `SkillLibrary.get` (exposed as
+`autogpt.skills.get`) to load the recommended skill and execute it with the
+provided parameters:
+
+```python
+from types import ModuleType
+from autogpt.skills import get as SkillLibrary_get
+
+
+def main() -> None:
+    rec = {"name": "hello_world", "version": "1.0", "parameters": {"foo": "bar"}}
+    skill = SkillLibrary_get(rec["name"], rec["version"])
+    assert skill is not None
+
+    module = ModuleType("skill")
+    exec(skill.code, module.__dict__)
+    module.run(**rec["parameters"])
+```
+
+An accompanying test verifies that the script calls the skill with the
+expected parameters:
+
+```python
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
+import scripts.use_recommended_skill as script
+
+
+def test_main_calls_recommended_skill() -> None:
+    skill = SimpleNamespace(code="def run(foo: str) -> None: pass")
+    mock_run = MagicMock()
+
+    def fake_exec(code: str, ns: dict) -> None:
+        ns["run"] = mock_run
+
+    with patch("scripts.use_recommended_skill.get_skill", return_value=skill) as get_mock, patch(
+        "scripts.use_recommended_skill.exec", side_effect=fake_exec
+    ):
+        script.main()
+    get_mock.assert_called_once_with("hello_world", "1.0")
+    mock_run.assert_called_once_with(foo="bar")
+```
+
 ### Event bus and configuration
 
 ```python
