@@ -159,3 +159,92 @@ def test_skill_library_reindex_and_nested_loading(
     assert skill4 and skill4.metadata.creation_timestamp == "2024-02-02T00:00:00Z"
     results = library.search("description2", top_k=1)
     assert results and results[0].name == "skill4"
+
+
+def test_git_commit_triggers_push(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+    import sys
+    from types import ModuleType
+
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
+    vector_pkg = ModuleType("autogpt.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
+    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    sys.modules.setdefault("spacy", ModuleType("spacy"))
+
+    from autogpt.skills.library import SkillLibrary
+    from autogpt.skills.vector_db import MemoryVectorDB
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True)
+    subprocess.run(["git", "checkout", "-b", "main"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=repo, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+
+    storage = repo / "skills"
+    config = Config()
+    monkeypatch.setattr("autogpt.skills.library.get_embedding", lambda *_: [0.0])
+
+    calls: Dict[str, str] = {}
+
+    def fake_git_push(repo_path: str, branch_name: str, _agent: object) -> str:
+        calls["repo_path"] = repo_path
+        calls["branch_name"] = branch_name
+        return "Pushed"
+
+    monkeypatch.setattr("autogpt.commands.git_operations.git_push", fake_git_push)
+
+    library = SkillLibrary(config, storage_path=storage, vector_db=MemoryVectorDB())
+    library.add_skill("s", "1.0", "code", {}, "d", ["t"])
+
+    assert calls["repo_path"] == str(repo)
+    assert calls["branch_name"] == "main"
+
+
+def test_git_commit_reports_push_failure(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import subprocess
+    import sys
+    from types import ModuleType
+
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
+    vector_pkg = ModuleType("autogpt.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
+    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    sys.modules.setdefault("spacy", ModuleType("spacy"))
+
+    from autogpt.skills.library import SkillLibrary
+    from autogpt.skills.vector_db import MemoryVectorDB
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init"], cwd=repo, check=True)
+    subprocess.run(["git", "checkout", "-b", "main"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "test@example.com"], cwd=repo, check=True
+    )
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
+
+    storage = repo / "skills"
+    config = Config()
+    monkeypatch.setattr("autogpt.skills.library.get_embedding", lambda *_: [0.0])
+
+    monkeypatch.setattr(
+        "autogpt.commands.git_operations.git_push",
+        lambda *_: "Error: push failed",
+    )
+    printed: List[str] = []
+    monkeypatch.setattr(
+        "builtins.print", lambda *a, **k: printed.append(" ".join(map(str, a)))
+    )
+
+    library = SkillLibrary(config, storage_path=storage, vector_db=MemoryVectorDB())
+    library.add_skill("s", "1.0", "code", {}, "d", ["t"])
+
+    assert any("Error: push failed" in p for p in printed)
