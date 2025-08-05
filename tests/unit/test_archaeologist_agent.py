@@ -3,11 +3,15 @@ import sys
 import types
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, cast
 from unittest.mock import patch
+
+import pytest
 
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
+    TICKET_RECEIVED,
     DiagnosisComplete,
     EventMessage,
     MessageQueue,
@@ -23,7 +27,10 @@ dep_module = importlib.import_module("autogpt.agents.archaeologist_dependency")
 Archaeologist = arch_module.Archaeologist
 
 
-def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_archaeologist_agent_diagnosis_complete(
+    tmp_path: Path, event_type: str
+) -> None:
     message_queue = MessageQueue()
     Archaeologist(message_queue)
 
@@ -83,9 +90,7 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
             "issue_type": "bug",
         }
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert any(cmd[:2] == ["git", "checkout"] for cmd in commands)
@@ -103,20 +108,24 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
     )
     assert "skill_sample_skill_v1" in diag.actionable_recommendations
     assert diag.details is not None
-    blame = diag.details["blame"]
+    details = cast(dict[str, Any], diag.details)
+    blame = details["blame"]
     assert blame["commit"] == "^123"
     assert blame["author"] == "user"
     assert blame["text"].startswith("^123")
-    assert diag.details["context"][0]["content"].strip() == "import sample_dep"
-    assert diag.details["dependencies"][0]["dependency"] == "sample_dep"
-    assert diag.details["recommended_skill"] == {
+    assert details["context"][0]["content"].strip() == "import sample_dep"
+    assert details["dependencies"][0]["dependency"] == "sample_dep"
+    assert details["recommended_skill"] == {
         "name": "sample_skill",
         "version": "1",
         "parameters": {"path": "str"},
     }
 
 
-def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_archaeologist_agent_uses_dependency_new_version(
+    tmp_path: Path, event_type: str
+) -> None:
     message_queue = MessageQueue()
     Archaeologist(message_queue)
 
@@ -161,21 +170,22 @@ def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None
             "issue_type": "dependency_update",
         }
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert len(received) == 1
-    dep_analysis = received[0].details["dependencies"][0]
+    assert received[0].details is not None
+    details = cast(dict[str, Any], received[0].details)
+    dep_analysis = details["dependencies"][0]
     assert called_versions == ["2.0"]
     assert dep_analysis["new_version"] == "2.0"
     assert any("sample_dep 2.0" in f for f in dep_analysis["findings"])
     assert all(cmd[0] != "git" for cmd in commands)
-    assert received[0].details["recommended_skill"] is None
+    assert details["recommended_skill"] is None
 
 
-def test_on_issue_detected_recommends_existing_skill() -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
     message_queue = MessageQueue()
     received: list[DiagnosisComplete] = []
     message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -193,22 +203,25 @@ def test_on_issue_detected_recommends_existing_skill() -> None:
             "description": "runtime error",
         }
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert len(received) == 1
     diag = received[0]
     assert "skill_mock_v1" in diag.actionable_recommendations
-    assert diag.details["recommended_skill"] == {
+    assert diag.details is not None
+    details = cast(dict[str, Any], diag.details)
+    assert details["recommended_skill"] == {
         "name": "mock",
         "version": "1",
         "parameters": {},
     }
 
 
-def test_on_issue_detected_recommends_new_skill_when_none_found() -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_on_issue_detected_recommends_new_skill_when_none_found(
+    event_type: str,
+) -> None:
     message_queue = MessageQueue()
     received: list[DiagnosisComplete] = []
     message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -224,9 +237,7 @@ def test_on_issue_detected_recommends_new_skill_when_none_found() -> None:
             "description": "runtime error",
         }
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert len(received) == 1
@@ -235,4 +246,5 @@ def test_on_issue_detected_recommends_new_skill_when_none_found() -> None:
         diag.actionable_recommendations
         == "No suitable skill found; consider developing a new skill. Start new skill development process."
     )
+    assert diag.details is not None
     assert diag.details["recommended_skill"] is None

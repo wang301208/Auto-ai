@@ -1,4 +1,3 @@
-from .agent import Agent, CommandRepetitionError
 from autogpt.event_bus import (
     APPROVAL_GRANTED,
     CODE_FIX_PROPOSED,
@@ -6,12 +5,15 @@ from autogpt.event_bus import (
     HUMAN_APPROVAL_REQUIRED,
     ISSUE_DETECTED,
     ISSUE_RESOLVED,
+    TICKET_RECEIVED,
 )
+
+from .agent import Agent, CommandRepetitionError
 from .archaeologist import Archaeologist
-from .qa_agent import QAAgent
-from .tdd_developer import TDDDeveloper
-from .sentry import SentryAgent
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
+from .qa_agent import QAAgent
+from .sentry import SentryAgent
+from .tdd_developer import TDDDeveloper
 
 __all__ = [
     "BaseAgent",
@@ -22,6 +24,7 @@ __all__ = [
     "CommandRepetitionError",
     "Archaeologist",
     "SentryAgent",
+    "TICKET_RECEIVED",
     "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "TDDDeveloper",
