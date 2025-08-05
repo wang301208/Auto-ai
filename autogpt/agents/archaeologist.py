@@ -150,14 +150,18 @@ class Archaeologist:
         }
         query = self._generate_query(query_payload)
 
-        skills = []
+        skills: list[dict[str, Any]] = []
+        top_k = 3
         if self.librarian:
             try:
-                skills = self.librarian.find_skill(query)
+                skills = self.librarian.find_skill(query, top_k=top_k)
             except Exception as err:  # noqa: BLE001
                 logger.error(f"Error searching for skill: {err}")
         if skills:
-            skill = skills[0]
+            if any("score" in s for s in skills):
+                skill = max(skills, key=lambda s: s.get("score", float("-inf")))
+            else:
+                skill = skills[0]
             call_name = f"skill_{skill['skill_name']}_v{skill['version']}"
             params = skill.get("parameters", {})
             param_list = ", ".join(params.keys()) if params else "no parameters"
@@ -179,7 +183,7 @@ class Archaeologist:
             recs.append(base_rec)
         recs.append(skill_rec)
         recommendations = " ".join(recs)
-        details["skill_search"] = skills
+        details["skill_search"] = skills[:top_k]
 
         event = DiagnosisComplete(
             summary=summary,
