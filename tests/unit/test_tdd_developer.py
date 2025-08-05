@@ -291,3 +291,39 @@ def test_tdd_developer_adds_new_skill(
     assert len(received) == 1
     assert received[0].payload["branch_name"] == "new-skill/awesome_1.0"
     assert received[0].payload["summary"] == "Add new skill awesome"
+
+
+def test_tdd_developer_aborts_on_failed_add_skill(
+    agent: Agent, workspace: Workspace, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    event_bus = EventBus(tmp_path / "events.db")
+    message_queue = MessageQueue(event_bus)
+    librarian = mocker.Mock()
+    librarian.add_skill.return_value = False
+    TDDDeveloper(agent=agent, message_queue=message_queue, librarian=librarian)
+
+    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
+    mocker.patch("autogpt.agents.tdd_developer.write_to_file", return_value="")
+    commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+
+    repo_path = str(workspace.root)
+    payload = {
+        "repo_path": repo_path,
+        "details": {
+            "new_skill": {
+                "skill_name": "awesome",
+                "version": "1.0",
+                "code": "def run(): pass",
+            }
+        },
+    }
+
+    message_queue.publish(
+        EventMessage(
+            event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester"
+        )
+    )
+
+    librarian.add_skill.assert_called_once()
+    commit.assert_not_called()

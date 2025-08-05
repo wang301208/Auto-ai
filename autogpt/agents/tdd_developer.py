@@ -197,7 +197,12 @@ class TDDDeveloper:
                 return
             if self.librarian:
                 try:
-                    self.librarian.add_skill(metadata, str(skill_dir / "main.py"))
+                    added = self.librarian.add_skill(
+                        metadata, str(skill_dir / "main.py")
+                    )
+                    if not added:
+                        logger.error("Librarian rejected new skill %s", name)
+                        return
                 except Exception:
                     logger.exception(
                         "Failed to add new skill %s to librarian", name
