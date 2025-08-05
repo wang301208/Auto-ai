@@ -7,6 +7,8 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 import chromadb
+import faiss
+import json
 import numpy as np
 
 Embedding = List[float]
@@ -119,3 +121,74 @@ class ChromaVectorDB(VectorDBProvider):
         ids = self._collection.get()["ids"]
         if ids:
             self._collection.delete(ids=ids)
+
+
+class FaissVectorDB(VectorDBProvider):
+    """`VectorDBProvider` backed by a FAISS index with JSON metadata storage."""
+
+    def __init__(self, persist_path: Path) -> None:
+        self.persist_path = Path(persist_path)
+        self.persist_path.mkdir(parents=True, exist_ok=True)
+        self.data_file = self.persist_path / "data.json"
+        if self.data_file.exists():
+            with self.data_file.open("r", encoding="utf-8") as f:
+                self._data: Dict[str, Dict] = json.load(f)
+        else:
+            self._data = {}
+        self._rebuild_index()
+
+    # internal helpers -------------------------------------------------
+    def _save(self) -> None:
+        with self.data_file.open("w", encoding="utf-8") as f:
+            json.dump(self._data, f)
+
+    def _rebuild_index(self) -> None:
+        if self._data:
+            dim = len(next(iter(self._data.values()))["embedding"])
+            self._index = faiss.IndexFlatIP(dim)
+            embeddings = [v["embedding"] for v in self._data.values()]
+            emb_array = np.array(embeddings, dtype="float32")
+            faiss.normalize_L2(emb_array)
+            self._index.add(emb_array)
+            self._keys = list(self._data.keys())
+        else:
+            self._index = None
+            self._keys = []
+
+    # VectorDBProvider API ---------------------------------------------
+    def add(self, key: str, embedding: Embedding, metadata: Dict | None = None) -> None:
+        self._data[key] = {
+            "embedding": list(map(float, embedding)),
+            "metadata": metadata or {},
+        }
+        self._save()
+        self._rebuild_index()
+
+    def delete(self, key: str) -> None:
+        if key in self._data:
+            del self._data[key]
+            self._save()
+            self._rebuild_index()
+
+    def query(self, embedding: Embedding, top_k: int = 5) -> List[Tuple[str, float]]:
+        if not self._index or not self._keys or top_k <= 0:
+            return []
+        vec = np.array([embedding], dtype="float32")
+        faiss.normalize_L2(vec)
+        scores, idxs = self._index.search(vec, top_k)
+        results: List[Tuple[str, float]] = []
+        for score, idx in zip(scores[0], idxs[0]):
+            if 0 <= idx < len(self._keys):
+                results.append((self._keys[idx], float(score)))
+        return results
+
+    def get(self, key: str) -> Tuple[Embedding, Dict] | None:
+        item = self._data.get(key)
+        if item is None:
+            return None
+        return item["embedding"], item["metadata"]
+
+    def clear(self) -> None:
+        self._data.clear()
+        self._save()
+        self._rebuild_index()
