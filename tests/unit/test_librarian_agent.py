@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
 import pytest
@@ -9,24 +8,17 @@ from autogpt.config import Config
 from autogpt.skills.librarian import LibrarianAgent
 
 
-def test_add_skill_persists_full_metadata(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def _setup_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> LibrarianAgent:
     agent = LibrarianAgent(Config())
     agent.skill_library.storage_path = tmp_path
     monkeypatch.setattr(
-        "autogpt.skills.library.get_embedding",
-        lambda _text, _config: [0.0, 0.0, 0.0],
+        "autogpt.skills.library.get_embedding", lambda _text, _config: [0.1, 0.2, 0.3]
     )
+    return agent
 
-    code_file = tmp_path / "skill.py"
-    code_file.write_text(
-        """def run():
-    return 'hello'
-"""
-    )
 
-    metadata = {
+def _metadata() -> dict:
+    return {
         "skill_name": "test_skill",
         "version": "1.0",
         "description": "Test skill",
@@ -39,10 +31,39 @@ def test_add_skill_persists_full_metadata(
         "creation_timestamp": "2024-01-01T00:00:00Z",
     }
 
-    assert agent.add_skill(metadata, str(code_file))
 
-    skill_json = tmp_path / "test_skill_1.0" / "skill.json"
-    with skill_json.open("r", encoding="utf-8") as f:
-        stored = json.load(f)
+def test_add_and_find_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+    code_file = tmp_path / "skill.py"
+    code_file.write_text("def run():\n    return 'hello'\n")
 
-    assert stored == metadata
+    metadata = _metadata()
+
+    assert agent.add_skill(metadata, str(code_file)) is True
+
+    results = agent.find_skill("Test skill")
+    assert results == [metadata]
+
+
+def test_add_skill_invalid_metadata_returns_false(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+    code_file = tmp_path / "skill.py"
+    code_file.write_text("def run():\n    return 'hello'\n")
+
+    metadata = _metadata()
+    metadata.pop("skill_name")
+
+    assert agent.add_skill(metadata, str(code_file)) is False
+
+
+def test_add_skill_missing_code_path_returns_false(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+
+    metadata = _metadata()
+    missing_path = tmp_path / "missing.py"
+
+    assert agent.add_skill(metadata, str(missing_path)) is False
