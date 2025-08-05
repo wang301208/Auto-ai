@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from autogpt.config import Config
-from autogpt.skills.librarian import LibrarianAgent
+from autogpt.skills import LibrarianAgent
 
 
 def main() -> None:
