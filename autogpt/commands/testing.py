@@ -3,8 +3,13 @@
 COMMAND_CATEGORY = "testing"
 COMMAND_CATEGORY_TITLE = "Testing"
 
-import subprocess
+import io
+import os
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from typing import Any, Dict
+
+import pytest
 
 from autogpt.agents.agent import Agent
 from autogpt.command_decorator import command
@@ -25,26 +30,58 @@ from .file_operations import write_to_file
     },
 )
 @sanitize_path_arg("path")
-def run_tests(path: str, agent: Agent) -> str:
-    """Run tests using pytest and return the combined output.
+def run_tests(path: str, agent: Agent) -> Dict[str, Any]:
+    """Run tests using pytest and return structured results.
 
     Args:
         path: Path to the tests to run.
         agent: The Agent running the command.
 
     Returns:
-        stdout and stderr from running pytest, or an error message.
+        Dict with keys ``successes``, ``failures``, ``errors`` and ``logs``.
     """
+
+    class ResultAggregator:
+        """Pytest plugin to aggregate test results."""
+
+        def __init__(self) -> None:
+            self.passed = 0
+            self.failed = 0
+            self.errors = 0
+
+        def pytest_runtest_logreport(self, report: pytest.TestReport) -> None:  # type: ignore[override]
+            if report.when == "call":
+                if report.passed:
+                    self.passed += 1
+                elif report.failed:
+                    self.failed += 1
+            elif report.failed:
+                self.errors += 1
+
+    aggregator = ResultAggregator()
+    output_buffer = io.StringIO()
+
     try:
-        result = subprocess.run(
-            ["pytest", path],
-            capture_output=True,
-            text=True,
-            cwd=agent.config.workspace_path,
-        )
-        return result.stdout + result.stderr
-    except Exception as e:
-        return f"Error: {e}"
+        prev_cwd = os.getcwd()
+        os.chdir(agent.config.workspace_path)
+        with redirect_stdout(output_buffer), redirect_stderr(output_buffer):
+            pytest.main([path], plugins=[aggregator])
+    except Exception as e:  # pragma: no cover - defensive programming
+        return {
+            "successes": 0,
+            "failures": 0,
+            "errors": 1,
+            "logs": f"Error: {e}",
+        }
+    finally:
+        os.chdir(prev_cwd)
+
+    return {
+        "successes": aggregator.passed,
+        "failures": aggregator.failed,
+        "errors": aggregator.errors,
+        "logs": output_buffer.getvalue(),
+    }
 
 
 @command(

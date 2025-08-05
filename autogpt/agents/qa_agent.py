@@ -13,8 +13,6 @@ from autogpt.commands.testing import run_tests
 from autogpt.event_bus import (
     APPROVAL_GRANTED,
     CODE_FIX_PROPOSED,
-    HUMAN_APPROVAL_REQUIRED,
-    ISSUE_RESOLVED,
     ApprovalGranted,
     CodeFixProposed,
     HumanApprovalRequired,
@@ -36,7 +34,9 @@ class QAAgent:
     def _on_code_fix_proposed(self, event: CodeFixProposed) -> None:
         """Handle a ``CODE_FIX_PROPOSED`` event."""
 
-        payload: dict[str, Any] | None = event.payload if isinstance(event.payload, dict) else None
+        payload: dict[str, Any] | None = (
+            event.payload if isinstance(event.payload, dict) else None
+        )
         repo_path = (payload or {}).get("repo_path", self.agent.config.workspace_path)
 
         branch = event.branch_name
@@ -45,12 +45,12 @@ class QAAgent:
 
         git_checkout(repo_path, branch, self.agent)
 
-        test_output = run_tests(repo_path, self.agent)
+        test_result = run_tests(repo_path, self.agent)
 
         self.message_queue.publish(
             HumanApprovalRequired(
                 branch_name=branch,
-                test_output=test_output,
+                test_output=test_result["logs"],
                 summary=event.summary,
                 source_agent="qa_agent",
             )
@@ -59,7 +59,9 @@ class QAAgent:
     def _on_approval_granted(self, event: ApprovalGranted) -> None:
         """Handle an ``APPROVAL_GRANTED`` event."""
 
-        payload: dict[str, Any] | None = event.payload if isinstance(event.payload, dict) else None
+        payload: dict[str, Any] | None = (
+            event.payload if isinstance(event.payload, dict) else None
+        )
         repo_path = (payload or {}).get("repo_path", self.agent.config.workspace_path)
 
         branch = event.branch_name

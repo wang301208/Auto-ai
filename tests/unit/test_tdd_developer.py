@@ -1,7 +1,6 @@
 import importlib
 import sys
 import types
-from pathlib import Path
 
 from autogpt.event_bus import (
     CODE_FIX_PROPOSED,
@@ -19,6 +18,7 @@ sys.modules.setdefault("autogpt.agents", agents_pkg)
 tdd_module = importlib.import_module("autogpt.agents.tdd_developer")
 TDDDeveloper = tdd_module.TDDDeveloper
 
+
 def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
@@ -34,22 +34,24 @@ def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
         "autogpt.agents.tdd_developer.create_test_file", return_value=""
     )
     run = mocker.patch(
-        "autogpt.agents.tdd_developer.run_tests", side_effect=["1 failed", "1 passed"]
+        "autogpt.agents.tdd_developer.run_tests",
+        side_effect=[
+            {"successes": 0, "failures": 1, "errors": 0, "logs": "1 failed"},
+            {"successes": 1, "failures": 0, "errors": 0, "logs": "1 passed"},
+        ],
     )
-    commit = mocker.patch(
-        "autogpt.agents.tdd_developer.git_commit", return_value=""
-    )
+    commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
 
     received: list[EventMessage] = []
-    message_queue.subscribe(
-        CODE_FIX_PROPOSED, lambda msg: received.append(msg)
-    )
+    message_queue.subscribe(CODE_FIX_PROPOSED, lambda msg: received.append(msg))
 
     repo_path = str(workspace.root)
     payload = {"issue_id": "123", "repo_path": repo_path, "diagnostics": "details"}
 
     message_queue.publish(
-        EventMessage(event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester")
+        EventMessage(
+            event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester"
+        )
     )
 
     create_branch.assert_called_once_with(repo_path, "fix/123", agent)

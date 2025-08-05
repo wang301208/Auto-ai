@@ -8,14 +8,9 @@ from typing import Any
 from git import Repo
 
 from autogpt.agents.agent import Agent
-from autogpt.commands.git_operations import (
-    git_checkout,
-    git_commit,
-    git_create_branch,
-)
+from autogpt.commands.git_operations import git_checkout, git_commit, git_create_branch
 from autogpt.commands.testing import create_test_file, run_tests
 from autogpt.event_bus import (
-    CODE_FIX_PROPOSED,
     DIAGNOSIS_COMPLETE,
     CodeFixProposed,
     EventMessage,
@@ -58,11 +53,14 @@ class TDDDeveloper:
         create_test_file(str(test_file), test_content, self.agent)
 
         initial_result = run_tests(str(test_file), self.agent)
-        if "failed" not in initial_result.lower():
+        if (
+            initial_result.get("failures", 0) == 0
+            and initial_result.get("errors", 0) == 0
+        ):
             return
 
         final_result = run_tests(repo_path, self.agent)
-        if "failed" in final_result.lower():
+        if final_result.get("failures", 0) > 0 or final_result.get("errors", 0) > 0:
             return
 
         git_commit(repo_path, f"Fix issue {issue_id}", self.agent)
