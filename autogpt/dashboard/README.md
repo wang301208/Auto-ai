@@ -16,9 +16,8 @@ when accessing the dashboard.
 
 ## Features
 
-- Streams events such as `TICKET_RECEIVED`, `ISSUE_DETECTED`,
-  `DIAGNOSIS_COMPLETE`, `CODE_FIX_PROPOSED`, `HUMAN_APPROVAL_REQUIRED`, and
-  `ISSUE_RESOLVED`.
+- Streams events such as `ISSUE_DETECTED`, `DIAGNOSIS_COMPLETE`,
+  `CODE_FIX_PROPOSED`, `HUMAN_APPROVAL_REQUIRED`, and `ISSUE_RESOLVED`.
 - Displays the latest state, timestamp, and source agent information for each
   issue.
 - Exposes an `/issues` endpoint with the aggregated per‑issue state.

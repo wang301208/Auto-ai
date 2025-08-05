@@ -6,10 +6,10 @@ Auto‑GPT ships with a lightweight orchestrator that coordinates the helper
 agents over the shared event bus. It supervises the lifecycle of an issue from
 detection to resolution:
 
-1. **Detection** – A component emits `TICKET_RECEIVED` or `ISSUE_DETECTED` when a
-   problem occurs. The payload **must** include an `issue_type` describing the
-   nature of the problem, such as `"bug"` for runtime errors or
-   `"dependency_update"` when a newer package version is available.
+1. **Detection** – A component emits `ISSUE_DETECTED` when a problem occurs. The
+   payload **must** include an `issue_type` describing the nature of the problem,
+   such as `"bug"` for runtime errors or `"dependency_update"` when a newer
+   package version is available.
 2. **Diagnosis** – `ArchaeologistAgent` analyses the repository and publishes
    `DIAGNOSIS_COMPLETE`.
 3. **Development** – `TDDDeveloperAgent` creates a regression test, guides the
@@ -56,11 +56,11 @@ crashes, ensuring continuous monitoring of plugin health.
 
 `ArchaeologistAgent` is an event‑driven diagnostic helper that assists plugin
 authors in understanding runtime failures. The agent listens for
-`ISSUE_DETECTED` and `TICKET_RECEIVED` events on Auto‑GPT's event bus. The agent
-tailors its analysis based on the event's `issue_type` and finally publishes a
+`ISSUE_DETECTED` events on Auto‑GPT's event bus. The agent tailors its analysis
+based on the event's `issue_type` and finally publishes a
 `DIAGNOSIS_COMPLETE` event summarising its findings.
 
-Expected `ISSUE_DETECTED`/`TICKET_RECEIVED` payload fields:
+Expected `ISSUE_DETECTED` payload fields:
 
 - `plugin` – identifier of the emitting component.
 - `error_log` – log snippet or message describing the problem.
@@ -101,7 +101,7 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
-from autogpt.agents import Archaeologist, ISSUE_DETECTED, TICKET_RECEIVED
+from autogpt.agents import Archaeologist, ISSUE_DETECTED
 from autogpt.skills import LibrarianAgent
 
 message_queue = MessageQueue()
@@ -154,7 +154,7 @@ queue dispatch `DIAGNOSIS_COMPLETE` events to `handle_diagnostics`:
 
 ```python
 message_queue.publish(
-    EventMessage(TICKET_RECEIVED, payload={"plugin": "example", "issue_type": "bug"})
+    EventMessage(ISSUE_DETECTED, payload={"plugin": "example", "issue_type": "bug"})
 )
 ```
 

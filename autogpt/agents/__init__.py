@@ -5,7 +5,6 @@ from autogpt.event_bus import (
     HUMAN_APPROVAL_REQUIRED,
     ISSUE_DETECTED,
     ISSUE_RESOLVED,
-    TICKET_RECEIVED,
 )
 
 from .agent import Agent, CommandRepetitionError
@@ -24,7 +23,6 @@ __all__ = [
     "CommandRepetitionError",
     "Archaeologist",
     "SentryAgent",
-    "TICKET_RECEIVED",
     "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "TDDDeveloper",

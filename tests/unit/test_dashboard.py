@@ -10,13 +10,12 @@ from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
     ISSUE_RESOLVED,
-    TICKET_RECEIVED,
     EventMessage,
     MessageQueue,
 )
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_dashboard_tracks_events(event_type: str) -> None:
     mq = MessageQueue()
     app = create_dashboard_app(mq, db_path=":memory:")

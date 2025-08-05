@@ -15,7 +15,6 @@ from autogpt.config import Config
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
-    TICKET_RECEIVED,
     DiagnosisComplete,
     EventMessage,
     MessageQueue,
@@ -65,7 +64,7 @@ def test_generate_query(payload: dict, expected: str) -> None:
     assert agent._generate_query(payload) == expected
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_archaeologist_agent_diagnosis_complete(
     tmp_path: Path, event_type: str
 ) -> None:
@@ -160,7 +159,7 @@ def test_archaeologist_agent_diagnosis_complete(
     }
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_archaeologist_agent_uses_dependency_new_version(
     tmp_path: Path, event_type: str
 ) -> None:
@@ -222,7 +221,7 @@ def test_archaeologist_agent_uses_dependency_new_version(
     assert details["recommended_skill"] is None
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
     message_queue = MessageQueue()
     received: list[DiagnosisComplete] = []
@@ -261,7 +260,7 @@ def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
     ]
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_on_issue_detected_recommends_new_skill_when_none_found(
     event_type: str,
 ) -> None:
@@ -290,7 +289,7 @@ def test_on_issue_detected_recommends_new_skill_when_none_found(
     assert diag.details["recommended_skill"] is None
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_on_issue_detected_with_missing_index(
     event_type: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -328,7 +327,7 @@ def test_on_issue_detected_with_missing_index(
     assert diag.details["recommended_skill"] is None
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_on_issue_detected_handles_skill_exception(event_type: str) -> None:
     message_queue = MessageQueue()
     received: list[DiagnosisComplete] = []
@@ -366,7 +365,7 @@ def test_archaeologist_agent_respects_config_flag() -> None:
         assert not MockLib.called
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_on_issue_detected_publish_retry(event_type: str) -> None:
     message_queue = MessageQueue()
     Archaeologist(message_queue, config=Config(use_librarian=False))

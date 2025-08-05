@@ -34,9 +34,6 @@ APPROVAL_GRANTED = "APPROVAL_GRANTED"
 ISSUE_RESOLVED = "ISSUE_RESOLVED"
 """Event type emitted after a fix has been merged and deployed."""
 
-TICKET_RECEIVED = "TICKET_RECEIVED"
-"""Event type emitted when a ticket describing an issue is received."""
-
 ISSUE_DETECTED = "ISSUE_DETECTED"
 """Event type emitted when a plugin issue is detected."""
 
@@ -80,15 +77,6 @@ class IssueDetected(EventMessage):
 
 
 @dataclass(kw_only=True)
-class TicketReceived(IssueDetected):
-    """Schema for :data:`TICKET_RECEIVED` events.
-
-    Identical to :class:`IssueDetected` but used for generic issue tickets.
-    """
-
-    event_type: str = field(init=False, default=TICKET_RECEIVED)
-
-
 class RecommendedSkill(TypedDict):
     """Metadata describing a skill suggestion."""
 
