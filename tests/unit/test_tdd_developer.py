@@ -1,7 +1,11 @@
 import importlib
 import sys
 import types
+from pathlib import Path
 
+from pytest_mock import MockerFixture
+
+from autogpt.agents.agent import Agent
 from autogpt.event_bus import (
     CODE_FIX_PROPOSED,
     DIAGNOSIS_COMPLETE,
@@ -9,6 +13,7 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
+from autogpt.workspace import Workspace
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -19,7 +24,9 @@ tdd_module = importlib.import_module("autogpt.agents.tdd_developer")
 TDDDeveloper = tdd_module.TDDDeveloper
 
 
-def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
+def test_tdd_developer_handles_diagnosis(
+    agent: Agent, workspace: Workspace, tmp_path: Path, mocker: MockerFixture
+) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     TDDDeveloper(agent=agent, message_queue=message_queue)
@@ -33,11 +40,15 @@ def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
     create_test = mocker.patch(
         "autogpt.agents.tdd_developer.create_test_file", return_value=""
     )
+    write_file = mocker.patch(
+        "autogpt.agents.tdd_developer.write_to_file", return_value=""
+    )
     run = mocker.patch(
         "autogpt.agents.tdd_developer.run_tests",
         side_effect=[
             {"successes": 0, "failures": 1, "errors": 0, "logs": "1 failed"},
-            {"successes": 1, "failures": 0, "errors": 0, "logs": "1 passed"},
+            {"successes": 1, "failures": 1, "errors": 0, "logs": "1 failed"},
+            {"successes": 2, "failures": 0, "errors": 0, "logs": "2 passed"},
         ],
     )
     commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
@@ -46,7 +57,16 @@ def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
     message_queue.subscribe(CODE_FIX_PROPOSED, lambda msg: received.append(msg))
 
     repo_path = str(workspace.root)
-    payload = {"issue_id": "123", "repo_path": repo_path, "diagnostics": "details"}
+    payload = {
+        "issue_id": "123",
+        "repo_path": repo_path,
+        "diagnostics": {
+            "fixes": [
+                {"module.py": "print('fix1')"},
+                {"module.py": "print('fix2')"},
+            ]
+        },
+    }
 
     message_queue.publish(
         EventMessage(
@@ -57,7 +77,8 @@ def test_tdd_developer_handles_diagnosis(agent, workspace, tmp_path, mocker):
     create_branch.assert_called_once_with(repo_path, "fix/123", agent)
     checkout.assert_called_once_with(repo_path, "fix/123", agent)
     create_test.assert_called_once()
-    assert run.call_count == 2
+    assert write_file.call_count == 2
+    assert run.call_count == 3
     commit.assert_called_once_with(repo_path, "Fix issue 123", agent)
     assert len(received) == 1
     assert received[0].event_type == CODE_FIX_PROPOSED

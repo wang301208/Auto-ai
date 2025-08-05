@@ -1,13 +1,14 @@
-from __future__ import annotations
-
 """Event-driven TDD developer agent that responds to diagnostics."""
+
+from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
 
-from git import Repo
+from git import Repo  # type: ignore[import-not-found]
 
 from autogpt.agents.agent import Agent
+from autogpt.commands.file_operations import write_to_file
 from autogpt.commands.git_operations import git_checkout, git_commit, git_create_branch
 from autogpt.commands.testing import create_test_file, run_tests
 from autogpt.event_bus import (
@@ -59,21 +60,35 @@ class TDDDeveloper:
         ):
             return
 
-        final_result = run_tests(repo_path, self.agent)
-        if final_result.get("failures", 0) > 0 or final_result.get("errors", 0) > 0:
-            return
+        fixes: list[dict[str, str]] = []
+        if isinstance(diagnostics, dict):
+            fixes = diagnostics.get("fixes", []) or []
 
-        git_commit(repo_path, f"Fix issue {issue_id}", self.agent)
-        try:
-            commit_hash = Repo(repo_path).head.commit.hexsha
-        except Exception:
-            commit_hash = ""
+        max_iterations = payload.get("max_iterations", len(fixes) or 1)
 
-        self.message_queue.publish(
-            CodeFixProposed(
-                branch_name=branch,
-                commit_hash=commit_hash,
-                summary=f"Fix issue {issue_id}",
-                source_agent="tdd_developer",
-            )
-        )
+        for i in range(max_iterations):
+            if i < len(fixes):
+                for rel_path, new_content in fixes[i].items():
+                    file_path = Path(repo_path) / rel_path
+                    write_to_file(str(file_path), new_content, self.agent)
+
+            result = run_tests(repo_path, self.agent)
+            if result.get("failures", 0) == 0 and result.get("errors", 0) == 0:
+                git_commit(repo_path, f"Fix issue {issue_id}", self.agent)
+                try:
+                    commit_hash = Repo(repo_path).head.commit.hexsha
+                except Exception:
+                    commit_hash = ""
+
+                self.message_queue.publish(
+                    CodeFixProposed(
+                        branch_name=branch,
+                        commit_hash=commit_hash,
+                        summary=f"Fix issue {issue_id}",
+                        source_agent="tdd_developer",
+                    )
+                )
+                return
+
+        # If we exit the loop without passing tests, no commit or event is produced
+        return
