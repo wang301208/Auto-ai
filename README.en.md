@@ -106,6 +106,7 @@ Select the backend with `SKILL_DB_PROVIDER` in `.env`:
 
 - `memory` (default) — in-memory only;
 - `chroma` — install with `pip install chromadb` to persist data in `skill_library/chroma`.
+- `faiss` — install with `pip install faiss-cpu` to persist data in `skill_library/faiss`.
 
 ## Running the app
 

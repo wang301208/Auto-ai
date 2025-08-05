@@ -104,6 +104,7 @@ cp .env.template .env
 
 - `memory`（默认） — 使用内存实现，运行结束后数据会丢失；
 - `chroma` — 需要先 `pip install chromadb`，数据会持久化到 `skill_library/chroma`。
+- `faiss` — 需要先 `pip install faiss-cpu`，数据会持久化到 `skill_library/faiss`。
 
 ## 消息队列
 

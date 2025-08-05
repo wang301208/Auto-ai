@@ -12,7 +12,13 @@ from typing import Dict, List, Optional
 from autogpt.config import Config
 from autogpt.memory.vector.utils import get_embedding
 
-from .vector_db import ChromaVectorDB, Embedding, MemoryVectorDB, VectorDBProvider
+from .vector_db import (
+    ChromaVectorDB,
+    Embedding,
+    FaissVectorDB,
+    MemoryVectorDB,
+    VectorDBProvider,
+)
 
 
 @dataclass
@@ -78,6 +84,9 @@ class SkillLibrary:
             if provider == "chroma":
                 persist = self.storage_path / "chroma"
                 self.vector_db = ChromaVectorDB(persist)
+            elif provider == "faiss":
+                persist = self.storage_path / "faiss"
+                self.vector_db = FaissVectorDB(persist)
             else:
                 self.vector_db = MemoryVectorDB()
         self._skills: Dict[str, Skill] = {}
