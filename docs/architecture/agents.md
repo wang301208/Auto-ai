@@ -86,8 +86,9 @@ Expected `ISSUE_DETECTED`/`TICKET_RECEIVED` payload fields:
 agent includes the raw search results in the `skill_search` field and the top
 match in `recommended_skill` within the `DIAGNOSIS_COMPLETE` event's
 `details`. When a match is found the event's `actionable_recommendations`
-directs consumers to invoke the suggested skill; otherwise it signals that a
-new skill may be needed and to start the skill development process.
+directs consumers to invoke the suggested skill and the `parameters` subfield
+provides the schema for the skill's expected arguments. Otherwise it signals
+that a new skill may be needed and to start the skill development process.
 
 ### Event bus and tool requirements
 
@@ -110,7 +111,10 @@ archaeologist.librarian = librarian
 def handle_diagnostics(event: DiagnosisComplete) -> None:
     rec = event.details["recommended_skill"]
     if rec:
-        print(f"Matched skill: {rec['name']}")
+        params_schema = rec["parameters"]
+        print(
+            f"Matched skill: {rec['name']} with params: {params_schema}"
+        )
     else:
         print("No matching skill found")
 
@@ -132,7 +136,7 @@ handle_diagnostics(
         },
         source_agent="archaeologist",
     )
-)  # -> Matched skill: skill_example
+)  # -> Matched skill: skill_example with params: {}
 handle_diagnostics(
     DiagnosisComplete(
         summary="",
@@ -189,9 +193,10 @@ Invoke skill_example_v1 with parameters: no parameters.
 ```
 
 The event's `details` include a `skill_search` array with the raw result and a
-`recommended_skill` entry containing the suggested skill (or `None`). Other
-components subscribed to `DIAGNOSIS_COMPLETE` can display the message to users
-or log it for further analysis.
+`recommended_skill` entry containing the suggested skill (or `None`). Downstream
+agents can inspect `recommended_skill['parameters']` to understand how to invoke
+the skill. Other components subscribed to `DIAGNOSIS_COMPLETE` can display the
+message to users or log it for further analysis.
 
 ## TDDDeveloperAgent
 

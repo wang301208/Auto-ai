@@ -4,6 +4,7 @@ from autogpt.agents.archaeologist import Archaeologist
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
+    DiagnosisComplete,
     EventMessage,
     MessageQueue,
 )
@@ -12,7 +13,15 @@ from autogpt.event_bus import (
 def test_archaeologist_recommends_skill_without_git_ops(monkeypatch):
     mq = MessageQueue()
     received = []
-    mq.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+    schemas = []
+
+    def handler(msg: DiagnosisComplete) -> None:
+        received.append(msg)
+        rec = msg.details["recommended_skill"]
+        if rec:
+            schemas.append(rec["parameters"])
+
+    mq.subscribe(DIAGNOSIS_COMPLETE, handler)
 
     class FakeLibrarian:
         def find_skill(self, query: str, top_k: int = 3):
@@ -61,6 +70,7 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch):
 
     assert calls == []
     assert len(received) == 1
+    assert schemas == [{"path": "str"}]
     diag = received[0]
     assert diag.details["recommended_skill"] == {
         "name": "sample_skill",
