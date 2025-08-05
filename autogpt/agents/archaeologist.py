@@ -14,6 +14,7 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
+from autogpt.skills.librarian import LibrarianAgent
 
 from .archaeologist_dependency import analyze_dependency
 
@@ -24,6 +25,7 @@ class Archaeologist:
     def __init__(self, message_queue: MessageQueue) -> None:
         self.message_queue = message_queue
         self.message_queue.subscribe(ISSUE_DETECTED, self._on_issue_detected)
+        self.librarian = LibrarianAgent()
 
     # ------------------------------------------------------------------
     def _on_issue_detected(self, event: EventMessage) -> None:
@@ -57,8 +59,6 @@ class Archaeologist:
                     metadata.get("file"), metadata.get("dependencies")
                 ),
             }
-
-            recommendations = self._recommendations(analysis)
 
             summary_parts = [
                 f"Diagnostics for plugin {plugin_id}" if plugin_id else "Diagnostics"
@@ -96,7 +96,6 @@ class Archaeologist:
                     metadata.get("file"), dep_info
                 )
             }
-            recommendations = self._recommendations(analysis)
             summary = (
                 f"Dependency update for plugin {plugin_id}"
                 if plugin_id
@@ -109,6 +108,38 @@ class Archaeologist:
             }
         else:
             return
+
+        query_parts: list[str] = []
+        if issue_type:
+            query_parts.append(issue_type.replace("_", " "))
+        if plugin_id:
+            query_parts.append(f"plugin {plugin_id}")
+        if error_log:
+            query_parts.append(str(error_log))
+        for k, v in metadata.items():
+            if isinstance(v, (str, int)):
+                query_parts.append(f"{k} {v}")
+        query = " ".join(query_parts)
+
+        skills = self.librarian.find_skill(query)
+        if skills:
+            skill = skills[0]
+            call_name = f"skill_{skill['skill_name']}_v{skill['version']}"
+            params = skill.get("parameters", {})
+            param_list = ", ".join(params.keys()) if params else "no parameters"
+            skill_rec = f"Invoke {call_name} with parameters: {param_list}."
+        else:
+            skill_rec = (
+                "No suitable skill found; consider developing a new skill."
+            )
+
+        base_rec = self._recommendations(analysis)
+        recs = []
+        if base_rec and base_rec != "No recommendations.":
+            recs.append(base_rec)
+        recs.append(skill_rec)
+        recommendations = " ".join(recs)
+        details["skill_search"] = skills
 
         self.message_queue.publish(
             DiagnosisComplete(
