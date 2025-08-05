@@ -148,8 +148,14 @@ class Archaeologist:
             params = skill.get("parameters", {})
             param_list = ", ".join(params.keys()) if params else "no parameters"
             skill_rec = f"Invoke {call_name} with parameters: {param_list}."
+            details["recommended_skill"] = {
+                "name": skill["skill_name"],
+                "version": skill["version"],
+                "parameters": params,
+            }
         else:
             skill_rec = "No suitable skill found; consider developing a new skill."
+            details["recommended_skill"] = None
 
         base_rec = self._recommendations(analysis)
         recs = []
