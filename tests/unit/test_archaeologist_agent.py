@@ -10,6 +10,7 @@ from autogpt.event_bus import (
     DiagnosisComplete,
     EventMessage,
     MessageQueue,
+    ISSUE_DETECTED,
 )
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
@@ -20,7 +21,6 @@ sys.modules.setdefault("autogpt.agents", agents_pkg)
 arch_module = importlib.import_module("autogpt.agents.archaeologist")
 dep_module = importlib.import_module("autogpt.agents.archaeologist_dependency")
 Archaeologist = arch_module.Archaeologist
-ISSUE_DETECTED = arch_module.ISSUE_DETECTED
 
 
 def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:

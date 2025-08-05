@@ -19,6 +19,32 @@ detection to resolution:
 The orchestrator ensures each agent is running and relays events between them,
 providing a full end‑to‑end workflow for addressing issues.
 
+## SentryAgent
+
+`SentryAgent` acts as the system's watchman. It monitors plugins for failures
+and surface anomalies by publishing `ISSUE_DETECTED` events:
+
+- **Log monitoring** – Uses the `watchdog` library to tail log files under
+  `plugins/*/logs/` and looks for patterns like `ERROR`, `Exception` or
+  `Traceback`.
+- **Health checks** – Polls each plugin's `/health` endpoint and records any
+  non‑`200` responses.
+- **Dependency updates** – Queries the GitHub API or PyPI for newer releases of
+  declared dependencies and alerts when security updates are available.
+
+When an anomaly is found the agent emits:
+
+```python
+EventMessage(
+    ISSUE_DETECTED,
+    payload={"plugin": "example", "error_log": "...", "issue_type": "log_error"},
+    source_agent="sentry",
+)
+```
+
+The orchestrator spawns `SentryAgent` in its own thread and restarts it if it
+crashes, ensuring continuous monitoring of plugin health.
+
 ## ArchaeologistAgent
 
 `ArchaeologistAgent` is an event‑driven diagnostic helper that assists plugin

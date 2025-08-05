@@ -34,6 +34,9 @@ APPROVAL_GRANTED = "APPROVAL_GRANTED"
 ISSUE_RESOLVED = "ISSUE_RESOLVED"
 """Event type emitted after a fix has been merged and deployed."""
 
+ISSUE_DETECTED = "ISSUE_DETECTED"
+"""Event type emitted when a plugin issue is detected."""
+
 
 @dataclass(kw_only=True)
 class DiagnosisComplete(EventMessage):
@@ -154,6 +157,7 @@ __all__ = [
     "HumanApprovalRequired",
     "ApprovalGranted",
     "IssueResolved",
+    "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "CODE_FIX_PROPOSED",
     "HUMAN_APPROVAL_REQUIRED",

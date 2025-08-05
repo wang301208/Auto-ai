@@ -7,7 +7,7 @@ import time
 from pathlib import Path
 from typing import Callable
 
-from autogpt.agents import Archaeologist, QAAgent, TDDDeveloper
+from autogpt.agents import Archaeologist, QAAgent, SentryAgent, TDDDeveloper
 from autogpt.event_bus import EventBus, MessageQueue
 
 
@@ -56,6 +56,10 @@ class Orchestrator:
         while not self.stop_event.is_set():
             time.sleep(1)
 
+    def _run_sentry_agent(self) -> None:
+        agent = SentryAgent(message_queue=self.message_queue, stop_event=self.stop_event)
+        agent.run()
+
     # ------------------------------------------------------------------
     def start_agents(self) -> None:
         """Start all helper agents."""
@@ -63,6 +67,7 @@ class Orchestrator:
         self._start_thread("archaeologist", self._run_archaeologist)
         self._start_thread("tdd_developer", self._run_tdd_developer)
         self._start_thread("qa_agent", self._run_qa_agent)
+        self._start_thread("sentry_agent", self._run_sentry_agent)
 
     # ------------------------------------------------------------------
     def monitor(self) -> None:

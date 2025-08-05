@@ -27,15 +27,26 @@ def test_orchestrator_process_lifecycle(monkeypatch):
     monkeypatch.setattr(Orchestrator, "_run_archaeologist", make_run("archaeologist"))
     monkeypatch.setattr(Orchestrator, "_run_tdd_developer", make_run("tdd_developer"))
     monkeypatch.setattr(Orchestrator, "_run_qa_agent", make_run("qa_agent"))
+    monkeypatch.setattr(Orchestrator, "_run_sentry_agent", make_run("sentry_agent"))
 
     orc.start_agents()
-    assert set(orc.threads.keys()) == {"archaeologist", "tdd_developer", "qa_agent"}
+    assert set(orc.threads.keys()) == {
+        "archaeologist",
+        "tdd_developer",
+        "qa_agent",
+        "sentry_agent",
+    }
     for thread, _ in orc.threads.values():
         thread.join(timeout=0.1)
 
     orc.stop()
 
-    assert [e.payload["agent"] for e in events] == ["archaeologist", "tdd_developer", "qa_agent"]
+    assert [e.payload["agent"] for e in events] == [
+        "archaeologist",
+        "tdd_developer",
+        "qa_agent",
+        "sentry_agent",
+    ]
 
 
 def test_orchestrator_restarts_dead_threads(monkeypatch):
@@ -57,9 +68,15 @@ def test_orchestrator_restarts_dead_threads(monkeypatch):
     monkeypatch.setattr(Orchestrator, "_run_archaeologist", fast_run)
     monkeypatch.setattr(Orchestrator, "_run_tdd_developer", fast_run)
     monkeypatch.setattr(Orchestrator, "_run_qa_agent", fast_run)
+    monkeypatch.setattr(Orchestrator, "_run_sentry_agent", fast_run)
 
     orc.start_agents()
-    assert started == ["archaeologist", "tdd_developer", "qa_agent"]
+    assert started == [
+        "archaeologist",
+        "tdd_developer",
+        "qa_agent",
+        "sentry_agent",
+    ]
 
     calls: list[str] = []
 
@@ -77,4 +94,9 @@ def test_orchestrator_restarts_dead_threads(monkeypatch):
     monkeypatch.setattr(orch_mod.time, "sleep", fake_sleep)
 
     orc.monitor()
-    assert calls == ["archaeologist", "tdd_developer", "qa_agent"]
+    assert calls == [
+        "archaeologist",
+        "tdd_developer",
+        "qa_agent",
+        "sentry_agent",
+    ]

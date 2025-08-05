@@ -4,11 +4,13 @@ from autogpt.event_bus import (
     CODE_FIX_PROPOSED,
     DIAGNOSIS_COMPLETE,
     HUMAN_APPROVAL_REQUIRED,
+    ISSUE_DETECTED,
     ISSUE_RESOLVED,
 )
-from .archaeologist import ISSUE_DETECTED, Archaeologist
+from .archaeologist import Archaeologist
 from .qa_agent import QAAgent
 from .tdd_developer import TDDDeveloper
+from .sentry import SentryAgent
 from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
 
 __all__ = [
@@ -19,6 +21,7 @@ __all__ = [
     "AgentThoughts",
     "CommandRepetitionError",
     "Archaeologist",
+    "SentryAgent",
     "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "TDDDeveloper",

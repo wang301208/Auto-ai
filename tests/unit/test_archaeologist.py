@@ -9,6 +9,7 @@ from autogpt.event_bus import (
     EventBus,
     EventMessage,
     MessageQueue,
+    ISSUE_DETECTED,
 )
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
@@ -18,7 +19,6 @@ sys.modules.setdefault("autogpt.agents", agents_pkg)
 
 arch_module = importlib.import_module("autogpt.agents.archaeologist")
 Archaeologist = arch_module.Archaeologist
-ISSUE_DETECTED = arch_module.ISSUE_DETECTED
 
 
 def test_archaeologist_handles_issue(tmp_path: Path) -> None:
