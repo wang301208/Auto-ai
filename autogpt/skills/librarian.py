@@ -19,6 +19,12 @@ class LibrarianAgent:
 
     def __init__(self, config: Config | None = None) -> None:
         self.skill_library = SkillLibrary(config or Config())
+        storage = self.skill_library.storage_path
+        if not any(storage.rglob("skill.json")):
+            logger.warn(
+                "No existing skill index found at %s; starting with empty library",
+                storage,
+            )
         # Cache search results to avoid redundant library queries for repeated
         # requests. This keeps ``find_skill`` simple and synchronous while
         # still improving performance for common lookups.

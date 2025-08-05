@@ -18,6 +18,8 @@ from autogpt.event_bus import (
 )
 from autogpt.app.i18n import _
 from autogpt.config import Config
+import autogpt.skills.library as library_module
+import autogpt.skills.librarian as librarian_module
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -241,6 +243,42 @@ def test_on_issue_detected_recommends_new_skill_when_none_found(
         message_queue.publish(
             EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
+
+    assert len(received) == 1
+    diag = received[0]
+    assert diag.actionable_recommendations == _("New skill development recommended.")
+    assert diag.details is not None
+    assert diag.details["recommended_skill"] is None
+
+
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_on_issue_detected_with_missing_index(event_type: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    message_queue = MessageQueue()
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    monkeypatch.setattr(
+        "autogpt.skills.library.get_embedding", lambda _text, _cfg: [0.1, 0.2, 0.3]
+    )
+    storage = tmp_path / "skills"
+    monkeypatch.setattr(
+        "autogpt.skills.librarian.SkillLibrary",
+        lambda config: library_module.SkillLibrary(config, storage_path=storage),
+    )
+
+    with patch.object(librarian_module.logger, "warn") as mock_warn:
+        Archaeologist(message_queue, config=Config())
+        mock_warn.assert_called_once()
+
+    payload = {
+        "plugin": "test_plugin",
+        "issue_type": "bug",
+        "error_log": "runtime error",
+        "description": "runtime error",
+    }
+    message_queue.publish(
+        EventMessage(event_type=event_type, payload=payload, source_agent="tester")
+    )
 
     assert len(received) == 1
     diag = received[0]
