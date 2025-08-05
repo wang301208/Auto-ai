@@ -77,10 +77,7 @@ class TDDDeveloper:
         create_test_file(str(test_file), test_content, self.agent)
 
         initial_result = run_tests(str(test_file), self.agent)
-        if (
-            initial_result.get("failures", 0) == 0
-            and initial_result.get("errors", 0) == 0
-        ):
+        if initial_result.get("exit_code", 1) == 0:
             return
 
         fixes: list[dict[str, str]] = []
@@ -96,7 +93,7 @@ class TDDDeveloper:
                     write_to_file(str(file_path), new_content, self.agent)
 
             result = run_tests(repo_path, self.agent)
-            if result.get("failures", 0) == 0 and result.get("errors", 0) == 0:
+            if result.get("exit_code", 1) == 0:
                 git_commit(repo_path, f"Fix issue {issue_id}", self.agent)
                 try:
                     commit_hash = Repo(repo_path).head.commit.hexsha

@@ -10,6 +10,8 @@ def test_run_tests_success(workspace, agent: Agent):
         f.write("def test_example():\n    assert True\n")
 
     result = run_tests(str(test_file), agent=agent)
+    assert result["exit_code"] == 0
+    assert result["status"] == "passed"
     assert result["successes"] == 1
     assert result["failures"] == 0
     assert result["errors"] == 0
