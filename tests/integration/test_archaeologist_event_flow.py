@@ -22,10 +22,17 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librari
         def find_skill(self, query: str, top_k: int = 3):
             return [
                 {
-                    "skill_name": "sample_skill",
+                    "skill_name": "sample_low",
                     "version": "1",
                     "parameters": {"path": "str"},
-                }
+                    "score": 0.1,
+                },
+                {
+                    "skill_name": "sample_high",
+                    "version": "2",
+                    "parameters": {"path": "str"},
+                    "score": 0.9,
+                },
             ]
 
     Archaeologist(
@@ -70,11 +77,25 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librari
     diag = received[0]
     if use_librarian:
         assert diag.details["recommended_skill"] == {
-            "name": "sample_skill",
-            "version": "1",
+            "name": "sample_high",
+            "version": "2",
             "parameters": {"path": "str"},
         }
-        assert "skill_sample_skill_v1" in diag.actionable_recommendations
+        assert diag.details["skill_search"] == [
+            {
+                "skill_name": "sample_low",
+                "version": "1",
+                "parameters": {"path": "str"},
+                "score": 0.1,
+            },
+            {
+                "skill_name": "sample_high",
+                "version": "2",
+                "parameters": {"path": "str"},
+                "score": 0.9,
+            },
+        ]
+        assert "skill_sample_high_v2" in diag.actionable_recommendations
     else:
         assert diag.details["recommended_skill"] is None
-        assert "skill_sample_skill_v1" not in diag.actionable_recommendations
+        assert "skill_sample_high_v2" not in diag.actionable_recommendations

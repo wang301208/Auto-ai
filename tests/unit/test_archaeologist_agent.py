@@ -196,7 +196,8 @@ def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
 
     with patch.object(arch_module, "LibrarianAgent") as MockLib:
         MockLib.return_value.find_skill.return_value = [
-            {"skill_name": "mock", "version": "1", "parameters": {}}
+            {"skill_name": "mock_low", "version": "1", "parameters": {}, "score": 0.2},
+            {"skill_name": "mock_high", "version": "2", "parameters": {}, "score": 0.9},
         ]
         Archaeologist(message_queue)
 
@@ -212,14 +213,18 @@ def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
 
     assert len(received) == 1
     diag = received[0]
-    assert "skill_mock_v1" in diag.actionable_recommendations
+    assert "skill_mock_high_v2" in diag.actionable_recommendations
     assert diag.details is not None
     details = cast(dict[str, Any], diag.details)
     assert details["recommended_skill"] == {
-        "name": "mock",
-        "version": "1",
+        "name": "mock_high",
+        "version": "2",
         "parameters": {},
     }
+    assert details["skill_search"] == [
+        {"skill_name": "mock_low", "version": "1", "parameters": {}, "score": 0.2},
+        {"skill_name": "mock_high", "version": "2", "parameters": {}, "score": 0.9},
+    ]
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
