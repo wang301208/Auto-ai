@@ -74,13 +74,16 @@ class SkillLibrary:
     def _load(self) -> None:
         if not self.storage_path.exists():
             return
-        for skill_dir in self.storage_path.iterdir():
+
+        # Walk the entire storage path looking for skill definitions
+        for meta_file in self.storage_path.rglob("skill.json"):
+            skill_dir = meta_file.parent
             if not skill_dir.is_dir():
                 continue
-            meta_file = skill_dir / "skill.json"
             code_file = skill_dir / "main.py"
-            if not meta_file.exists() or not code_file.exists():
+            if not code_file.exists():
                 continue
+
             with meta_file.open("r", encoding="utf-8") as f:
                 metadata_dict = json.load(f)
             metadata = SkillMetadata(**metadata_dict)
@@ -102,6 +105,17 @@ class SkillLibrary:
                     "parameters": skill.parameters,
                 },
             )
+
+    def reindex(self) -> None:
+        """Clear and rebuild the in-memory index and vector database."""
+
+        self._skills.clear()
+        # Recreate the vector db to remove any stale embeddings
+        try:
+            self.vector_db = type(self.vector_db)()
+        except Exception:
+            self.vector_db = MemoryVectorDB()
+        self._load()
 
     def _skill_dir(self, name: str, version: str) -> Path:
         return self.storage_path / f"{name}_{version}"
