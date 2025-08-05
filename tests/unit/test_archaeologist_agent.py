@@ -165,3 +165,58 @@ def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None
     assert dep_analysis["new_version"] == "2.0"
     assert any("sample_dep 2.0" in f for f in dep_analysis["findings"])
     assert all(cmd[0] != "git" for cmd in commands)
+
+
+def test_on_issue_detected_recommends_existing_skill() -> None:
+    message_queue = MessageQueue()
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    with patch.object(arch_module, "LibrarianAgent") as MockLib:
+        MockLib.return_value.find_skill.return_value = [
+            {"skill_name": "mock", "version": "1", "parameters": {}}
+        ]
+        Archaeologist(message_queue)
+
+        payload = {
+            "plugin": "test_plugin",
+            "issue_type": "bug",
+            "error_log": "runtime error",
+        }
+        message_queue.publish(
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
+        )
+
+    assert len(received) == 1
+    diag = received[0]
+    assert "skill_mock_v1" in diag.actionable_recommendations
+
+
+def test_on_issue_detected_recommends_new_skill_when_none_found() -> None:
+    message_queue = MessageQueue()
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    with patch.object(arch_module, "LibrarianAgent") as MockLib:
+        MockLib.return_value.find_skill.return_value = []
+        Archaeologist(message_queue)
+
+        payload = {
+            "plugin": "test_plugin",
+            "issue_type": "bug",
+            "error_log": "runtime error",
+        }
+        message_queue.publish(
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
+        )
+
+    assert len(received) == 1
+    diag = received[0]
+    assert (
+        diag.actionable_recommendations
+        == "No suitable skill found; consider developing a new skill."
+    )
