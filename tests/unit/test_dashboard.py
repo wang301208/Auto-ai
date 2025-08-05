@@ -13,7 +13,7 @@ from autogpt.event_bus import (
 
 def test_dashboard_tracks_events() -> None:
     mq = MessageQueue()
-    app = create_dashboard_app(mq)
+    app = create_dashboard_app(mq, db_path=":memory:")
     client = app.test_client()
 
     event = EventMessage(
@@ -28,11 +28,12 @@ def test_dashboard_tracks_events() -> None:
     assert data["42"]["event_type"] == "ISSUE_DETECTED"
     assert data["42"]["source_agent"] == "tester"
     assert data["42"]["timestamp"] == event.timestamp
+    assert data["42"]["stage"] == "detected"
 
 
 def test_auth_token_required() -> None:
     mq = MessageQueue()
-    app = create_dashboard_app(mq, auth_token="secret")
+    app = create_dashboard_app(mq, auth_token="secret", db_path=":memory:")
     client = app.test_client()
 
     assert client.get("/").status_code == 401
@@ -41,7 +42,7 @@ def test_auth_token_required() -> None:
 
 def test_dashboard_streams_events_and_updates_state() -> None:
     mq = MessageQueue()
-    app = create_dashboard_app(mq)
+    app = create_dashboard_app(mq, db_path=":memory:")
 
     with app.test_request_context("/stream"):
         resp = app.view_functions["stream"]()
@@ -76,11 +77,12 @@ def test_dashboard_streams_events_and_updates_state() -> None:
     issue = resp.get_json()["1"]
     assert issue["event_type"] == ISSUE_RESOLVED
     assert len(issue["events"]) == len(events)
+    assert issue["stage"] == "resolved"
 
 
 def test_dashboard_handles_missing_issue_id() -> None:
     mq = MessageQueue()
-    app = create_dashboard_app(mq)
+    app = create_dashboard_app(mq, db_path=":memory:")
     client = app.test_client()
 
     event = EventMessage(
@@ -97,7 +99,7 @@ def test_dashboard_handles_missing_issue_id() -> None:
 
 def test_stream_removes_disconnected_clients() -> None:
     mq = MessageQueue()
-    app = create_dashboard_app(mq)
+    app = create_dashboard_app(mq, db_path=":memory:")
     stream_func = app.view_functions["stream"]
     subscribers = next(
         cell.cell_contents
@@ -120,3 +122,23 @@ def test_stream_removes_disconnected_clients() -> None:
         next(gen)
         gen.close()
         assert len(subscribers) == 0
+
+
+def test_dashboard_persists_events(tmp_path) -> None:
+    db_file = tmp_path / "events.db"
+    mq = MessageQueue()
+    create_dashboard_app(mq, db_path=db_file)
+    event = EventMessage(
+        event_type="ISSUE_DETECTED",
+        payload={"issue_id": "7", "issue_type": "bug"},
+        source_agent="tester",
+    )
+    mq.publish(event)
+
+    # New app instance using the same database should load the event
+    mq2 = MessageQueue()
+    app2 = create_dashboard_app(mq2, db_path=db_file)
+    client = app2.test_client()
+    data = client.get("/issues").get_json()
+    assert data["7"]["stage"] == "detected"
+    assert len(data["7"]["events"]) == 1
