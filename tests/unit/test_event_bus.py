@@ -61,6 +61,34 @@ def test_message_queue_diagnosis_complete(message_queue: MessageQueue) -> None:
     assert events[0].details["recommended_skill"] is None
 
 
+def test_message_queue_diagnosis_complete_recommended_skill(
+    message_queue: MessageQueue,
+) -> None:
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    event = DiagnosisComplete(
+        summary="Diagnostics complete",
+        actionable_recommendations="Invoke skill",
+        details={
+            "recommended_skill": {
+                "name": "skill_example",
+                "version": "1",
+                "parameters": {"path": "str"},
+            }
+        },
+        source_agent="archaeologist",
+    )
+    message_queue.publish(event)
+
+    rec = received[0].details["recommended_skill"]
+    assert rec == {
+        "name": "skill_example",
+        "version": "1",
+        "parameters": {"path": "str"},
+    }
+
+
 def test_message_queue_publish_from_multiple_sources(
     message_queue: MessageQueue,
 ) -> None:
