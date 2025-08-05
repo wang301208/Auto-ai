@@ -26,12 +26,14 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librari
                     "version": "1",
                     "parameters": {"path": "str"},
                     "score": 0.1,
+                    "description": "Low scoring skill",
                 },
                 {
                     "skill_name": "sample_high",
                     "version": "2",
                     "parameters": {"path": "str"},
                     "score": 0.9,
+                    "description": "High scoring skill",
                 },
             ]
 
@@ -87,15 +89,18 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librari
                 "version": "1",
                 "parameters": {"path": "str"},
                 "score": 0.1,
+                "description": "Low scoring skill",
             },
             {
                 "skill_name": "sample_high",
                 "version": "2",
                 "parameters": {"path": "str"},
                 "score": 0.9,
+                "description": "High scoring skill",
             },
         ]
         assert "skill_sample_high_v2" in diag.actionable_recommendations
+        assert "High scoring skill" in diag.actionable_recommendations
     else:
         assert diag.details["recommended_skill"] is None
         assert "skill_sample_high_v2" not in diag.actionable_recommendations

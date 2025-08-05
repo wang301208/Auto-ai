@@ -165,9 +165,15 @@ class Archaeologist:
             call_name = f"skill_{skill['skill_name']}_v{skill['version']}"
             params = skill.get("parameters", {})
             param_list = ", ".join(params.keys()) if params else "no parameters"
-            skill_rec = _(
-                "Issue can be solved by invoking {call_name} with parameters: {param_list}."
-            ).format(call_name=call_name, param_list=param_list)
+            desc = skill.get("description")
+            if desc:
+                skill_rec = _(
+                    "Issue can be solved by invoking {call_name} ({desc}) with parameters: {param_list}."
+                ).format(call_name=call_name, desc=desc, param_list=param_list)
+            else:
+                skill_rec = _(
+                    "Issue can be solved by invoking {call_name} with parameters: {param_list}."
+                ).format(call_name=call_name, param_list=param_list)
             details["recommended_skill"] = {
                 "name": skill["skill_name"],
                 "version": skill["version"],
