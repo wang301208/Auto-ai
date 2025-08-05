@@ -35,6 +35,7 @@ sys.modules.setdefault("autogpt.commands.testing", testing_stub)
 
 git_ops_stub = types.ModuleType("autogpt.commands.git_operations")
 git_ops_stub.git_checkout = lambda *a, **k: ""
+git_ops_stub.git_clone = lambda *a, **k: ""
 sys.modules.setdefault("autogpt.commands.git_operations", git_ops_stub)
 
 qa_module = importlib.import_module("autogpt.agents.qa_agent")
@@ -57,6 +58,7 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
     on_code_fix_proposed = callbacks[CODE_FIX_PROPOSED]
     on_approval_granted = callbacks[APPROVAL_GRANTED]
 
+    git_clone = mocker.patch.object(qa_module, "git_clone")
     git_checkout = mocker.patch.object(qa_module, "git_checkout")
     run_tests = mocker.patch.object(
         qa_module,
@@ -71,14 +73,30 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
     repo_mock = mocker.MagicMock()
     repo_mock.git.checkout.return_value = ""
     repo_mock.git.merge.return_value = ""
+    origin_mock = mocker.MagicMock()
+    origin_mock.url = "https://example.com/repo.git"
+    remotes_mock = mocker.MagicMock()
+    remotes_mock.origin = origin_mock
+    repo_mock.remotes = remotes_mock
     mocker.patch.object(qa_module, "Repo", return_value=repo_mock)
     subprocess_run = mocker.patch.object(qa_module.subprocess, "run")
+
+    clone_dir = tmp_path / "clone"
+    mocker.patch.object(
+        qa_module.tempfile,
+        "TemporaryDirectory",
+        return_value=mocker.MagicMock(
+            __enter__=mocker.MagicMock(return_value=str(clone_dir)),
+            __exit__=mocker.MagicMock(return_value=None),
+        ),
+    )
 
     event = CodeFixProposed(branch_name="fix/123", commit_hash="abc", summary="Fix bug")
     on_code_fix_proposed(event)
 
-    git_checkout.assert_called_once_with(str(tmp_path), "fix/123", agent)
-    run_tests.assert_called_once_with(str(tmp_path), agent)
+    git_clone.assert_called_once_with("https://example.com/repo.git", str(clone_dir), agent)
+    git_checkout.assert_called_once_with(str(clone_dir), "fix/123", agent)
+    run_tests.assert_called_once_with(str(clone_dir), agent)
     message_queue.publish.assert_called_once()
     published_event = message_queue.publish.call_args[0][0]
     assert isinstance(published_event, HumanApprovalRequired)
