@@ -5,16 +5,19 @@ from pathlib import Path
 import pytest
 
 from autogpt.config import Config
+from autogpt.skills import library as library_module
 from autogpt.skills.librarian import LibrarianAgent
 
 
 def _setup_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> LibrarianAgent:
-    agent = LibrarianAgent(Config())
-    agent.skill_library.storage_path = tmp_path
     monkeypatch.setattr(
         "autogpt.skills.library.get_embedding", lambda _text, _config: [0.1, 0.2, 0.3]
     )
-    return agent
+    monkeypatch.setattr(
+        "autogpt.skills.librarian.SkillLibrary",
+        lambda config: library_module.SkillLibrary(config, storage_path=tmp_path),
+    )
+    return LibrarianAgent(Config())
 
 
 def _metadata() -> dict:

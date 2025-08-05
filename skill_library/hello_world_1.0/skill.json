@@ -1,0 +1,7 @@
+{
+  "skill_name": "hello_world",
+  "version": "1.0",
+  "description": "Return a friendly greeting",
+  "tags": ["example", "greeting"],
+  "parameters": {}
+}
