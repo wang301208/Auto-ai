@@ -223,6 +223,16 @@ agpt run_tests <path>
 pytest
 ```
 
+## 技能库 CLI
+
+使用 `scripts/skill_cli.py` 管理和测试技能：
+
+```bash
+python scripts/skill_cli.py add path/to/skill_dir
+python scripts/skill_cli.py search "convert csv to json"
+python scripts/skill_cli.py test my_skill
+```
+
 ## 📖 文档
 * [⚙️ 设置][docs/setup]
 * [💻 用法][docs/usage]
