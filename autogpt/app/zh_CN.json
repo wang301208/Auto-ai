@@ -62,5 +62,7 @@
   "The Agent failed to select an action.": "代理未能选择操作。",
   "Plugin folder {plugin_module_name} found but not configured. If this is a legitimate plugin, please add it to plugins_config.yaml (key: {plugin_module_name}).": "发现插件文件夹 {plugin_module_name} 但未配置。如果这是合法的插件，请将其添加到 plugins_config.yaml（键：{plugin_module_name}）。",
   "OpenAI Plugin {plugin_module_name} found but not configured": "发现 OpenAI 插件 {plugin_module_name} 但未配置",
-  "Failed to update API costs: {err_class}: {err}": "更新 API 成本失败：{err_class}: {err}"
+  "Failed to update API costs: {err_class}: {err}": "更新 API 成本失败：{err_class}: {err}",
+  "Issue can be solved by invoking {call_name} with parameters: {param_list}.": "问题可以通过调用 {call_name} 并使用参数：{param_list} 来解决。",
+  "New skill development recommended.": "建议开发新技能。"
 }
