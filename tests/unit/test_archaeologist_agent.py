@@ -68,6 +68,7 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
                 f'  File "{source_file}", line 1, in <module>'
             ),
             "commit": "abc123",
+            "issue_type": "bug",
         }
         message_queue.publish(
             EventMessage(
@@ -107,9 +108,12 @@ def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None
     source_file = tmp_path / "mod.py"
     source_file.write_text("import sample_dep\nsample_dep.old_func()\n")
 
+    commands: list[list[str]] = []
+
     def fake_run(
         cmd: list[str], capture_output: bool = True, text: bool = True
     ) -> SimpleNamespace:
+        commands.append(cmd)
         if cmd[:2] == ["git", "blame"]:
             return SimpleNamespace(stdout="^123 (user 2023-01-01 1) line\n", stderr="")
         return SimpleNamespace(stdout="", stderr="")
@@ -134,6 +138,7 @@ def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None
                 f'  File "{source_file}", line 2, in <module>'
             ),
             "dependencies": {"sample_dep": {"new_version": "2.0"}},
+            "issue_type": "dependency_update",
         }
         message_queue.publish(
             EventMessage(
@@ -146,3 +151,4 @@ def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None
     assert called_versions == ["2.0"]
     assert dep_analysis["new_version"] == "2.0"
     assert any("sample_dep 2.0" in f for f in dep_analysis["findings"])
+    assert all(cmd[0] != "git" for cmd in commands)

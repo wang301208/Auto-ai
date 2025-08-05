@@ -18,7 +18,7 @@ def test_dashboard_tracks_events() -> None:
 
     event = EventMessage(
         event_type="ISSUE_DETECTED",
-        payload={"issue_id": "42"},
+        payload={"issue_id": "42", "issue_type": "bug"},
         source_agent="tester",
     )
     mq.publish(event)
@@ -50,7 +50,7 @@ def test_dashboard_streams_events_and_updates_state() -> None:
         events = [
             EventMessage(
                 event_type="ISSUE_DETECTED",
-                payload={"issue_id": "1"},
+                payload={"issue_id": "1", "issue_type": "bug"},
                 source_agent="tester",
             ),
             EventMessage(
@@ -83,7 +83,11 @@ def test_dashboard_handles_missing_issue_id() -> None:
     app = create_dashboard_app(mq)
     client = app.test_client()
 
-    event = EventMessage(event_type="ISSUE_DETECTED", payload={}, source_agent="tester")
+    event = EventMessage(
+        event_type="ISSUE_DETECTED",
+        payload={"issue_type": "bug"},
+        source_agent="tester",
+    )
     mq.publish(event)
 
     resp = client.get("/issues")
@@ -96,7 +100,9 @@ def test_stream_removes_disconnected_clients() -> None:
     app = create_dashboard_app(mq)
     stream_func = app.view_functions["stream"]
     subscribers = next(
-        cell.cell_contents for cell in stream_func.__closure__ if isinstance(cell.cell_contents, list)
+        cell.cell_contents
+        for cell in stream_func.__closure__
+        if isinstance(cell.cell_contents, list)
     )
 
     assert len(subscribers) == 0
@@ -104,7 +110,13 @@ def test_stream_removes_disconnected_clients() -> None:
         resp = stream_func()
         gen = resp.response
         assert len(subscribers) == 1
-        mq.publish(EventMessage(event_type="ISSUE_DETECTED", payload={}, source_agent="tester"))
+        mq.publish(
+            EventMessage(
+                event_type="ISSUE_DETECTED",
+                payload={"issue_type": "bug"},
+                source_agent="tester",
+            )
+        )
         next(gen)
         gen.close()
         assert len(subscribers) == 0

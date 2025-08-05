@@ -36,6 +36,7 @@ def test_archaeologist_handles_issue(tmp_path: Path) -> None:
         "file": "autogpt/agents/agent.py",
         "line": 10,
         "extra": "meta",
+        "issue_type": "bug",
     }
 
     message_queue.publish(
@@ -68,6 +69,7 @@ def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:
             '  File "autogpt/agents/agent.py", line 42, in <module>\n'
             "    raise Exception()\n"
         ),
+        "issue_type": "bug",
     }
 
     message_queue.publish(
@@ -88,6 +90,7 @@ def test_archaeologist_parses_plugin_log(tmp_path: Path) -> None:
     payload = {
         "plugin": "test_plugin",
         "error_log": "ERROR at autogpt/agents/agent.py:50 something went wrong",
+        "issue_type": "bug",
     }
 
     message_queue.publish(
@@ -108,6 +111,7 @@ def test_archaeologist_parsing_fails_gracefully(tmp_path: Path) -> None:
     payload = {
         "plugin": "test_plugin",
         "error_log": "unstructured log message",
+        "issue_type": "bug",
     }
 
     message_queue.publish(

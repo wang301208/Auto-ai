@@ -5,13 +5,13 @@ from __future__ import annotations
 import re
 import threading
 from pathlib import Path
-from typing import Dict, Mapping
+from typing import Any, Dict, Mapping
 
 import requests
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
-from autogpt.event_bus import EventMessage, MessageQueue, ISSUE_DETECTED
+from autogpt.event_bus import ISSUE_DETECTED, EventMessage, MessageQueue
 
 
 class SentryAgent:
@@ -53,19 +53,21 @@ class SentryAgent:
             def __init__(self) -> None:
                 self.positions: Dict[str, int] = {}
 
-            def on_modified(self, event) -> None:  # type: ignore[override]
+            def on_modified(self, event: Any) -> None:  # type: ignore[override]
                 if event.is_directory:
                     return
                 pos = self.positions.get(event.src_path, 0)
                 try:
-                    with open(event.src_path, "r", encoding="utf-8", errors="ignore") as f:
+                    with open(
+                        event.src_path, "r", encoding="utf-8", errors="ignore"
+                    ) as f:
                         f.seek(pos)
                         data = f.read()
                         self.positions[event.src_path] = f.tell()
                 except Exception:
                     return
                 if agent.ERROR_PATTERN.search(data):
-                    agent._publish_issue(plugin, data, "log_error")
+                    agent._publish_issue(plugin, data, "bug")
 
         return Handler()
 
@@ -84,9 +86,9 @@ class SentryAgent:
             try:
                 resp = requests.get(url, timeout=5)
                 if resp.status_code != 200:
-                    self._publish_issue(plugin, f"status {resp.status_code}", "healthcheck")
+                    self._publish_issue(plugin, f"status {resp.status_code}", "bug")
             except Exception as e:  # pragma: no cover - network errors
-                self._publish_issue(plugin, str(e), "healthcheck")
+                self._publish_issue(plugin, str(e), "bug")
 
     # ------------------------------------------------------------------
     def _check_dependencies(self) -> None:

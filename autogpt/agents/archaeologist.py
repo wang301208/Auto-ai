@@ -35,49 +35,80 @@ class Archaeologist:
 
         plugin_id = payload.get("plugin")
         error_log = payload.get("error_log")
+        issue_type = payload.get("issue_type", "bug")
         metadata = {
-            k: v for k, v in payload.items() if k not in {"plugin", "error_log"}
+            k: v
+            for k, v in payload.items()
+            if k not in {"plugin", "error_log", "issue_type"}
         }
 
-        if error_log and ("file" not in metadata or "line" not in metadata):
-            file, line = next(self._parse_log(error_log), (None, None))
-            if "file" not in metadata and file:
-                metadata["file"] = file
-            if "line" not in metadata and line is not None:
-                metadata["line"] = line
+        if issue_type == "bug":
+            if error_log and ("file" not in metadata or "line" not in metadata):
+                file, line = next(self._parse_log(error_log), (None, None))
+                if "file" not in metadata and file:
+                    metadata["file"] = file
+                if "line" not in metadata and line is not None:
+                    metadata["line"] = line
 
-        analysis: dict[str, Any] = {
-            "checkout": self._checkout_commit(metadata.get("commit")),
-            "blame": self._git_blame(metadata.get("file"), metadata.get("line")),
-            "dependencies": self._review_dependencies(
-                metadata.get("file"), metadata.get("dependencies")
-            ),
-        }
+            analysis: dict[str, Any] = {
+                "checkout": self._checkout_commit(metadata.get("commit")),
+                "blame": self._git_blame(metadata.get("file"), metadata.get("line")),
+                "dependencies": self._review_dependencies(
+                    metadata.get("file"), metadata.get("dependencies")
+                ),
+            }
 
-        recommendations = self._recommendations(analysis)
+            recommendations = self._recommendations(analysis)
 
-        summary_parts = [
-            f"Diagnostics for plugin {plugin_id}" if plugin_id else "Diagnostics"
-        ]
-        if metadata.get("file"):
-            location = metadata["file"]
-            if metadata.get("line") is not None:
-                location += f":{metadata['line']}"
-            summary_parts.append(f"at {location}")
-        summary = " ".join(summary_parts)
+            summary_parts = [
+                f"Diagnostics for plugin {plugin_id}" if plugin_id else "Diagnostics"
+            ]
+            if metadata.get("file"):
+                location = metadata["file"]
+                if metadata.get("line") is not None:
+                    location += f":{metadata['line']}"
+                summary_parts.append(f"at {location}")
+            summary = " ".join(summary_parts)
 
-        blame_info = self._parse_blame_output(analysis.get("blame"))
-        context = []
-        if metadata.get("file") and metadata.get("line") is not None:
-            context = self._source_context(metadata["file"], metadata["line"])
+            blame_info = self._parse_blame_output(analysis.get("blame"))
+            context: list[dict[str, Any]] = []
+            if metadata.get("file") and metadata.get("line") is not None:
+                context = self._source_context(metadata["file"], metadata["line"])
 
-        details = {
-            "metadata": metadata,
-            "error_log": error_log,
-            "blame": blame_info,
-            "context": context,
-            "dependencies": analysis.get("dependencies"),
-        }
+            details = {
+                "metadata": metadata,
+                "error_log": error_log,
+                "blame": blame_info,
+                "context": context,
+                "dependencies": analysis.get("dependencies"),
+            }
+
+        elif issue_type == "dependency_update":
+            dep_info = metadata.get("dependencies")
+            if not dep_info and error_log:
+                parts = error_log.split()
+                if parts:
+                    new_version = parts[1] if len(parts) > 1 else None
+                    dep_info = {parts[0]: {"new_version": new_version}}
+
+            analysis = {
+                "dependencies": self._review_dependencies(
+                    metadata.get("file"), dep_info
+                )
+            }
+            recommendations = self._recommendations(analysis)
+            summary = (
+                f"Dependency update for plugin {plugin_id}"
+                if plugin_id
+                else "Dependency update"
+            )
+            details = {
+                "metadata": metadata,
+                "error_log": error_log,
+                "dependencies": analysis.get("dependencies"),
+            }
+        else:
+            return
 
         self.message_queue.publish(
             DiagnosisComplete(
@@ -176,24 +207,26 @@ class Archaeologist:
     ) -> list[dict[str, Any]]:
         """Analyze imported modules from ``file`` for compatibility issues."""
 
-        if not file or not Path(file).exists():
-            return []
-        try:
-            source_path = Path(file)
-            tree = ast.parse(source_path.read_text())
-        except Exception:
-            return []
+        source_path = Path(file) if file else Path("nonexistent.py")
+        tree = None
+        if source_path.exists():
+            try:
+                tree = ast.parse(source_path.read_text())
+            except Exception:
+                tree = None
 
         deps: list[str] = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Import):
-                deps.extend(alias.name.split(".")[0] for alias in node.names)
-            elif isinstance(node, ast.ImportFrom) and node.module:
-                deps.append(node.module.split(".")[0])
+        if tree is not None:
+            for node in ast.walk(tree):
+                if isinstance(node, ast.Import):
+                    deps.extend(alias.name.split(".")[0] for alias in node.names)
+                elif isinstance(node, ast.ImportFrom) and node.module:
+                    deps.append(node.module.split(".")[0])
 
         dep_info = dep_info or {}
+        names = sorted(set(deps) | set(dep_info.keys()))
         analyses: list[dict[str, Any]] = []
-        for dep in sorted(set(deps)):
+        for dep in names:
             info = dep_info.get(dep)
             new_version = None
             if isinstance(info, dict):
