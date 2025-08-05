@@ -88,6 +88,10 @@ match in `recommended_skill` within the `DIAGNOSIS_COMPLETE` event's
 directs consumers to invoke the suggested skill; otherwise it signals that new
 skill development is recommended.
 
+Repeated calls to `find_skill` are cached by the librarian so common queries do
+not repeatedly hit the underlying skill library. This keeps the interface
+simple and synchronous while still avoiding unnecessary work.
+
 ### Event bus and tool requirements
 
 ```python

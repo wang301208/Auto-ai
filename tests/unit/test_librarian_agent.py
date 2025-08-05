@@ -70,3 +70,31 @@ def test_add_skill_missing_code_path_returns_false(
     missing_path = tmp_path / "missing.py"
 
     assert agent.add_skill(metadata, str(missing_path)) is False
+
+
+def test_find_skill_caches_results(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+    code_file = tmp_path / "skill.py"
+    code_file.write_text("def run():\n    return 'hello'\n")
+
+    metadata = _metadata()
+    assert agent.add_skill(metadata, str(code_file)) is True
+
+    call_count = 0
+    original_search = library_module.SkillLibrary.search
+
+    def counting_search(
+        self: library_module.SkillLibrary, query: str, top_k: int = 3
+    ) -> list:
+        nonlocal call_count
+        call_count += 1
+        return original_search(self, query, top_k=top_k)
+
+    monkeypatch.setattr(library_module.SkillLibrary, "search", counting_search)
+
+    agent.find_skill("Test skill")
+    agent.find_skill("Test skill")
+
+    assert call_count == 1
