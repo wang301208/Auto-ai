@@ -273,10 +273,7 @@ def test_on_issue_detected_handles_skill_exception(event_type: str) -> None:
 
     assert len(received) == 1
     diag = received[0]
-    assert (
-        diag.actionable_recommendations
-        == "No suitable skill found; consider developing a new skill. Start new skill development process."
-    )
+    assert diag.actionable_recommendations == "建议开发新技能。"
     assert diag.details is not None
     assert diag.details["recommended_skill"] is None
     assert mock_error.called

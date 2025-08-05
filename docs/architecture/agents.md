@@ -82,11 +82,13 @@ Expected `ISSUE_DETECTED`/`TICKET_RECEIVED` payload fields:
 ### Librarian integration and event payload
 
 `LibrarianAgent.find_skill` enables the archaeologist to reuse prior work. The
-agent includes the raw search results in the `skill_search` field and the top
-match in `recommended_skill` within the `DIAGNOSIS_COMPLETE` event's
-`details`. When a match is found the event's `actionable_recommendations`
-directs consumers to invoke the suggested skill; otherwise it signals that new
-skill development is recommended.
+agent caches repeated search queries, returning cached metadata when the same
+``(query, top_k)`` combination is requested again. The agent includes the raw
+search results in the `skill_search` field and the top match in
+`recommended_skill` within the `DIAGNOSIS_COMPLETE` event's `details`. When a
+match is found the event's `actionable_recommendations` directs consumers to
+invoke the suggested skill; otherwise it signals that new skill development is
+recommended.
 
 ### Event bus and tool requirements
 
