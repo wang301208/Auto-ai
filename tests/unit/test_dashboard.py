@@ -3,22 +3,27 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from autogpt.dashboard import create_dashboard_app
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
+    ISSUE_DETECTED,
     ISSUE_RESOLVED,
+    TICKET_RECEIVED,
     EventMessage,
     MessageQueue,
 )
 
 
-def test_dashboard_tracks_events() -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_dashboard_tracks_events(event_type: str) -> None:
     mq = MessageQueue()
     app = create_dashboard_app(mq, db_path=":memory:")
     client = app.test_client()
 
     event = EventMessage(
-        event_type="ISSUE_DETECTED",
+        event_type=event_type,
         payload={"issue_id": "42", "issue_type": "bug", "description": "test bug"},
         source_agent="tester",
     )
@@ -26,7 +31,7 @@ def test_dashboard_tracks_events() -> None:
 
     resp = client.get("/issues")
     data = resp.get_json()
-    assert data["42"]["event_type"] == "ISSUE_DETECTED"
+    assert data["42"]["event_type"] == event_type
     assert data["42"]["source_agent"] == "tester"
     assert data["42"]["timestamp"] == event.timestamp
     assert data["42"]["stage"] == "detected"
@@ -51,7 +56,7 @@ def test_dashboard_streams_events_and_updates_state() -> None:
 
         events = [
             EventMessage(
-                event_type="ISSUE_DETECTED",
+                event_type=ISSUE_DETECTED,
                 payload={
                     "issue_id": "1",
                     "issue_type": "bug",
@@ -91,7 +96,7 @@ def test_dashboard_handles_missing_issue_id() -> None:
     client = app.test_client()
 
     event = EventMessage(
-        event_type="ISSUE_DETECTED",
+        event_type=ISSUE_DETECTED,
         payload={"issue_type": "bug", "description": "test bug"},
         source_agent="tester",
     )
@@ -119,7 +124,7 @@ def test_stream_removes_disconnected_clients() -> None:
         assert len(subscribers) == 1
         mq.publish(
             EventMessage(
-                event_type="ISSUE_DETECTED",
+                event_type=ISSUE_DETECTED,
                 payload={"issue_type": "bug", "description": "test bug"},
                 source_agent="tester",
             )
@@ -134,7 +139,7 @@ def test_dashboard_persists_events(tmp_path: Path) -> None:
     mq = MessageQueue()
     create_dashboard_app(mq, db_path=db_file)
     event = EventMessage(
-        event_type="ISSUE_DETECTED",
+        event_type=ISSUE_DETECTED,
         payload={"issue_id": "7", "issue_type": "bug", "description": "test bug"},
         source_agent="tester",
     )

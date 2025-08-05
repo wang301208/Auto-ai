@@ -6,14 +6,16 @@ import ast
 import re
 import subprocess
 from pathlib import Path
-from typing import Any, Iterator
+from typing import Any, Iterator, cast
 
 from autogpt.event_bus import (
     ISSUE_DETECTED,
+    TICKET_RECEIVED,
     DiagnosisComplete,
     EventMessage,
     MessageQueue,
 )
+from autogpt.event_bus.message_types import DiagnosisDetails
 from autogpt.skills.librarian import LibrarianAgent
 
 from .archaeologist_dependency import analyze_dependency
@@ -36,12 +38,13 @@ class Archaeologist:
                 ``LibrarianAgent`` will be created.
         """
         self.message_queue = message_queue
-        self.message_queue.subscribe(ISSUE_DETECTED, self._on_issue_detected)
+        self.message_queue.subscribe(ISSUE_DETECTED, self._on_ticket_received)
+        self.message_queue.subscribe(TICKET_RECEIVED, self._on_ticket_received)
         self.librarian = librarian or LibrarianAgent()
 
     # ------------------------------------------------------------------
-    def _on_issue_detected(self, event: EventMessage) -> None:
-        """Handle an ISSUE_DETECTED event."""
+    def _on_ticket_received(self, event: EventMessage) -> None:
+        """Handle an ISSUE_DETECTED or TICKET_RECEIVED event."""
 
         payload = event.payload or {}
         if not isinstance(payload, dict):
@@ -57,6 +60,7 @@ class Archaeologist:
             if k not in {"plugin", "error_log", "issue_type", "description"}
         }
 
+        details: dict[str, Any]
         if issue_type == "bug":
             if error_log and ("file" not in metadata or "line" not in metadata):
                 file, line = next(self._parse_log(error_log), (None, None))
@@ -169,7 +173,7 @@ class Archaeologist:
             DiagnosisComplete(
                 summary=summary,
                 actionable_recommendations=recommendations,
-                details=details,
+                details=cast(DiagnosisDetails, details),
                 source_agent="archaeologist",
             )
         )

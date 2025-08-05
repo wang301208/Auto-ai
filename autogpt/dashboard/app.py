@@ -8,7 +8,7 @@ import sqlite3
 from pathlib import Path
 from queue import Queue
 from threading import Lock
-from typing import Any, Dict, Iterable
+from typing import Any, Dict, Iterable, cast
 
 from flask import Flask, Response, abort, render_template, request
 
@@ -16,13 +16,16 @@ from autogpt.event_bus import (
     CODE_FIX_PROPOSED,
     DIAGNOSIS_COMPLETE,
     HUMAN_APPROVAL_REQUIRED,
+    ISSUE_DETECTED,
     ISSUE_RESOLVED,
+    TICKET_RECEIVED,
     EventMessage,
     MessageQueue,
 )
 
 EVENT_TYPES = [
-    "ISSUE_DETECTED",
+    ISSUE_DETECTED,
+    TICKET_RECEIVED,
     DIAGNOSIS_COMPLETE,
     CODE_FIX_PROPOSED,
     HUMAN_APPROVAL_REQUIRED,
@@ -30,7 +33,8 @@ EVENT_TYPES = [
 ]
 
 EVENT_STAGE_MAPPING = {
-    "ISSUE_DETECTED": "detected",
+    ISSUE_DETECTED: "detected",
+    TICKET_RECEIVED: "detected",
     DIAGNOSIS_COMPLETE: "diagnosed",
     CODE_FIX_PROPOSED: "fix_proposed",
     HUMAN_APPROVAL_REQUIRED: "awaiting_approval",
@@ -116,21 +120,15 @@ def create_dashboard_app(
         token = auth_token or os.getenv("DASHBOARD_TOKEN")
         if not token:
             return True
-        supplied = request.args.get("token") or request.headers.get(
-            "X-Dashboard-Token"
-        )
+        supplied = request.args.get("token") or request.headers.get("X-Dashboard-Token")
         return supplied == token
 
     def _issue_id(event: EventMessage) -> str:
         payload = event.payload if isinstance(event.payload, dict) else {}
-        return (
-            str(payload.get("issue_id")
-                or payload.get("branch_name")
-                or "unknown")
-        )
+        return str(payload.get("issue_id") or payload.get("branch_name") or "unknown")
 
     def _broadcast(event: EventMessage) -> None:
-        data = {
+        data: Dict[str, Any] = {
             "event_type": event.event_type,
             "payload": event.payload,
             "source_agent": event.source_agent,
@@ -138,7 +136,7 @@ def create_dashboard_app(
             "issue_id": _issue_id(event),
         }
         with lock:
-            issue = issues.setdefault(data["issue_id"], {"events": []})
+            issue = issues.setdefault(cast(str, data["issue_id"]), {"events": []})
             issue["events"].append(data)
             issue.update(data)
             issue["stage"] = _compute_stage(issue["events"])
@@ -208,4 +206,3 @@ def run_dashboard(
 
 if __name__ == "__main__":  # pragma: no cover - manual launch
     run_dashboard()
-

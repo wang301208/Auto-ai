@@ -2,11 +2,15 @@ import importlib
 import sys
 import types
 from pathlib import Path
+from typing import Any, cast
 from unittest.mock import patch
+
+import pytest
 
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
+    TICKET_RECEIVED,
     DiagnosisComplete,
     EventBus,
     EventMessage,
@@ -22,7 +26,8 @@ arch_module = importlib.import_module("autogpt.agents.archaeologist")
 Archaeologist = arch_module.Archaeologist
 
 
-def test_archaeologist_handles_issue(tmp_path: Path) -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_archaeologist_handles_issue(tmp_path: Path, event_type: str) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
@@ -43,9 +48,7 @@ def test_archaeologist_handles_issue(tmp_path: Path) -> None:
         }
 
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert len(received) == 1
@@ -53,14 +56,16 @@ def test_archaeologist_handles_issue(tmp_path: Path) -> None:
     assert "test_plugin" in diag.summary
     assert isinstance(diag.actionable_recommendations, str)
     assert diag.details is not None
-    assert diag.details["blame"]["commit"]
-    assert diag.details["blame"]["author"]
-    assert any(c["line"] == 10 for c in diag.details["context"])
-    assert isinstance(diag.details["dependencies"], list)
-    assert diag.details["recommended_skill"] is None
+    details = cast(dict[str, Any], diag.details)
+    assert details["blame"]["commit"]
+    assert details["blame"]["author"]
+    assert any(c["line"] == 10 for c in details["context"])
+    assert isinstance(details["dependencies"], list)
+    assert details["recommended_skill"] is None
 
 
-def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_archaeologist_parses_python_traceback(tmp_path: Path, event_type: str) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
@@ -81,15 +86,14 @@ def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:
         }
 
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert "autogpt/agents/agent.py:42" in received[0].summary
 
 
-def test_archaeologist_parses_plugin_log(tmp_path: Path) -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_archaeologist_parses_plugin_log(tmp_path: Path, event_type: str) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
@@ -106,15 +110,16 @@ def test_archaeologist_parses_plugin_log(tmp_path: Path) -> None:
         }
 
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert "autogpt/agents/agent.py:50" in received[0].summary
 
 
-def test_archaeologist_parsing_fails_gracefully(tmp_path: Path) -> None:
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_archaeologist_parsing_fails_gracefully(
+    tmp_path: Path, event_type: str
+) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     with patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]):
@@ -131,9 +136,7 @@ def test_archaeologist_parsing_fails_gracefully(tmp_path: Path) -> None:
         }
 
         message_queue.publish(
-            EventMessage(
-                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
-            )
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
     assert "autogpt/agents/agent.py" not in received[0].summary
