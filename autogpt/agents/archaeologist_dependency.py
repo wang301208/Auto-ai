@@ -13,7 +13,8 @@ import requests
 def fetch_release_notes(package: str, version: str | None) -> str | None:
     """Fetch release notes for ``package`` at ``version`` from PyPI.
 
-    If fetching fails, ``None`` is returned.
+    ``version`` may be a not-yet-installed release that should be inspected
+    for compatibility. If fetching fails, ``None`` is returned.
     """
 
     if not version:
@@ -66,16 +67,19 @@ def scan_for_usage(source: Path, package: str) -> Set[str]:
     return usages
 
 
-def analyze_dependency(package: str, source: Path) -> Dict[str, Any]:
+def analyze_dependency(
+    package: str, source: Path, new_version: str | None = None
+) -> Dict[str, Any]:
     """Analyze ``package`` usage within ``source`` and check release notes."""
 
-    version: str | None = None
+    installed: str | None = None
     try:
-        version = metadata.version(package)
+        installed = metadata.version(package)
     except Exception:
         pass
 
-    release_notes = fetch_release_notes(package, version)
+    target_version = new_version or installed
+    release_notes = fetch_release_notes(package, target_version)
     usages = scan_for_usage(source, package)
 
     findings: list[str] = []
@@ -86,17 +90,20 @@ def analyze_dependency(package: str, source: Path) -> Dict[str, Any]:
             if name in lowered and any(
                 kw in lowered for kw in ["deprecated", "removed", "breaking"]
             ):
-                findings.append(f"{usage} may be incompatible with {package} {version}")
+                findings.append(
+                    f"{usage} may be incompatible with {package} {target_version}"
+                )
         if not findings and any(
             kw in lowered for kw in ["deprecated", "removed", "breaking"]
         ):
             findings.append(
-                f"{package} {version} release notes mention potential breaking changes"
+                f"{package} {target_version} release notes mention potential breaking changes"
             )
 
     return {
         "dependency": package,
-        "version": version,
+        "version": installed,
+        "new_version": new_version,
         "usages": sorted(usages),
         "release_notes": release_notes,
         "findings": findings,
