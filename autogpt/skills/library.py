@@ -12,7 +12,7 @@ from typing import Dict, List, Optional
 from autogpt.config import Config
 from autogpt.memory.vector.utils import get_embedding
 
-from .vector_db import Embedding, MemoryVectorDB, VectorDBProvider
+from .vector_db import ChromaVectorDB, Embedding, MemoryVectorDB, VectorDBProvider
 
 
 @dataclass
@@ -71,7 +71,15 @@ class SkillLibrary:
     ) -> None:
         self.config = config
         self.storage_path = storage_path or Path("skill_library")
-        self.vector_db = vector_db or MemoryVectorDB()
+        if vector_db is not None:
+            self.vector_db = vector_db
+        else:
+            provider = getattr(config, "skill_db_provider", "memory").lower()
+            if provider == "chroma":
+                persist = self.storage_path / "chroma"
+                self.vector_db = ChromaVectorDB(persist)
+            else:
+                self.vector_db = MemoryVectorDB()
         self._skills: Dict[str, Skill] = {}
         self._load()
 
@@ -115,11 +123,13 @@ class SkillLibrary:
         """Clear and rebuild the in-memory index and vector database."""
 
         self._skills.clear()
-        # Recreate the vector db to remove any stale embeddings
         try:
-            self.vector_db = type(self.vector_db)()
+            self.vector_db.clear()
         except Exception:
-            self.vector_db = MemoryVectorDB()
+            try:
+                self.vector_db = type(self.vector_db)()
+            except Exception:
+                self.vector_db = MemoryVectorDB()
         self._load()
 
     def _skill_dir(self, name: str, version: str) -> Path:

@@ -97,6 +97,14 @@ cp .env.template .env
 若使用 Azure OpenAI，请设置 `USE_AZURE=true` 并将 `azure.yaml.template` 复制为
 `azure.yaml`，然后填写所需字段。
 
+### 技能库向量数据库
+
+技能库使用向量数据库存储技能嵌入。
+在 `.env` 中通过 `SKILL_DB_PROVIDER` 选择后端：
+
+- `memory`（默认） — 使用内存实现，运行结束后数据会丢失；
+- `chroma` — 需要先 `pip install chromadb`，数据会持久化到 `skill_library/chroma`。
+
 ## 消息队列
 
 Auto-GPT 包含用于代理之间通信的轻量级消息队列与事件总线。

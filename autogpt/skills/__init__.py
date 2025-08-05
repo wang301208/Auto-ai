@@ -8,7 +8,7 @@ from typing import Dict, List, Optional
 from autogpt.config import ConfigBuilder
 
 from .library import Skill, SkillLibrary
-from .vector_db import MemoryVectorDB, VectorDBProvider
+from .vector_db import ChromaVectorDB, MemoryVectorDB, VectorDBProvider
 
 _default_library: SkillLibrary | None = None
 
@@ -118,6 +118,7 @@ __all__ = [
     "SkillLibrary",
     "VectorDBProvider",
     "MemoryVectorDB",
+    "ChromaVectorDB",
     "get_library",
     "add",
     "get",
