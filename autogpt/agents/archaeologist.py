@@ -49,11 +49,12 @@ class Archaeologist:
 
         plugin_id = payload.get("plugin")
         error_log = payload.get("error_log")
+        description = payload.get("description")
         issue_type = payload.get("issue_type", "bug")
         metadata = {
             k: v
             for k, v in payload.items()
-            if k not in {"plugin", "error_log", "issue_type"}
+            if k not in {"plugin", "error_log", "issue_type", "description"}
         }
 
         if issue_type == "bug":
@@ -94,6 +95,8 @@ class Archaeologist:
                 "context": context,
                 "dependencies": analysis.get("dependencies"),
             }
+            if description:
+                details["description"] = description
 
         elif issue_type == "dependency_update":
             dep_info = metadata.get("dependencies")
@@ -118,20 +121,25 @@ class Archaeologist:
                 "error_log": error_log,
                 "dependencies": analysis.get("dependencies"),
             }
+            if description:
+                details["description"] = description
         else:
             return
 
-        query_parts: list[str] = []
-        if issue_type:
-            query_parts.append(issue_type.replace("_", " "))
-        if plugin_id:
-            query_parts.append(f"plugin {plugin_id}")
-        if error_log:
-            query_parts.append(str(error_log))
-        for k, v in metadata.items():
-            if isinstance(v, (str, int)):
-                query_parts.append(f"{k} {v}")
-        query = " ".join(query_parts)
+        if description:
+            query = description
+        else:
+            query_parts: list[str] = []
+            if issue_type:
+                query_parts.append(issue_type.replace("_", " "))
+            if plugin_id:
+                query_parts.append(f"plugin {plugin_id}")
+            if error_log:
+                query_parts.append(str(error_log))
+            for k, v in metadata.items():
+                if isinstance(v, (str, int)):
+                    query_parts.append(f"{k} {v}")
+            query = " ".join(query_parts)
 
         skills = self.librarian.find_skill(query)
         if skills:

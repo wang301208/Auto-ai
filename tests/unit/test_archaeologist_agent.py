@@ -79,6 +79,7 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
                 f'  File "{source_file}", line 1, in <module>'
             ),
             "commit": "abc123",
+            "description": "runtime error",
             "issue_type": "bug",
         }
         message_queue.publish(
@@ -151,6 +152,7 @@ def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None
                 f'  File "{source_file}", line 2, in <module>'
             ),
             "dependencies": {"sample_dep": {"new_version": "2.0"}},
+            "description": "dependency update",
             "issue_type": "dependency_update",
         }
         message_queue.publish(
@@ -182,6 +184,7 @@ def test_on_issue_detected_recommends_existing_skill() -> None:
             "plugin": "test_plugin",
             "issue_type": "bug",
             "error_log": "runtime error",
+            "description": "runtime error",
         }
         message_queue.publish(
             EventMessage(
@@ -207,6 +210,7 @@ def test_on_issue_detected_recommends_new_skill_when_none_found() -> None:
             "plugin": "test_plugin",
             "issue_type": "bug",
             "error_log": "runtime error",
+            "description": "runtime error",
         }
         message_queue.publish(
             EventMessage(

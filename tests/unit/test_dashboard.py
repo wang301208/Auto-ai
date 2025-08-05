@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from autogpt.dashboard import create_dashboard_app
 from autogpt.event_bus import (
@@ -18,7 +19,7 @@ def test_dashboard_tracks_events() -> None:
 
     event = EventMessage(
         event_type="ISSUE_DETECTED",
-        payload={"issue_id": "42", "issue_type": "bug"},
+        payload={"issue_id": "42", "issue_type": "bug", "description": "test bug"},
         source_agent="tester",
     )
     mq.publish(event)
@@ -51,7 +52,11 @@ def test_dashboard_streams_events_and_updates_state() -> None:
         events = [
             EventMessage(
                 event_type="ISSUE_DETECTED",
-                payload={"issue_id": "1", "issue_type": "bug"},
+                payload={
+                    "issue_id": "1",
+                    "issue_type": "bug",
+                    "description": "test bug",
+                },
                 source_agent="tester",
             ),
             EventMessage(
@@ -87,7 +92,7 @@ def test_dashboard_handles_missing_issue_id() -> None:
 
     event = EventMessage(
         event_type="ISSUE_DETECTED",
-        payload={"issue_type": "bug"},
+        payload={"issue_type": "bug", "description": "test bug"},
         source_agent="tester",
     )
     mq.publish(event)
@@ -115,7 +120,7 @@ def test_stream_removes_disconnected_clients() -> None:
         mq.publish(
             EventMessage(
                 event_type="ISSUE_DETECTED",
-                payload={"issue_type": "bug"},
+                payload={"issue_type": "bug", "description": "test bug"},
                 source_agent="tester",
             )
         )
@@ -124,13 +129,13 @@ def test_stream_removes_disconnected_clients() -> None:
         assert len(subscribers) == 0
 
 
-def test_dashboard_persists_events(tmp_path) -> None:
+def test_dashboard_persists_events(tmp_path: Path) -> None:
     db_file = tmp_path / "events.db"
     mq = MessageQueue()
     create_dashboard_app(mq, db_path=db_file)
     event = EventMessage(
         event_type="ISSUE_DETECTED",
-        payload={"issue_id": "7", "issue_type": "bug"},
+        payload={"issue_id": "7", "issue_type": "bug", "description": "test bug"},
         source_agent="tester",
     )
     mq.publish(event)

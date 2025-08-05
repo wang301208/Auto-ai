@@ -45,6 +45,38 @@ DEPLOYMENT_FAILED = "DEPLOYMENT_FAILED"
 
 
 @dataclass(kw_only=True)
+class IssueDetected(EventMessage):
+    """Schema for :data:`ISSUE_DETECTED` events.
+
+    Expected payload fields:
+        issue_type: Categorisation such as ``"bug"`` or ``"dependency_update"``.
+        plugin: Identifier of the emitting component.
+        description: Human-readable summary of the issue.
+        error_log: Optional log snippet or message describing the problem.
+        metadata: Additional context like ``file``, ``line`` or ``commit``.
+    """
+
+    issue_type: str
+    plugin: str | None = None
+    description: str | None = None
+    error_log: str | None = None
+    metadata: dict[str, Any] | None = None
+    event_type: str = field(init=False, default=ISSUE_DETECTED)
+    payload: dict[str, Any] | str | None = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.payload = {
+            "issue_type": self.issue_type,
+            "plugin": self.plugin,
+            "description": self.description,
+            "error_log": self.error_log,
+        }
+        if self.metadata:
+            self.payload.update(self.metadata)
+        self.payload = {k: v for k, v in self.payload.items() if v is not None}
+
+
+@dataclass(kw_only=True)
 class DiagnosisComplete(EventMessage):
     """Schema for :data:`DIAGNOSIS_COMPLETE` events."""
 
@@ -201,6 +233,7 @@ class DeploymentFailed(EventMessage):
 
 __all__ = [
     "EventMessage",
+    "IssueDetected",
     "DiagnosisComplete",
     "CodeFixProposed",
     "HumanApprovalRequired",
