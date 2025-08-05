@@ -7,6 +7,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Dict, List, Optional
 
 from autogpt.config import Config
@@ -169,7 +170,9 @@ class SkillLibrary:
             )
         return skill_dir
 
-    def _git_commit(self, path: Path, message: str) -> None:
+    def _git_commit(
+        self, path: Path, message: str, branch_name: str | None = None
+    ) -> None:
         repo = path.resolve()
         while repo != repo.parent and not (repo / ".git").exists():
             repo = repo.parent
@@ -178,9 +181,29 @@ class SkillLibrary:
         rel = path.resolve().relative_to(repo)
         try:
             subprocess.run(["git", "add", str(rel)], cwd=repo, check=True)
-            subprocess.run(["git", "commit", "-m", message], cwd=repo, check=False)
-        except Exception:
-            pass
+            commit_proc = subprocess.run(
+                ["git", "commit", "-m", message], cwd=repo, check=False
+            )
+            if commit_proc.returncode != 0:
+                return
+            if branch_name is None:
+                branch_name = getattr(self.config, "git_branch", None)
+            if branch_name is None:
+                branch_name = subprocess.run(
+                    ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                    cwd=repo,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                ).stdout.strip()
+            from autogpt.commands.git_operations import git_push
+
+            agent = SimpleNamespace(config=self.config)
+            result = git_push(str(repo), branch_name, agent)
+            if isinstance(result, str) and result.startswith("Error"):
+                print(result)
+        except Exception as e:
+            print(f"Error: {e}")
 
     # ------------------------------------------------------------------
     def add_skill(
