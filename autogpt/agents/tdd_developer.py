@@ -19,14 +19,27 @@ from autogpt.event_bus import (
     EventMessage,
     MessageQueue,
 )
+from autogpt.skills.librarian import LibrarianAgent
 
 
 class TDDDeveloper:
-    """Agent that creates failing tests and proposes fixes based on diagnostics."""
+    """Agent that creates failing tests and proposes fixes based on diagnostics.
 
-    def __init__(self, agent: Agent, message_queue: MessageQueue) -> None:
+    Args:
+        agent: The ``Agent`` used for executing commands.
+        message_queue: Queue for communication with other agents.
+        librarian: Optional ``LibrarianAgent`` for registering new skills.
+    """
+
+    def __init__(
+        self,
+        agent: Agent,
+        message_queue: MessageQueue,
+        librarian: LibrarianAgent | None = None,
+    ) -> None:
         self.agent = agent
         self.message_queue = message_queue
+        self.librarian = librarian
         self.message_queue.subscribe(DIAGNOSIS_COMPLETE, self._on_diagnosis_complete)
 
     # ------------------------------------------------------------------
@@ -164,6 +177,8 @@ class TDDDeveloper:
             write_to_file(
                 str(skill_dir / "skill.json"), json.dumps(metadata, indent=2), self.agent
             )
+            if self.librarian:
+                self.librarian.add_skill(metadata, str(skill_dir / "main.py"))
             git_commit(repo_path, f"Add new skill {name}", self.agent)
             try:
                 commit_hash = Repo(repo_path).head.commit.hexsha

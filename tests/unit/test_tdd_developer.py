@@ -238,7 +238,8 @@ def test_tdd_developer_adds_new_skill(
 ) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
-    TDDDeveloper(agent=agent, message_queue=message_queue)
+    librarian = mocker.Mock()
+    TDDDeveloper(agent=agent, message_queue=message_queue, librarian=librarian)
 
     create_branch = mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
     checkout = mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
@@ -277,6 +278,14 @@ def test_tdd_developer_adds_new_skill(
     write_file.assert_any_call(str(skill_dir / "main.py"), "def run(): pass", agent)
     write_file.assert_any_call(str(skill_dir / "skill.json"), ANY, agent)
     assert write_file.call_count == 2
+    expected_metadata = {
+        "skill_name": "awesome",
+        "version": "1.0",
+        "description": "",
+        "tags": [],
+        "parameters": {},
+    }
+    librarian.add_skill.assert_called_once_with(expected_metadata, str(skill_dir / "main.py"))
     commit.assert_called_once_with(repo_path, "Add new skill awesome", agent)
     run.assert_not_called()
     assert len(received) == 1
