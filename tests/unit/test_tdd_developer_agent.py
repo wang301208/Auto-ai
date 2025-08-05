@@ -11,25 +11,36 @@ agents_pkg.__path__ = ["autogpt/agents"]
 sys.modules.setdefault("autogpt.agents", agents_pkg)
 
 agent_stub = types.ModuleType("autogpt.agents.agent")
+
+
 class Agent:  # minimal stub to satisfy imports
     pass
+
+
 agent_stub.Agent = Agent
 sys.modules.setdefault("autogpt.agents.agent", agent_stub)
 
 # Stub memory and text processing modules to avoid heavy dependencies
 memory_pkg = types.ModuleType("autogpt.memory")
 vector_stub = types.ModuleType("autogpt.memory.vector")
+
+
 class MemoryItem:  # minimal stub
     pass
+
+
 class VectorMemory:  # minimal stub
     pass
+
+
 vector_stub.MemoryItem = MemoryItem
 vector_stub.VectorMemory = VectorMemory
 memory_pkg.vector = vector_stub
 sys.modules.setdefault("autogpt.memory", memory_pkg)
 sys.modules.setdefault("autogpt.memory.vector", vector_stub)
 sys.modules.setdefault(
-    "autogpt.memory.vector.providers", types.ModuleType("autogpt.memory.vector.providers")
+    "autogpt.memory.vector.providers",
+    types.ModuleType("autogpt.memory.vector.providers"),
 )
 
 processing_stub = types.ModuleType("autogpt.processing.text")
@@ -63,11 +74,18 @@ def test_tdd_developer_agent_flow(tmp_path, mocker):
     subscribed_event, callback = message_queue.subscribe.call_args[0]
     assert subscribed_event == DIAGNOSIS_COMPLETE
 
-    create_branch = mocker.patch.object(tdd_module, "git_create_branch", return_value="")
+    create_branch = mocker.patch.object(
+        tdd_module, "git_create_branch", return_value=""
+    )
     checkout = mocker.patch.object(tdd_module, "git_checkout", return_value="")
     create_test = mocker.patch.object(tdd_module, "create_test_file", return_value="")
     run = mocker.patch.object(
-        tdd_module, "run_tests", side_effect=["1 failed", "1 passed"]
+        tdd_module,
+        "run_tests",
+        side_effect=[
+            {"successes": 0, "failures": 1, "errors": 0, "logs": "1 failed"},
+            {"successes": 1, "failures": 0, "errors": 0, "logs": "1 passed"},
+        ],
     )
     commit = mocker.patch.object(tdd_module, "git_commit", return_value="")
     mocker.patch.object(tdd_module, "Repo", side_effect=Exception("git error"))
@@ -91,10 +109,12 @@ def test_tdd_developer_agent_flow(tmp_path, mocker):
     )
 
     assert run.call_count == 2
-    run.assert_has_calls([
-        mocker.call(str(expected_test_file), agent),
-        mocker.call(repo_path, agent),
-    ])
+    run.assert_has_calls(
+        [
+            mocker.call(str(expected_test_file), agent),
+            mocker.call(repo_path, agent),
+        ]
+    )
 
     commit.assert_called_once_with(repo_path, "Fix issue 123", agent)
 

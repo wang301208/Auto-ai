@@ -1,10 +1,8 @@
 import importlib
 import sys
 import types
-
 from pathlib import Path
 
-import pytest
 from pytest_mock import MockerFixture
 
 from autogpt.event_bus import (
@@ -51,14 +49,25 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
     QAAgent(agent=agent, message_queue=message_queue)
 
     assert message_queue.subscribe.call_count == 2
-    callbacks = {call.args[0]: call.args[1] for call in message_queue.subscribe.call_args_list}
+    callbacks = {
+        call.args[0]: call.args[1] for call in message_queue.subscribe.call_args_list
+    }
     assert set(callbacks.keys()) == {CODE_FIX_PROPOSED, APPROVAL_GRANTED}
 
     on_code_fix_proposed = callbacks[CODE_FIX_PROPOSED]
     on_approval_granted = callbacks[APPROVAL_GRANTED]
 
     git_checkout = mocker.patch.object(qa_module, "git_checkout")
-    run_tests = mocker.patch.object(qa_module, "run_tests", return_value="tests passed")
+    run_tests = mocker.patch.object(
+        qa_module,
+        "run_tests",
+        return_value={
+            "successes": 1,
+            "failures": 0,
+            "errors": 0,
+            "logs": "tests passed",
+        },
+    )
     repo_mock = mocker.MagicMock()
     repo_mock.git.checkout.return_value = ""
     repo_mock.git.merge.return_value = ""
@@ -79,12 +88,16 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
 
     message_queue.publish.reset_mock()
 
-    approval_event = ApprovalGranted(branch_name="fix/123", commit_hash="abc", summary="Fix bug")
+    approval_event = ApprovalGranted(
+        branch_name="fix/123", commit_hash="abc", summary="Fix bug"
+    )
     on_approval_granted(approval_event)
 
     repo_mock.git.checkout.assert_called_once_with("main")
     repo_mock.git.merge.assert_called_once_with("fix/123")
-    subprocess_run.assert_called_once_with(["bash", "scripts/deploy.sh"], cwd=str(tmp_path), check=False)
+    subprocess_run.assert_called_once_with(
+        ["bash", "scripts/deploy.sh"], cwd=str(tmp_path), check=False
+    )
     message_queue.publish.assert_called_once()
     resolved_event = message_queue.publish.call_args[0][0]
     assert isinstance(resolved_event, IssueResolved)

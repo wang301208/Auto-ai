@@ -10,7 +10,10 @@ def test_run_tests_success(workspace, agent: Agent):
         f.write("def test_example():\n    assert True\n")
 
     result = run_tests(str(test_file), agent=agent)
-    assert "1 passed" in result
+    assert result["successes"] == 1
+    assert result["failures"] == 0
+    assert result["errors"] == 0
+    assert "1 passed" in result["logs"]
 
 
 def test_run_tests_invalid_path(agent: Agent):
