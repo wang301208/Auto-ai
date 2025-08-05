@@ -69,7 +69,6 @@ def test_archaeologist_agent_diagnosis_complete(
     tmp_path: Path, event_type: str
 ) -> None:
     message_queue = MessageQueue()
-    Archaeologist(message_queue)
 
     received: list[DiagnosisComplete] = []
     message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -92,6 +91,7 @@ def test_archaeologist_agent_diagnosis_complete(
         return SimpleNamespace(stdout="", stderr="")
 
     with (
+        patch("autogpt.skills.library.get_embedding", lambda _t, _c: [0.1, 0.2, 0.3]),
         patch.object(arch_module.subprocess, "run", side_effect=fake_run) as mock_run,
         patch.object(dep_module.metadata, "version", return_value="1.0"),
         patch.object(
@@ -112,10 +112,12 @@ def test_archaeologist_agent_diagnosis_complete(
                     "skill_name": "sample_skill",
                     "version": "1",
                     "parameters": {"path": "str"},
+                    "description": "Tool that inspects sample files",
                 }
             ],
         ),
     ):
+        Archaeologist(message_queue)
         payload = {
             "plugin": "test_plugin",
             "error_log": (
@@ -144,6 +146,7 @@ def test_archaeologist_agent_diagnosis_complete(
         in diag.actionable_recommendations
     )
     assert "skill_sample_skill_v1" in diag.actionable_recommendations
+    assert "Tool that inspects sample files" in diag.actionable_recommendations
     assert diag.details is not None
     details = cast(dict[str, Any], diag.details)
     blame = details["blame"]
@@ -164,7 +167,6 @@ def test_archaeologist_agent_uses_dependency_new_version(
     tmp_path: Path, event_type: str
 ) -> None:
     message_queue = MessageQueue()
-    Archaeologist(message_queue)
 
     received: list[DiagnosisComplete] = []
     message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -191,11 +193,13 @@ def test_archaeologist_agent_uses_dependency_new_version(
         return ""
 
     with (
+        patch("autogpt.skills.library.get_embedding", lambda _t, _c: [0.1, 0.2, 0.3]),
         patch.object(arch_module.subprocess, "run", side_effect=fake_run),
         patch.object(dep_module.metadata, "version", return_value="1.0"),
         patch.object(dep_module, "fetch_release_notes", side_effect=fake_fetch),
         patch.object(arch_module.LibrarianAgent, "find_skill", return_value=[]),
     ):
+        Archaeologist(message_queue)
         payload = {
             "plugin": "test_plugin",
             "error_log": (
@@ -229,8 +233,20 @@ def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
 
     with patch.object(arch_module, "LibrarianAgent") as MockLib:
         MockLib.return_value.find_skill.return_value = [
-            {"skill_name": "mock_low", "version": "1", "parameters": {}, "score": 0.2},
-            {"skill_name": "mock_high", "version": "2", "parameters": {}, "score": 0.9},
+            {
+                "skill_name": "mock_low",
+                "version": "1",
+                "parameters": {},
+                "score": 0.2,
+                "description": "Lower score skill",
+            },
+            {
+                "skill_name": "mock_high",
+                "version": "2",
+                "parameters": {},
+                "score": 0.9,
+                "description": "Higher score skill",
+            },
         ]
         Archaeologist(message_queue)
 
@@ -247,6 +263,7 @@ def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
     assert len(received) == 1
     diag = received[0]
     assert "skill_mock_high_v2" in diag.actionable_recommendations
+    assert "Higher score skill" in diag.actionable_recommendations
     assert diag.details is not None
     details = cast(dict[str, Any], diag.details)
     assert details["recommended_skill"] == {
@@ -255,8 +272,20 @@ def test_on_issue_detected_recommends_existing_skill(event_type: str) -> None:
         "parameters": {},
     }
     assert details["skill_search"] == [
-        {"skill_name": "mock_low", "version": "1", "parameters": {}, "score": 0.2},
-        {"skill_name": "mock_high", "version": "2", "parameters": {}, "score": 0.9},
+        {
+            "skill_name": "mock_low",
+            "version": "1",
+            "parameters": {},
+            "score": 0.2,
+            "description": "Lower score skill",
+        },
+        {
+            "skill_name": "mock_high",
+            "version": "2",
+            "parameters": {},
+            "score": 0.9,
+            "description": "Higher score skill",
+        },
     ]
 
 
