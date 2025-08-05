@@ -8,6 +8,8 @@ from typing import Any
 
 from git import Repo
 
+import logging
+
 from autogpt.agents.agent import Agent
 from autogpt.commands.git_operations import git_checkout, git_clone
 from autogpt.commands.testing import run_tests
@@ -23,6 +25,8 @@ from autogpt.event_bus import (
     TestsFailed,
 )
 
+
+logger = logging.getLogger(__name__)
 
 class QAAgent:
     """Agent that verifies proposed fixes and merges them after approval."""
@@ -52,7 +56,11 @@ class QAAgent:
         with tempfile.TemporaryDirectory() as tmp_repo_path:
             git_clone(repo_url, tmp_repo_path, self.agent)
             git_checkout(tmp_repo_path, branch, self.agent)
-            test_result = run_tests(tmp_repo_path, self.agent)
+            try:
+                test_result = run_tests(tmp_repo_path, self.agent)
+            except Exception:
+                logger.exception("Failed to run tests for branch %s", branch)
+                return
 
         if (
             test_result.get("status") == "passed"

@@ -6,9 +6,13 @@ import argparse
 import json
 from pathlib import Path
 
+import logging
+
 from autogpt.config import Config
 from autogpt.skills import LibrarianAgent
 
+
+logger = logging.getLogger(__name__)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Interact with the librarian agent")
@@ -35,10 +39,13 @@ def main() -> None:
     elif args.command == "add":
         with Path(args.metadata).open("r", encoding="utf-8") as f:
             metadata = json.load(f)
-        if agent.add_skill(metadata, args.code):
-            print("Skill added successfully")
-        else:
-            print("Failed to add skill")
+        try:
+            if agent.add_skill(metadata, args.code):
+                print("Skill added successfully")
+            else:
+                print("Failed to add skill")
+        except Exception:
+            logger.exception("Failed to add skill")
     else:
         parser.print_help()
 
