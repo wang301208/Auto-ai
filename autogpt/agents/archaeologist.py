@@ -49,7 +49,9 @@ class Archaeologist:
         analysis: dict[str, Any] = {
             "checkout": self._checkout_commit(metadata.get("commit")),
             "blame": self._git_blame(metadata.get("file"), metadata.get("line")),
-            "dependencies": self._review_dependencies(metadata.get("file")),
+            "dependencies": self._review_dependencies(
+                metadata.get("file"), metadata.get("dependencies")
+            ),
         }
 
         recommendations = self._recommendations(analysis)
@@ -169,7 +171,9 @@ class Archaeologist:
         end = min(line + span, len(lines))
         return [{"line": i + 1, "content": lines[i]} for i in range(start, end)]
 
-    def _review_dependencies(self, file: str | None) -> list[dict[str, Any]]:
+    def _review_dependencies(
+        self, file: str | None, dep_info: dict[str, Any] | None = None
+    ) -> list[dict[str, Any]]:
         """Analyze imported modules from ``file`` for compatibility issues."""
 
         if not file or not Path(file).exists():
@@ -187,9 +191,18 @@ class Archaeologist:
             elif isinstance(node, ast.ImportFrom) and node.module:
                 deps.append(node.module.split(".")[0])
 
+        dep_info = dep_info or {}
         analyses: list[dict[str, Any]] = []
         for dep in sorted(set(deps)):
-            analyses.append(analyze_dependency(dep, source_path))
+            info = dep_info.get(dep)
+            new_version = None
+            if isinstance(info, dict):
+                new_version = info.get("new_version")
+            elif isinstance(info, str):
+                new_version = info
+            analyses.append(
+                analyze_dependency(dep, source_path, new_version=new_version)
+            )
         return analyses
 
     def _recommendations(self, analysis: dict[str, Any]) -> str:

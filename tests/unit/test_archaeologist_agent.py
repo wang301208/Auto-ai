@@ -95,3 +95,54 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
     assert blame["text"].startswith("^123")
     assert diag.details["context"][0]["content"].strip() == "import sample_dep"
     assert diag.details["dependencies"][0]["dependency"] == "sample_dep"
+
+
+def test_archaeologist_agent_uses_dependency_new_version(tmp_path: Path) -> None:
+    message_queue = MessageQueue()
+    Archaeologist(message_queue)
+
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    source_file = tmp_path / "mod.py"
+    source_file.write_text("import sample_dep\nsample_dep.old_func()\n")
+
+    def fake_run(
+        cmd: list[str], capture_output: bool = True, text: bool = True
+    ) -> SimpleNamespace:
+        if cmd[:2] == ["git", "blame"]:
+            return SimpleNamespace(stdout="^123 (user 2023-01-01 1) line\n", stderr="")
+        return SimpleNamespace(stdout="", stderr="")
+
+    called_versions: list[str | None] = []
+
+    def fake_fetch(package: str, version: str | None) -> str:
+        called_versions.append(version)
+        if version == "2.0":
+            return "old_func removed"
+        return ""
+
+    with (
+        patch.object(arch_module.subprocess, "run", side_effect=fake_run),
+        patch.object(dep_module.metadata, "version", return_value="1.0"),
+        patch.object(dep_module, "fetch_release_notes", side_effect=fake_fetch),
+    ):
+        payload = {
+            "plugin": "test_plugin",
+            "error_log": (
+                "Traceback (most recent call last):\n"
+                f'  File "{source_file}", line 2, in <module>'
+            ),
+            "dependencies": {"sample_dep": {"new_version": "2.0"}},
+        }
+        message_queue.publish(
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
+        )
+
+    assert len(received) == 1
+    dep_analysis = received[0].details["dependencies"][0]
+    assert called_versions == ["2.0"]
+    assert dep_analysis["new_version"] == "2.0"
+    assert any("sample_dep 2.0" in f for f in dep_analysis["findings"])
