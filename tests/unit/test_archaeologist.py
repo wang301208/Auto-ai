@@ -5,11 +5,11 @@ from pathlib import Path
 
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
+    ISSUE_DETECTED,
     DiagnosisComplete,
     EventBus,
     EventMessage,
     MessageQueue,
-    ISSUE_DETECTED,
 )
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
@@ -46,6 +46,11 @@ def test_archaeologist_handles_issue(tmp_path: Path) -> None:
     diag = received[0]
     assert "test_plugin" in diag.summary
     assert isinstance(diag.actionable_recommendations, str)
+    assert diag.details is not None
+    assert diag.details["blame"]["commit"]
+    assert diag.details["blame"]["author"]
+    assert any(c["line"] == 10 for c in diag.details["context"])
+    assert isinstance(diag.details["dependencies"], list)
 
 
 def test_archaeologist_parses_python_traceback(tmp_path: Path) -> None:

@@ -79,6 +79,7 @@ class EventBus:
                     actionable_recommendations=str(
                         payload_obj.get("actionable_recommendations", "")
                     ),
+                    details=payload_obj.get("details"),
                     source_agent=source_agent,
                     timestamp=ts,
                 )
