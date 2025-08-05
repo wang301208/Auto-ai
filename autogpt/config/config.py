@@ -101,6 +101,11 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     redis_password: str = ""
     wipe_redis_on_start: bool = True
 
+    ####################
+    # Skill Library DB #
+    ####################
+    skill_db_provider: str = "memory"
+
     ############
     # Commands #
     ############
@@ -319,6 +324,7 @@ class ConfigBuilder(Configurable[Config]):
             "redis_host": os.getenv("REDIS_HOST"),
             "redis_password": os.getenv("REDIS_PASSWORD"),
             "wipe_redis_on_start": os.getenv("WIPE_REDIS_ON_START", "True") == "True",
+            "skill_db_provider": os.getenv("SKILL_DB_PROVIDER"),
             "plugins_dir": os.getenv("PLUGINS_DIR"),
             "plugins_config_file": os.getenv(
                 "PLUGINS_CONFIG_FILE", PLUGINS_CONFIG_FILE

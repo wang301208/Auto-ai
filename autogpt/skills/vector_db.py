@@ -3,8 +3,10 @@ from __future__ import annotations  # noqa: F401
 """Vector database provider abstraction for skill embeddings."""
 
 from abc import ABC, abstractmethod
+from pathlib import Path
 from typing import Dict, List, Tuple
 
+import chromadb
 import numpy as np
 
 Embedding = List[float]
@@ -29,11 +31,15 @@ class VectorDBProvider(ABC):
     def get(self, key: str) -> Tuple[Embedding, Dict] | None:
         """Return the stored embedding and metadata for ``key`` if present."""
 
+    def clear(self) -> None:  # pragma: no cover - optional method
+        """Remove all entries from the database."""
+        raise NotImplementedError
+
 
 class MemoryVectorDB(VectorDBProvider):
     """Simple in-memory vector database implementation."""
 
-    def __init__(self) -> None:
+    def __init__(self, *_args, **_kwargs) -> None:
         self._index: Dict[str, Tuple[Embedding, Dict]] = {}
 
     def add(self, key: str, embedding: Embedding, metadata: Dict | None = None) -> None:
@@ -62,3 +68,54 @@ class MemoryVectorDB(VectorDBProvider):
 
     def get(self, key: str) -> Tuple[Embedding, Dict] | None:
         return self._index.get(key)
+
+    def clear(self) -> None:
+        self._index.clear()
+
+
+class ChromaVectorDB(VectorDBProvider):
+    """`VectorDBProvider` using a persistent ChromaDB collection."""
+
+    def __init__(self, persist_path: Path, collection_name: str = "skills") -> None:
+        self.persist_path = Path(persist_path)
+        self._client = chromadb.PersistentClient(path=str(self.persist_path))
+        self._collection = self._client.get_or_create_collection(collection_name)
+
+    def add(self, key: str, embedding: Embedding, metadata: Dict | None = None) -> None:
+        # chromadb doesn't overwrite existing ids on add, so delete first
+        try:
+            self._collection.delete(ids=[key])
+        except Exception:
+            pass
+        self._collection.add(
+            ids=[key], embeddings=[embedding], metadatas=[metadata or {}]
+        )
+
+    def delete(self, key: str) -> None:
+        self._collection.delete(ids=[key])
+
+    def query(self, embedding: Embedding, top_k: int = 5) -> List[Tuple[str, float]]:
+        if top_k <= 0:
+            return []
+        result = self._collection.query(
+            query_embeddings=[embedding],
+            n_results=top_k,
+            include=["distances"],
+        )
+        ids = result.get("ids", [[]])[0]
+        dists = result.get("distances", [[]])[0]
+        scores = [1.0 / (1.0 + d) for d in dists]
+        return list(zip(ids, scores))
+
+    def get(self, key: str) -> Tuple[Embedding, Dict] | None:
+        result = self._collection.get(ids=[key], include=["embeddings", "metadatas"])
+        if not result.get("ids"):
+            return None
+        embedding = result["embeddings"][0]
+        metadata = result["metadatas"][0]
+        return embedding, metadata
+
+    def clear(self) -> None:
+        ids = self._collection.get()["ids"]
+        if ids:
+            self._collection.delete(ids=ids)

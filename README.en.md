@@ -99,6 +99,14 @@ Remove the leading `#` to enable optional settings.
 For Azure OpenAI, set `USE_AZURE=true` and copy `azure.yaml.template` to
 `azure.yaml`, then fill in the required fields.
 
+### Skill library vector DB
+
+The skill library stores skill embeddings in a vector database.
+Select the backend with `SKILL_DB_PROVIDER` in `.env`:
+
+- `memory` (default) — in-memory only;
+- `chroma` — install with `pip install chromadb` to persist data in `skill_library/chroma`.
+
 ## Running the app
 
 ```bash
