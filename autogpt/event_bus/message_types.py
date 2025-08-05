@@ -44,6 +44,7 @@ class DiagnosisComplete(EventMessage):
 
     summary: str
     actionable_recommendations: str
+    details: dict[str, Any] | None = None
     event_type: str = field(init=False, default=DIAGNOSIS_COMPLETE)
     payload: dict[str, Any] | str | None = field(init=False)
 
@@ -51,6 +52,7 @@ class DiagnosisComplete(EventMessage):
         self.payload = {
             "summary": self.summary,
             "actionable_recommendations": self.actionable_recommendations,
+            "details": self.details,
         }
 
 

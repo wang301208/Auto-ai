@@ -9,10 +9,10 @@ from pathlib import Path
 from typing import Any, Iterator
 
 from autogpt.event_bus import (
+    ISSUE_DETECTED,
     DiagnosisComplete,
     EventMessage,
     MessageQueue,
-    ISSUE_DETECTED,
 )
 
 from .archaeologist_dependency import analyze_dependency
@@ -46,7 +46,7 @@ class Archaeologist:
             if "line" not in metadata and line is not None:
                 metadata["line"] = line
 
-        analysis = {
+        analysis: dict[str, Any] = {
             "checkout": self._checkout_commit(metadata.get("commit")),
             "blame": self._git_blame(metadata.get("file"), metadata.get("line")),
             "dependencies": self._review_dependencies(metadata.get("file")),
@@ -64,10 +64,24 @@ class Archaeologist:
             summary_parts.append(f"at {location}")
         summary = " ".join(summary_parts)
 
+        blame_info = self._parse_blame_output(analysis.get("blame"))
+        context = []
+        if metadata.get("file") and metadata.get("line") is not None:
+            context = self._source_context(metadata["file"], metadata["line"])
+
+        details = {
+            "metadata": metadata,
+            "error_log": error_log,
+            "blame": blame_info,
+            "context": context,
+            "dependencies": analysis.get("dependencies"),
+        }
+
         self.message_queue.publish(
             DiagnosisComplete(
                 summary=summary,
                 actionable_recommendations=recommendations,
+                details=details,
                 source_agent="archaeologist",
             )
         )
@@ -123,6 +137,37 @@ class Archaeologist:
         cmd.append(file)
         result = subprocess.run(cmd, capture_output=True, text=True)
         return result.stdout.strip()
+
+    def _parse_blame_output(self, blame: str | None) -> dict[str, Any] | None:
+        """Parse commit hash and author from ``git blame`` output."""
+
+        if not blame:
+            return None
+        first_line = blame.splitlines()[0]
+        match = re.match(
+            r"^(?P<commit>\S+)\s+\((?P<author>.+?)\s+\d{4}-\d{2}-\d{2}",
+            first_line,
+        )
+        if match:
+            return {
+                "commit": match.group("commit"),
+                "author": match.group("author").strip(),
+                "text": blame,
+            }
+        return {"text": blame}
+
+    def _source_context(
+        self, file: str, line: int, span: int = 2
+    ) -> list[dict[str, Any]]:
+        """Return source lines surrounding ``line`` from ``file``."""
+
+        try:
+            lines = Path(file).read_text().splitlines()
+        except Exception:
+            return []
+        start = max(line - span - 1, 0)
+        end = min(line + span, len(lines))
+        return [{"line": i + 1, "content": lines[i]} for i in range(start, end)]
 
     def _review_dependencies(self, file: str | None) -> list[dict[str, Any]]:
         """Analyze imported modules from ``file`` for compatibility issues."""

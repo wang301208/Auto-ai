@@ -7,10 +7,10 @@ from unittest.mock import patch
 
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
+    ISSUE_DETECTED,
     DiagnosisComplete,
     EventMessage,
     MessageQueue,
-    ISSUE_DETECTED,
 )
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
@@ -35,7 +35,9 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
 
     commands: list[list[str]] = []
 
-    def fake_run(cmd, capture_output=True, text=True):
+    def fake_run(
+        cmd: list[str], capture_output: bool = True, text: bool = True
+    ) -> SimpleNamespace:
         commands.append(cmd)
         if cmd[:3] == ["git", "rev-parse", "--abbrev-ref"]:
             return SimpleNamespace(stdout="main\n", stderr="")
@@ -68,7 +70,9 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
             "commit": "abc123",
         }
         message_queue.publish(
-            EventMessage(event_type=ISSUE_DETECTED, payload=payload, source_agent="tester")
+            EventMessage(
+                event_type=ISSUE_DETECTED, payload=payload, source_agent="tester"
+            )
         )
 
     assert any(cmd[:2] == ["git", "checkout"] for cmd in commands)
@@ -80,4 +84,14 @@ def test_archaeologist_agent_diagnosis_complete(tmp_path: Path) -> None:
     diag = received[0]
     expected_summary = f"Diagnostics for plugin test_plugin at {source_file}:1"
     assert diag.summary == expected_summary
-    assert "Investigate compatibility issues in: sample_dep" in diag.actionable_recommendations
+    assert (
+        "Investigate compatibility issues in: sample_dep"
+        in diag.actionable_recommendations
+    )
+    assert diag.details is not None
+    blame = diag.details["blame"]
+    assert blame["commit"] == "^123"
+    assert blame["author"] == "user"
+    assert blame["text"].startswith("^123")
+    assert diag.details["context"][0]["content"].strip() == "import sample_dep"
+    assert diag.details["dependencies"][0]["dependency"] == "sample_dep"
