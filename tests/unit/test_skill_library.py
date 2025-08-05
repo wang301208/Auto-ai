@@ -1,10 +1,10 @@
 """Tests for :mod:`autogpt.skills.library`."""
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Dict, List
 
-import json
 import pytest
 
 from autogpt.config import Config
@@ -50,7 +50,19 @@ def test_skill_library_save_and_search(
 
     library = SkillLibrary(config, storage_path=storage, vector_db=vector_db)
 
-    library.add_skill("skill1", "1.0", "code1", {"a": 1}, "description1", ["tag1"])
+    library.add_skill(
+        "skill1",
+        "1.0",
+        "code1",
+        {"a": 1},
+        "description1",
+        ["tag1"],
+        dependencies_file="reqs1.txt",
+        entry_point="main:run",
+        return_type="int",
+        author_agent="agent1",
+        creation_timestamp="2024-01-01T00:00:00Z",
+    )
     library.add_skill("skill2", "1.0", "code2", {"b": 2}, "description2", ["tag2"])
 
     # Ensure skills are persisted and retrievable
@@ -60,10 +72,19 @@ def test_skill_library_save_and_search(
         meta = json.load(f)
     assert meta["skill_name"] == "skill1"
     assert meta["tags"] == ["tag1"]
-    assert library.get_skill("skill1", "1.0")
+    assert meta["dependencies_file"] == "reqs1.txt"
+    assert meta["entry_point"] == "main:run"
+    assert meta["return_type"] == "int"
+    assert meta["author_agent"] == "agent1"
+    assert meta["creation_timestamp"] == "2024-01-01T00:00:00Z"
+    skill1 = library.get_skill("skill1", "1.0")
+    assert skill1
+    assert skill1.metadata.entry_point == "main:run"
 
     # Reload from disk to verify save/load cycle
     new_library = SkillLibrary(config, storage_path=storage, vector_db=MemoryVectorDB())
+    reloaded = new_library.get_skill("skill1", "1.0")
+    assert reloaded and reloaded.metadata.author_agent == "agent1"
 
     results = new_library.search("description1", top_k=1)
     assert results and results[0].name == "skill1"
@@ -109,6 +130,7 @@ def test_skill_library_reindex_and_nested_loading(
                 "description": "description1",
                 "tags": ["tag1"],
                 "parameters": {},
+                "author_agent": "author3",
             }
         )
     )
@@ -127,11 +149,13 @@ def test_skill_library_reindex_and_nested_loading(
                 "description": "description2",
                 "tags": ["tag2"],
                 "parameters": {},
+                "creation_timestamp": "2024-02-02T00:00:00Z",
             }
         )
     )
 
     library.reindex()
-    assert library.get_skill("skill4", "1.0")
+    skill4 = library.get_skill("skill4", "1.0")
+    assert skill4 and skill4.metadata.creation_timestamp == "2024-02-02T00:00:00Z"
     results = library.search("description2", top_k=1)
     assert results and results[0].name == "skill4"

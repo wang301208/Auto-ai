@@ -30,10 +30,27 @@ def add(
     parameters: Dict,
     description: str,
     tags: List[str],
+    dependencies_file: str | None = None,
+    entry_point: str | None = None,
+    return_type: str | None = None,
+    author_agent: str | None = None,
+    creation_timestamp: str | None = None,
 ) -> Skill:
     """Add a new skill to the library."""
 
-    return get_library().add_skill(name, version, code, parameters, description, tags)
+    return get_library().add_skill(
+        name,
+        version,
+        code,
+        parameters,
+        description,
+        tags,
+        dependencies_file,
+        entry_point,
+        return_type,
+        author_agent,
+        creation_timestamp,
+    )
 
 
 def get(name: str, version: str) -> Optional[Skill]:
@@ -49,10 +66,27 @@ def update(
     parameters: Dict | None = None,
     description: str | None = None,
     tags: List[str] | None = None,
+    dependencies_file: str | None = None,
+    entry_point: str | None = None,
+    return_type: str | None = None,
+    author_agent: str | None = None,
+    creation_timestamp: str | None = None,
 ) -> Optional[Skill]:
     """Update an existing skill."""
 
-    return get_library().update_skill(name, version, code, parameters, description, tags)
+    return get_library().update_skill(
+        name,
+        version,
+        code,
+        parameters,
+        description,
+        tags,
+        dependencies_file,
+        entry_point,
+        return_type,
+        author_agent,
+        creation_timestamp,
+    )
 
 
 def delete(name: str, version: str) -> None:

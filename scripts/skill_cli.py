@@ -33,6 +33,11 @@ def add_skill(path: str) -> None:
         meta.get("parameters", {}),
         meta.get("description", ""),
         meta.get("tags", []),
+        meta.get("dependencies_file"),
+        meta.get("entry_point"),
+        meta.get("return_type"),
+        meta.get("author_agent"),
+        meta.get("creation_timestamp"),
     )
     tag = f"skill-{skill.name}-v{skill.version}"
     try:
