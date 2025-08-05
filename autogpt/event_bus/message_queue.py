@@ -2,6 +2,7 @@ from __future__ import annotations
 
 """Lightweight publish/subscribe message queue with optional backend."""
 
+import logging
 from collections import defaultdict
 from typing import TYPE_CHECKING, Callable, DefaultDict, Iterable
 
@@ -24,9 +25,16 @@ class MessageQueue:
 
     def __init__(self, event_bus: "EventBus" | None = None) -> None:
         self.event_bus = event_bus
-        self._handlers: DefaultDict[
-            str, list[Callable[[EventMessage], None]]
-        ] = defaultdict(list)
+        self._handlers: DefaultDict[str, list[Callable[[EventMessage], None]]] = (
+            defaultdict(list)
+        )
+
+        if not _HAS_PUBSUB:
+            logging.getLogger(__name__).warning(
+                "PyPubSub not installed; using in-process fallback. "
+                "Install 'pypubsub' or configure an external message queue for "
+                "inter-agent communication."
+            )
 
     # -- Core API -----------------------------------------------------
     def publish(self, event: EventMessage) -> None:

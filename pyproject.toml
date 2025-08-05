@@ -101,6 +101,10 @@ test = [
     "pytest-xdist",
 ]
 
+pubsub = [
+    "pypubsub",
+]
+
 alphaevolve = [
     "flask",
 ]
