@@ -44,17 +44,21 @@ class QAAgent:
         if not branch or not repo_path:
             return
 
-        repo_url = Repo(repo_path).remotes.origin.url
+        repo = Repo(repo_path)
+        repo_url = repo.remotes.origin.url
 
         with tempfile.TemporaryDirectory() as tmp_repo_path:
             git_clone(repo_url, tmp_repo_path, self.agent)
             git_checkout(tmp_repo_path, branch, self.agent)
             test_result = run_tests(tmp_repo_path, self.agent)
 
+        diff = repo.git.diff("main", branch)
+
         self.message_queue.publish(
             HumanApprovalRequired(
                 branch_name=branch,
                 test_output=test_result["logs"],
+                diff=diff,
                 summary=event.summary,
                 source_agent="qa_agent",
             )

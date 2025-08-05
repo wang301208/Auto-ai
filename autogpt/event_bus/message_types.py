@@ -87,11 +87,13 @@ class HumanApprovalRequired(EventMessage):
     Expected payload fields:
         branch_name: Branch containing the proposed fix.
         test_output: Output from the verification test run.
+        diff: Diff between ``main`` and the proposed branch.
         summary: Short description of the proposed fix.
     """
 
     branch_name: str
     test_output: str
+    diff: str
     summary: str
     event_type: str = field(init=False, default=HUMAN_APPROVAL_REQUIRED)
     payload: dict[str, Any] | str | None = field(init=False)
@@ -100,6 +102,7 @@ class HumanApprovalRequired(EventMessage):
         self.payload = {
             "branch_name": self.branch_name,
             "test_output": self.test_output,
+            "diff": self.diff,
             "summary": self.summary,
         }
 

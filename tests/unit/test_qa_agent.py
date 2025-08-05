@@ -26,16 +26,16 @@ class Agent:  # minimal stub to satisfy imports
     pass
 
 
-agent_stub.Agent = Agent
+agent_stub.Agent = Agent  # type: ignore[attr-defined]
 sys.modules.setdefault("autogpt.agents.agent", agent_stub)
 
 testing_stub = types.ModuleType("autogpt.commands.testing")
-testing_stub.run_tests = lambda *a, **k: ""
+testing_stub.run_tests = lambda *a, **k: ""  # type: ignore[attr-defined]
 sys.modules.setdefault("autogpt.commands.testing", testing_stub)
 
 git_ops_stub = types.ModuleType("autogpt.commands.git_operations")
-git_ops_stub.git_checkout = lambda *a, **k: ""
-git_ops_stub.git_clone = lambda *a, **k: ""
+git_ops_stub.git_checkout = lambda *a, **k: ""  # type: ignore[attr-defined]
+git_ops_stub.git_clone = lambda *a, **k: ""  # type: ignore[attr-defined]
 sys.modules.setdefault("autogpt.commands.git_operations", git_ops_stub)
 
 qa_module = importlib.import_module("autogpt.agents.qa_agent")
@@ -75,6 +75,7 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
     repo_mock = mocker.MagicMock()
     repo_mock.git.checkout.return_value = ""
     repo_mock.git.merge.return_value = ""
+    repo_mock.git.diff.return_value = "diff output"
     origin_mock = mocker.MagicMock()
     origin_mock.url = "https://example.com/repo.git"
     remotes_mock = mocker.MagicMock()
@@ -96,14 +97,18 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
     event = CodeFixProposed(branch_name="fix/123", commit_hash="abc", summary="Fix bug")
     on_code_fix_proposed(event)
 
-    git_clone.assert_called_once_with("https://example.com/repo.git", str(clone_dir), agent)
+    git_clone.assert_called_once_with(
+        "https://example.com/repo.git", str(clone_dir), agent
+    )
     git_checkout.assert_called_once_with(str(clone_dir), "fix/123", agent)
     run_tests.assert_called_once_with(str(clone_dir), agent)
+    repo_mock.git.diff.assert_called_once_with("main", "fix/123")
     message_queue.publish.assert_called_once()
     published_event = message_queue.publish.call_args[0][0]
     assert isinstance(published_event, HumanApprovalRequired)
     assert published_event.branch_name == "fix/123"
     assert published_event.test_output == "tests passed"
+    assert published_event.diff == "diff output"
     assert published_event.summary == "Fix bug"
 
     message_queue.publish.reset_mock()

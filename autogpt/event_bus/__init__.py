@@ -95,6 +95,7 @@ class EventBus:
                 yield HumanApprovalRequired(
                     branch_name=str(payload_obj.get("branch_name", "")),
                     test_output=str(payload_obj.get("test_output", "")),
+                    diff=str(payload_obj.get("diff", "")),
                     summary=str(payload_obj.get("summary", "")),
                     source_agent=source_agent,
                     timestamp=ts,
