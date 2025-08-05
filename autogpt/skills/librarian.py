@@ -38,7 +38,34 @@ class LibrarianAgent:
         skills = self.skill_library.search(query, top_k=top_k)
         top_metadata = asdict(skills[0].metadata) if skills else None
         logger.debug(f"Skill search query: {query}, top result: {top_metadata}")
-        results = [asdict(skill.metadata) for skill in skills]
+
+        required_fields = ("skill_name", "version", "parameters")
+        results: List[dict] = []
+        for skill in skills:
+            metadata = getattr(skill, "metadata", None)
+            if metadata is None:
+                logger.warn("Skipping skill with missing metadata: %s", skill)
+                continue
+
+            if isinstance(metadata, dict):
+                meta_dict = metadata
+            else:
+                try:
+                    meta_dict = asdict(metadata)
+                except Exception:
+                    logger.warn("Skipping skill with invalid metadata: %s", metadata)
+                    continue
+
+            if not all(meta_dict.get(field) for field in required_fields):
+                logger.warn(
+                    "Skipping skill with missing required fields %s: %s",
+                    required_fields,
+                    meta_dict,
+                )
+                continue
+
+            results.append(meta_dict)
+
         self._search_cache[cache_key] = results
         return results
 

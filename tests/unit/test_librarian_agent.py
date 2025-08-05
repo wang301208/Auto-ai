@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from dataclasses import asdict
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
@@ -98,3 +100,45 @@ def test_find_skill_caches_results(
     agent.find_skill("Test skill")
 
     assert call_count == 1
+
+
+def test_find_skill_skips_missing_required_fields(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+
+    valid_meta = library_module.SkillMetadata(**_metadata())
+    invalid_meta = {"skill_name": "bad", "version": "1.0"}
+
+    skills = [
+        SimpleNamespace(metadata=valid_meta),
+        SimpleNamespace(metadata=invalid_meta),
+    ]
+
+    monkeypatch.setattr(
+        library_module.SkillLibrary, "search", lambda self, q, top_k=3: skills
+    )
+
+    results = agent.find_skill("Test skill")
+
+    assert results == [asdict(valid_meta)]
+
+
+def test_find_skill_skips_non_mapping_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    agent = _setup_agent(tmp_path, monkeypatch)
+
+    valid_meta = library_module.SkillMetadata(**_metadata())
+    skills = [
+        SimpleNamespace(metadata=valid_meta),
+        SimpleNamespace(metadata=object()),
+    ]
+
+    monkeypatch.setattr(
+        library_module.SkillLibrary, "search", lambda self, q, top_k=3: skills
+    )
+
+    results = agent.find_skill("Test skill")
+
+    assert results == [asdict(valid_meta)]
