@@ -70,20 +70,22 @@ Expected `ISSUE_DETECTED` payload fields:
 
 ### Workflow
 
-1. **Subscribe** – On initialisation the agent subscribes to
-   `ISSUE_DETECTED` events on the shared `MessageQueue`.
-2. **Collect context** – When an event is received the agent extracts metadata
-   such as the affected file, line number and commit hash from the payload or
-   the provided error log.
-3. **Analyse the repository** – For `issue_type="bug"` the agent may parse the
-   log, check out the referenced commit, run `git blame` and gather surrounding
-   source context. For `issue_type="dependency_update"` it skips blame/context
-   gathering and instead compares installed versions against the proposed
-   update while scraping release notes for potential breaking changes.
-4. **Generate recommendations** – The results are condensed into a summary and
-   simple actionable advice.
-5. **Publish results** – A `DIAGNOSIS_COMPLETE` event is emitted so other
-   components can surface the diagnostics to users or additional tools.
+1. **Extract issue** – Parse `ISSUE_DETECTED` payloads to pull out metadata
+   like file, line, commit hash and dependency information.
+2. **Query librarian** – Build a search string from the issue details and call
+   `LibrarianAgent.find_skill` to look for existing remediation skills.
+3. **Branch on results** – If a relevant skill is found, recommend invoking it;
+   otherwise advise creating a new skill or applying manual fixes.
+4. **Publish `DIAGNOSIS_COMPLETE`** – Emit diagnostics summarising the issue
+   and the skill search outcome for downstream agents.
+
+### Librarian integration and event payload
+
+`LibrarianAgent.find_skill` enables the archaeologist to reuse prior work. The
+agent includes the raw search results in the `skill_search` field of the
+`DIAGNOSIS_COMPLETE` event's `details`. When a match is found the event's
+`actionable_recommendations` directs consumers to invoke the suggested skill;
+otherwise it signals that a new skill may be needed.
 
 ### Event bus and tool requirements
 
@@ -131,16 +133,18 @@ message_queue.publish(
 ```
 
 `ArchaeologistAgent` receives the event, extracts the file and line number from
-`error_log`, runs `git blame` and inspects the file's imports. It then emits a
-`DIAGNOSIS_COMPLETE` event containing a summary and recommendations:
+`error_log` and queries the librarian for matching skills. Suppose the search
+returns `skill_example_v1`; the agent emits a `DIAGNOSIS_COMPLETE` event:
 
 ```text
 Diagnostics for plugin example-plugin at example.py:10
-Investigate compatibility issues in: some_dependency
+Invoke skill_example_v1 with parameters: no parameters.
 ```
 
-Other components subscribed to `DIAGNOSIS_COMPLETE` can display the message to
-users or log it for further analysis.
+The event's `details` include a `skill_search` array with the raw result so
+other components can decide whether to call the skill directly or craft a new
+one. Other components subscribed to `DIAGNOSIS_COMPLETE` can display the
+message to users or log it for further analysis.
 
 ## TDDDeveloperAgent
 
