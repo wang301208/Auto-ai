@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from typing import Any
 from unittest import mock
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -25,6 +26,7 @@ def test_initial_values(config: Config) -> None:
     assert config.speak_mode == False
     assert config.fast_llm == "gpt-3.5-turbo"
     assert config.smart_llm == "gpt-4-0314"
+    assert config.use_librarian is True
 
 
 def test_set_continuous_mode(config: Config) -> None:
@@ -97,7 +99,7 @@ def test_set_debug_mode(config: Config) -> None:
     config.debug_mode = debug_mode
 
 
-@patch("openai.OpenAI")
+@patch("autogpt.llm.providers.openai.OpenAI")
 def test_smart_and_fast_llms_set_to_gpt4(mock_openai: Any, config: Config) -> None:
     """
     Test if models update to gpt-3.5-turbo if both are set to gpt-4.
@@ -109,7 +111,10 @@ def test_smart_and_fast_llms_set_to_gpt4(mock_openai: Any, config: Config) -> No
     config.smart_llm = "gpt-4"
 
     mock_client = MagicMock()
-    mock_client.models.list.return_value.data = [{"id": "gpt-3.5-turbo"}]
+    mock_model = MagicMock()
+    mock_model.id = "gpt-3.5-turbo"
+    mock_model.__getitem__.side_effect = {"id": mock_model.id}.__getitem__
+    mock_client.models.list.return_value.data = [mock_model]
     mock_openai.return_value = mock_client
 
     create_config(
@@ -266,3 +271,9 @@ def test_apply_overlay(tmp_path: Path, config: Config) -> None:
     assert config.temperature == 0.5
     assert config.continuous_mode is True
     assert config.fast_llm == "gpt-4"
+
+
+def test_build_config_from_env_use_librarian(workspace: Workspace, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("USE_LIBRARIAN", "False")
+    config = ConfigBuilder.build_config_from_env(workspace.root.parent)
+    assert config.use_librarian is False

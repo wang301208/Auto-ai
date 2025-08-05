@@ -1,6 +1,9 @@
 from types import SimpleNamespace
 
+import pytest
+
 from autogpt.agents.archaeologist import Archaeologist
+from autogpt.config import Config
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
@@ -9,7 +12,8 @@ from autogpt.event_bus import (
 )
 
 
-def test_archaeologist_recommends_skill_without_git_ops(monkeypatch):
+@pytest.mark.parametrize("use_librarian", [True, False])
+def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librarian):
     mq = MessageQueue()
     received = []
     mq.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
@@ -24,7 +28,9 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch):
                 }
             ]
 
-    Archaeologist(mq, librarian=FakeLibrarian())
+    Archaeologist(
+        mq, librarian=FakeLibrarian(), config=Config(use_librarian=use_librarian)
+    )
 
     monkeypatch.setattr(
         "autogpt.agents.archaeologist.analyze_dependency",
@@ -62,9 +68,13 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch):
     assert calls == []
     assert len(received) == 1
     diag = received[0]
-    assert diag.details["recommended_skill"] == {
-        "name": "sample_skill",
-        "version": "1",
-        "parameters": {"path": "str"},
-    }
-    assert "skill_sample_skill_v1" in diag.actionable_recommendations
+    if use_librarian:
+        assert diag.details["recommended_skill"] == {
+            "name": "sample_skill",
+            "version": "1",
+            "parameters": {"path": "str"},
+        }
+        assert "skill_sample_skill_v1" in diag.actionable_recommendations
+    else:
+        assert diag.details["recommended_skill"] is None
+        assert "skill_sample_skill_v1" not in diag.actionable_recommendations

@@ -17,6 +17,7 @@ from autogpt.event_bus import (
     MessageQueue,
 )
 from autogpt.app.i18n import _
+from autogpt.config import Config
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -273,10 +274,16 @@ def test_on_issue_detected_handles_skill_exception(event_type: str) -> None:
 
     assert len(received) == 1
     diag = received[0]
-    assert (
-        diag.actionable_recommendations
-        == "No suitable skill found; consider developing a new skill. Start new skill development process."
+    assert diag.actionable_recommendations == _(
+        "New skill development recommended."
     )
     assert diag.details is not None
     assert diag.details["recommended_skill"] is None
     assert mock_error.called
+
+
+def test_archaeologist_agent_respects_config_flag() -> None:
+    message_queue = MessageQueue()
+    with patch.object(arch_module, "LibrarianAgent") as MockLib:
+        Archaeologist(message_queue, config=Config(use_librarian=False))
+        assert not MockLib.called

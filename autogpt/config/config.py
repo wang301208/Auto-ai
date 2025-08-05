@@ -105,6 +105,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     # Skill Library DB #
     ####################
     skill_db_provider: str = "memory"
+    use_librarian: bool = True
 
     ############
     # Commands #
@@ -325,6 +326,7 @@ class ConfigBuilder(Configurable[Config]):
             "redis_password": os.getenv("REDIS_PASSWORD"),
             "wipe_redis_on_start": os.getenv("WIPE_REDIS_ON_START", "True") == "True",
             "skill_db_provider": os.getenv("SKILL_DB_PROVIDER"),
+            "use_librarian": os.getenv("USE_LIBRARIAN", "True") == "True",
             "plugins_dir": os.getenv("PLUGINS_DIR"),
             "plugins_config_file": os.getenv(
                 "PLUGINS_CONFIG_FILE", PLUGINS_CONFIG_FILE

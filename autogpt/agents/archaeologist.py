@@ -16,6 +16,7 @@ from autogpt.event_bus import (
     MessageQueue,
 )
 from autogpt.app.i18n import _
+from autogpt.config import Config
 from autogpt.event_bus.message_types import DiagnosisDetails
 from autogpt.skills.librarian import LibrarianAgent
 from autogpt.logs import logger
@@ -30,19 +31,27 @@ class Archaeologist:
         self,
         message_queue: MessageQueue,
         librarian: LibrarianAgent | None = None,
+        config: Config | None = None,
     ) -> None:
         """Create a new instance of :class:`Archaeologist`.
 
         Args:
             message_queue: The message queue used for communication with other
                 agents.
-            librarian: Optional ``LibrarianAgent``. If not provided, a default
-                ``LibrarianAgent`` will be created.
+            librarian: Optional ``LibrarianAgent``. If provided and
+                ``config.use_librarian`` is ``True``, it will be used instead of
+                creating a default instance.
+            config: Optional application ``Config``. If not provided, a default
+                ``Config`` will be created.
         """
         self.message_queue = message_queue
         self.message_queue.subscribe(ISSUE_DETECTED, self._on_ticket_received)
         self.message_queue.subscribe(TICKET_RECEIVED, self._on_ticket_received)
-        self.librarian = librarian or LibrarianAgent()
+        self.config = config or Config()
+        if self.config.use_librarian:
+            self.librarian = librarian or LibrarianAgent(self.config)
+        else:
+            self.librarian = None
 
     # ------------------------------------------------------------------
     def _on_ticket_received(self, event: EventMessage) -> None:
@@ -147,11 +156,12 @@ class Archaeologist:
                     query_parts.append(f"{k} {v}")
             query = " ".join(query_parts)
 
-        try:
-            skills = self.librarian.find_skill(query)
-        except Exception as err:  # noqa: BLE001
-            logger.error(f"Error searching for skill: {err}")
-            skills = []
+        skills = []
+        if self.librarian:
+            try:
+                skills = self.librarian.find_skill(query)
+            except Exception as err:  # noqa: BLE001
+                logger.error(f"Error searching for skill: {err}")
         if skills:
             skill = skills[0]
             call_name = f"skill_{skill['skill_name']}_v{skill['version']}"
