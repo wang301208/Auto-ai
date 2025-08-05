@@ -248,3 +248,37 @@ def test_on_issue_detected_recommends_new_skill_when_none_found(
     )
     assert diag.details is not None
     assert diag.details["recommended_skill"] is None
+
+
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+def test_on_issue_detected_handles_skill_exception(event_type: str) -> None:
+    message_queue = MessageQueue()
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    with (
+        patch.object(arch_module, "LibrarianAgent") as MockLib,
+        patch.object(arch_module.logger, "error") as mock_error,
+    ):
+        MockLib.return_value.find_skill.side_effect = RuntimeError("boom")
+        Archaeologist(message_queue)
+
+        payload = {
+            "plugin": "test_plugin",
+            "issue_type": "bug",
+            "error_log": "runtime error",
+            "description": "runtime error",
+        }
+        message_queue.publish(
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
+        )
+
+    assert len(received) == 1
+    diag = received[0]
+    assert (
+        diag.actionable_recommendations
+        == "No suitable skill found; consider developing a new skill. Start new skill development process."
+    )
+    assert diag.details is not None
+    assert diag.details["recommended_skill"] is None
+    assert mock_error.called

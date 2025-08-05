@@ -17,6 +17,7 @@ from autogpt.event_bus import (
 )
 from autogpt.event_bus.message_types import DiagnosisDetails
 from autogpt.skills.librarian import LibrarianAgent
+from autogpt.logs import logger
 
 from .archaeologist_dependency import analyze_dependency
 
@@ -145,7 +146,11 @@ class Archaeologist:
                     query_parts.append(f"{k} {v}")
             query = " ".join(query_parts)
 
-        skills = self.librarian.find_skill(query)
+        try:
+            skills = self.librarian.find_skill(query)
+        except Exception as err:  # noqa: BLE001
+            logger.error(f"Error searching for skill: {err}")
+            skills = []
         if skills:
             skill = skills[0]
             call_name = f"skill_{skill['skill_name']}_v{skill['version']}"
