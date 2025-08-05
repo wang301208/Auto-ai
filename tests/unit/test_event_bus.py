@@ -45,6 +45,7 @@ def test_message_queue_diagnosis_complete(message_queue: MessageQueue) -> None:
     event = DiagnosisComplete(
         summary="Diagnostics complete",
         actionable_recommendations="Fix it",
+        details={"plugin": "example_plugin"},
         source_agent="archaeologist",
     )
     message_queue.publish(event)
@@ -53,12 +54,14 @@ def test_message_queue_diagnosis_complete(message_queue: MessageQueue) -> None:
     assert isinstance(received[0], DiagnosisComplete)
     assert received[0].summary == "Diagnostics complete"
     assert received[0].details["recommended_skill"] is None
+    assert received[0].details["plugin"] == "example_plugin"
 
     events = list(message_queue.get_events())
     assert len(events) == 1
     assert isinstance(events[0], DiagnosisComplete)
     assert events[0].summary == "Diagnostics complete"
     assert events[0].details["recommended_skill"] is None
+    assert events[0].details["plugin"] == "example_plugin"
 
 
 def test_message_queue_diagnosis_complete_recommended_skill(
@@ -71,6 +74,7 @@ def test_message_queue_diagnosis_complete_recommended_skill(
         summary="Diagnostics complete",
         actionable_recommendations="Invoke skill",
         details={
+            "plugin": "example_plugin",
             "recommended_skill": {
                 "name": "skill_example",
                 "version": "1",
@@ -87,6 +91,7 @@ def test_message_queue_diagnosis_complete_recommended_skill(
         "version": "1",
         "parameters": {"path": "str"},
     }
+    assert received[0].details["plugin"] == "example_plugin"
 
 
 def test_message_queue_publish_from_multiple_sources(

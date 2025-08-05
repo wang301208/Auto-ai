@@ -101,6 +101,7 @@ class DiagnosisDetails(TypedDict, total=False):
     """Extra information included with :class:`DiagnosisComplete`."""
 
     recommended_skill: RecommendedSkill | None
+    plugin: str | None
     # other optional fields such as ``skill_search`` or ``metadata`` may appear
 
 
@@ -116,9 +117,10 @@ class DiagnosisComplete(EventMessage):
 
     def __post_init__(self) -> None:
         if self.details is None:
-            self.details = {"recommended_skill": None}
+            self.details = {"recommended_skill": None, "plugin": None}
         else:
             self.details.setdefault("recommended_skill", None)
+            self.details.setdefault("plugin", None)
 
         rec = self.details.get("recommended_skill")
         if isinstance(rec, dict):

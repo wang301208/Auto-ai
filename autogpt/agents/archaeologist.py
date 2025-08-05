@@ -110,6 +110,7 @@ class Archaeologist:
                 "context": context,
                 "dependencies": analysis.get("dependencies"),
             }
+            details["plugin"] = plugin_id
             if description:
                 details["description"] = description
 
@@ -136,6 +137,7 @@ class Archaeologist:
                 "error_log": error_log,
                 "dependencies": analysis.get("dependencies"),
             }
+            details["plugin"] = plugin_id
             if description:
                 details["description"] = description
         else:
