@@ -85,3 +85,54 @@ def test_tdd_developer_handles_diagnosis(
     assert received[0].payload["branch_name"] == "fix/123"
     assert received[0].payload["summary"] == "Fix issue 123"
     assert "commit_hash" in received[0].payload
+
+
+def test_tdd_developer_generates_repro_test(
+    agent: Agent, workspace: Workspace, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    event_bus = EventBus(tmp_path / "events.db")
+    message_queue = MessageQueue(event_bus)
+    TDDDeveloper(agent=agent, message_queue=message_queue)
+
+    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
+    mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+
+    captured: dict[str, str] = {}
+
+    def capture_create_test_file(path: str, content: str, *_: object) -> str:
+        captured["content"] = content
+        return ""
+
+    mocker.patch(
+        "autogpt.agents.tdd_developer.create_test_file", side_effect=capture_create_test_file
+    )
+
+    mocker.patch(
+        "autogpt.agents.tdd_developer.run_tests",
+        side_effect=[
+            {"successes": 0, "failures": 1, "errors": 0},
+            {"successes": 0, "failures": 1, "errors": 0},
+        ],
+    )
+
+    repo_path = str(workspace.root)
+    module_path = Path(repo_path) / "buggy.py"
+    diag = (
+        "Traceback (most recent call last):\n"
+        f"  File \"{module_path}\", line 1, in buggy_fn\n"
+        "    buggy_fn()\n"
+        "ValueError: boom\n"
+    )
+
+    payload = {"issue_id": "456", "repo_path": repo_path, "diagnostics": diag}
+
+    message_queue.publish(
+        EventMessage(
+            event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester"
+        )
+    )
+
+    content = captured.get("content", "")
+    assert "from buggy import buggy_fn" in content
+    assert "pytest.raises(ValueError)" in content

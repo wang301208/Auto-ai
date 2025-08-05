@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import re
 
 from git import Repo  # type: ignore[import-not-found]
 
@@ -47,9 +48,31 @@ class TDDDeveloper:
         git_checkout(repo_path, branch, self.agent)
 
         test_file = Path(repo_path) / "tests" / f"test_issue_{issue_id}.py"
+
+        # Attempt to parse stack traces like: File "<path>", line X, in <func>
+        diag_text = diagnostics if isinstance(diagnostics, str) else ""
+        file_match = re.search(r'File "([^"]+)", line \d+, in (\w+)', diag_text)
+        err_match = re.search(r'^(\w+(?:Error|Exception))', diag_text.splitlines()[-1]) if diag_text else None
+
+        test_body = diag_text
+        if file_match and err_match:
+            file_path, func_name = file_match.groups()
+            error_type = err_match.group(1)
+            try:
+                rel_path = Path(file_path).relative_to(repo_path)
+                module = rel_path.with_suffix("").as_posix().replace("/", ".")
+                test_body = (
+                    f"import pytest\nfrom {module} import {func_name}\n\n"
+                    f"def test_issue_{issue_id}():\n"
+                    f"    with pytest.raises({error_type}):\n"
+                    f"        {func_name}()\n"
+                )
+            except ValueError:
+                # If path is outside repo, fall back to including diagnostics text
+                test_body = diag_text
+
         test_content = (
-            f"# Auto-generated regression test for issue {issue_id}\n"
-            f"{diagnostics or ''}\n"
+            f"# Auto-generated regression test for issue {issue_id}\n" f"{test_body}\n"
         )
         create_test_file(str(test_file), test_content, self.agent)
 
