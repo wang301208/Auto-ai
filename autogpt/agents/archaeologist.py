@@ -141,20 +141,14 @@ class Archaeologist:
         else:
             return
 
-        if description:
-            query = description
-        else:
-            query_parts: list[str] = []
-            if issue_type:
-                query_parts.append(issue_type.replace("_", " "))
-            if plugin_id:
-                query_parts.append(f"plugin {plugin_id}")
-            if error_log:
-                query_parts.append(str(error_log))
-            for k, v in metadata.items():
-                if isinstance(v, (str, int)):
-                    query_parts.append(f"{k} {v}")
-            query = " ".join(query_parts)
+        query_payload = {
+            "plugin": plugin_id,
+            "error_log": error_log,
+            "issue_type": issue_type,
+            "description": description,
+            **metadata,
+        }
+        query = self._generate_query(query_payload)
 
         skills = []
         if self.librarian:
@@ -195,6 +189,42 @@ class Archaeologist:
                 source_agent="archaeologist",
             )
         )
+
+    # ------------------------------------------------------------------
+    def _generate_query(self, payload: dict) -> str:
+        """Create a concise natural-language query from diagnostic payload."""
+
+        description = payload.get("description")
+        if description:
+            return description
+
+        parts: list[str] = []
+        prefix: list[str] = []
+        issue_type = payload.get("issue_type")
+        if issue_type:
+            prefix.append(issue_type.replace("_", " "))
+
+        plugin_id = payload.get("plugin")
+        if plugin_id:
+            prefix.append(f"in plugin {plugin_id}")
+
+        if prefix:
+            parts.append(" ".join(prefix))
+
+        error_log = payload.get("error_log")
+        if error_log:
+            parts.append(str(error_log))
+
+        metadata = {
+            k: v
+            for k, v in payload.items()
+            if k not in {"plugin", "error_log", "issue_type", "description"}
+        }
+        for k, v in metadata.items():
+            if isinstance(v, (str, int)):
+                parts.append(f"{k} {v}")
+
+        return ", ".join(parts)
 
     # ------------------------------------------------------------------
     def _parse_log(self, log: str) -> Iterator[tuple[str, int]]:
