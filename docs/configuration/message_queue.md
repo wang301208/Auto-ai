@@ -21,14 +21,19 @@ Agent -> MessageQueue -> (PyPubSub backend | in-process fallback) -> Subscribers
 ## Configuration
 
 No configuration is required to use the built‑in queue. Installing PyPubSub
-is recommended for cross-module communication. The event database is created
-at `<workspace>/events.db` by default.
+enables cross-module communication through a shared bus. The event database is
+created at `<workspace>/events.db` by default.
 
 ### Installing the default backend (PyPubSub)
 
+Install the optional dependency to enable the PyPubSub backend:
+
 ```bash
-pip install pypubsub
+pip install agpt[pubsub]  # or: pip install pypubsub
 ```
+
+Once installed, Auto‑GPT will automatically use PyPubSub when creating a
+`MessageQueue`.
 
 ### Alternative brokers
 
@@ -58,6 +63,17 @@ class EventMessage:
     payload: dict[str, Any] | str | None = None
     source_agent: str | None = None
     timestamp: str = field(default_factory=lambda: datetime.utcnow().isoformat())
+```
+
+A standard message therefore contains:
+
+```json
+{
+  "event_type": "status",
+  "payload": {"msg": "hi"},
+  "source_agent": "agent",
+  "timestamp": "2023-01-01T00:00:00Z"
+}
 ```
 
 ## Examples
