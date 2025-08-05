@@ -7,16 +7,15 @@ from unittest.mock import patch
 
 import pytest
 
+from autogpt.config import Config
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
-    TICKET_RECEIVED,
     DiagnosisComplete,
     EventBus,
     EventMessage,
     MessageQueue,
 )
-from autogpt.config import Config
 
 # Avoid importing autogpt.agents package initializer with heavy dependencies
 agents_pkg = types.ModuleType("autogpt.agents")
@@ -27,7 +26,7 @@ arch_module = importlib.import_module("autogpt.agents.archaeologist")
 Archaeologist = arch_module.Archaeologist
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 @pytest.mark.parametrize("use_librarian", [True, False])
 def test_archaeologist_handles_issue(
     tmp_path: Path, event_type: str, use_librarian: bool
@@ -68,7 +67,7 @@ def test_archaeologist_handles_issue(
     assert details["recommended_skill"] is None
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 @pytest.mark.parametrize("use_librarian", [True, False])
 def test_archaeologist_parses_python_traceback(
     tmp_path: Path, event_type: str, use_librarian: bool
@@ -99,7 +98,7 @@ def test_archaeologist_parses_python_traceback(
     assert "autogpt/agents/agent.py:42" in received[0].summary
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 @pytest.mark.parametrize("use_librarian", [True, False])
 def test_archaeologist_parses_plugin_log(
     tmp_path: Path, event_type: str, use_librarian: bool
@@ -126,7 +125,7 @@ def test_archaeologist_parses_plugin_log(
     assert "autogpt/agents/agent.py:50" in received[0].summary
 
 
-@pytest.mark.parametrize("event_type", [ISSUE_DETECTED, TICKET_RECEIVED])
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 @pytest.mark.parametrize("use_librarian", [True, False])
 def test_archaeologist_parsing_fails_gracefully(
     tmp_path: Path, event_type: str, use_librarian: bool

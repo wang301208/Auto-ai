@@ -18,14 +18,12 @@ from autogpt.event_bus import (
     HUMAN_APPROVAL_REQUIRED,
     ISSUE_DETECTED,
     ISSUE_RESOLVED,
-    TICKET_RECEIVED,
     EventMessage,
     MessageQueue,
 )
 
 EVENT_TYPES = [
     ISSUE_DETECTED,
-    TICKET_RECEIVED,
     DIAGNOSIS_COMPLETE,
     CODE_FIX_PROPOSED,
     HUMAN_APPROVAL_REQUIRED,
@@ -34,7 +32,6 @@ EVENT_TYPES = [
 
 EVENT_STAGE_MAPPING = {
     ISSUE_DETECTED: "detected",
-    TICKET_RECEIVED: "detected",
     DIAGNOSIS_COMPLETE: "diagnosed",
     CODE_FIX_PROPOSED: "fix_proposed",
     HUMAN_APPROVAL_REQUIRED: "awaiting_approval",
