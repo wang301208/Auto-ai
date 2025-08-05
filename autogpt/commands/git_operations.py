@@ -16,7 +16,7 @@ from .decorators import sanitize_path_arg
 
 
 @command(
-    "clone_repository",
+    "git_clone",
     "Clones a Repository",
     {
         "url": {
@@ -32,10 +32,11 @@ from .decorators import sanitize_path_arg
     },
     lambda config: bool(config.github_username and config.github_api_key),
     "Configure github_username and github_api_key.",
+    aliases=["clone_repository"],
 )
 @sanitize_path_arg("clone_path")
 @validate_url
-def clone_repository(url: str, clone_path: str, agent: Agent) -> str:
+def git_clone(url: str, clone_path: str, agent: Agent) -> str:
     """Clone a GitHub repository locally.
 
     Args:
@@ -56,6 +57,10 @@ def clone_repository(url: str, clone_path: str, agent: Agent) -> str:
         return f"""Cloned {url} to {clone_path}"""
     except Exception as e:
         return f"Error: {str(e)}"
+
+
+# Backwards compatibility alias
+clone_repository = git_clone
 
 
 @command(

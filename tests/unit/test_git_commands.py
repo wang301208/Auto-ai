@@ -1,13 +1,14 @@
+from pathlib import Path
+
 import pytest
 from git.exc import GitCommandError
 from git.repo.base import Repo
-from pathlib import Path
 
 from autogpt.agents.agent import Agent
 from autogpt.commands.git_operations import (
-    clone_repository,
     git_blame,
     git_checkout,
+    git_clone,
     git_commit,
     git_create_branch,
     git_push,
@@ -19,7 +20,7 @@ def mock_clone_from(mocker):
     return mocker.patch.object(Repo, "clone_from")
 
 
-def test_clone_auto_gpt_repository(workspace, mock_clone_from, agent: Agent):
+def test_git_clone_auto_gpt_repository(workspace, mock_clone_from, agent: Agent):
     mock_clone_from.return_value = None
 
     repo = "github.com/Significant-Gravitas/Auto-GPT.git"
@@ -29,7 +30,7 @@ def test_clone_auto_gpt_repository(workspace, mock_clone_from, agent: Agent):
 
     expected_output = f"Cloned {url} to {clone_path}"
 
-    clone_result = clone_repository(url=url, clone_path=clone_path, agent=agent)
+    clone_result = git_clone(url=url, clone_path=clone_path, agent=agent)
 
     assert clone_result == expected_output
     mock_clone_from.assert_called_once_with(
@@ -38,7 +39,7 @@ def test_clone_auto_gpt_repository(workspace, mock_clone_from, agent: Agent):
     )
 
 
-def test_clone_repository_error(workspace, mock_clone_from, agent: Agent):
+def test_git_clone_error(workspace, mock_clone_from, agent: Agent):
     url = "https://github.com/this-repository/does-not-exist.git"
     clone_path = str(workspace.get_path("does-not-exist"))
 
@@ -46,7 +47,7 @@ def test_clone_repository_error(workspace, mock_clone_from, agent: Agent):
         "clone", "fatal: repository not found", ""
     )
 
-    result = clone_repository(url=url, clone_path=clone_path, agent=agent)
+    result = git_clone(url=url, clone_path=clone_path, agent=agent)
 
     assert "Error: " in result
 
@@ -107,9 +108,7 @@ def test_git_push_success(mocker, workspace, agent: Agent):
 
     assert result == f"Pushed branch {branch} to remote"
     mock_repo.remote.assert_called_once_with(name="origin")
-    mock_origin.set_url.assert_called_once_with(
-        "https://user:key@github.com/repo.git"
-    )
+    mock_origin.set_url.assert_called_once_with("https://user:key@github.com/repo.git")
     mock_origin.push.assert_called_once_with(branch)
 
 

@@ -2,7 +2,7 @@
 
 本文介绍常用的 Git 操作以及相关参数，并提供调用示例。
 
-## `git_clone`
+## `git_clone`（别名：`clone_repository`）
 克隆远程仓库到本地。
 
 **参数**
