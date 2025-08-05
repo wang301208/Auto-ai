@@ -299,7 +299,7 @@ def test_tdd_developer_aborts_on_failed_add_skill(
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
     librarian = mocker.Mock()
-    librarian.add_skill.return_value = False
+    librarian.add_skill.side_effect = RuntimeError("failure")
     TDDDeveloper(agent=agent, message_queue=message_queue, librarian=librarian)
 
     mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
