@@ -2,6 +2,7 @@ import importlib
 import sys
 import types
 from pathlib import Path
+import json
 
 from autogpt.event_bus import CODE_FIX_PROPOSED, DIAGNOSIS_COMPLETE, EventMessage
 
@@ -138,3 +139,58 @@ def test_tdd_developer_agent_flow(tmp_path, mocker):
     assert published_event.payload["branch_name"] == "fix/123"
     assert published_event.payload["summary"] == "Fix issue 123"
     assert published_event.payload["commit_hash"] == ""
+
+
+def test_tdd_developer_creates_new_skill(tmp_path, mocker):
+    message_queue = mocker.Mock(spec=["subscribe", "publish"])
+    agent = Agent()
+
+    TDDDeveloper(agent=agent, message_queue=message_queue)
+
+    message_queue.subscribe.assert_called_once()
+    _, callback = message_queue.subscribe.call_args[0]
+
+    create_branch = mocker.patch.object(
+        tdd_module, "git_create_branch", return_value=""
+    )
+    checkout = mocker.patch.object(tdd_module, "git_checkout", return_value="")
+    commit = mocker.patch.object(tdd_module, "git_commit", return_value="")
+
+    def fake_write(path: str, content: str, *_: object) -> str:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        Path(path).write_text(content)
+        return ""
+
+    writer = mocker.patch.object(tdd_module, "write_to_file", side_effect=fake_write)
+
+    repo_path = str(tmp_path)
+    new_skill = {
+        "skill_name": "skill_test",
+        "version": "1.0",
+        "description": "Test skill",
+        "parameters": {},
+        "tags": ["test"],
+        "code": "def run() -> str:\n    return 'ok'\n",
+    }
+    event = EventMessage(
+        event_type=DIAGNOSIS_COMPLETE,
+        payload={"repo_path": repo_path, "details": {"new_skill": new_skill}},
+        source_agent="tester",
+    )
+
+    callback(event)
+
+    create_branch.assert_called_once_with(repo_path, "new-skill/skill_test_1.0", agent)
+    checkout.assert_called_once_with(repo_path, "new-skill/skill_test_1.0", agent)
+    commit.assert_called_once_with(repo_path, "Add new skill skill_test", agent)
+
+    skill_dir = Path(repo_path) / "skill_library" / "skill_test_1.0"
+    assert (skill_dir / "main.py").read_text() == new_skill["code"]
+    metadata = json.loads((skill_dir / "skill.json").read_text())
+    assert metadata["skill_name"] == "skill_test"
+    assert metadata["version"] == "1.0"
+
+    message_queue.publish.assert_called_once()
+    published_event = message_queue.publish.call_args[0][0]
+    assert published_event.payload["branch_name"] == "new-skill/skill_test_1.0"
+    assert published_event.payload["summary"] == "Add new skill skill_test"

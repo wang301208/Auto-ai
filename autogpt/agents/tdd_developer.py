@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 import re
+import json
 
 from git import Repo  # type: ignore[import-not-found]
 
@@ -126,11 +127,60 @@ class TDDDeveloper:
         if not isinstance(payload, dict):
             return
 
-        issue_id = payload.get("issue_id")
         repo_path = payload.get("repo_path")
-        diagnostics: Any = payload.get("diagnostics") or payload.get("details")
+        details = payload.get("details", {})
+        diagnostics: Any = payload.get("diagnostics") or details
 
-        if not issue_id or not repo_path:
+        if not repo_path:
+            return
+
+        new_skill = details.get("new_skill") if isinstance(details, dict) else None
+        if new_skill:
+            name = new_skill.get("skill_name") or new_skill.get("name")
+            version = new_skill.get("version", "1.0")
+            branch = f"new-skill/{name}_{version}"
+            git_create_branch(repo_path, branch, self.agent)
+            git_checkout(repo_path, branch, self.agent)
+
+            skill_dir = Path(repo_path) / "skill_library" / f"{name}_{version}"
+            code = new_skill.get("code", "")
+            write_to_file(str(skill_dir / "main.py"), code, self.agent)
+            metadata = {
+                "skill_name": name,
+                "version": version,
+                "description": new_skill.get("description", ""),
+                "tags": new_skill.get("tags", []),
+                "parameters": new_skill.get("parameters", {}),
+            }
+            for key in [
+                "dependencies_file",
+                "entry_point",
+                "return_type",
+                "author_agent",
+                "creation_timestamp",
+            ]:
+                if new_skill.get(key) is not None:
+                    metadata[key] = new_skill[key]
+            write_to_file(
+                str(skill_dir / "skill.json"), json.dumps(metadata, indent=2), self.agent
+            )
+            git_commit(repo_path, f"Add new skill {name}", self.agent)
+            try:
+                commit_hash = Repo(repo_path).head.commit.hexsha
+            except Exception:
+                commit_hash = ""
+            self.message_queue.publish(
+                CodeFixProposed(
+                    branch_name=branch,
+                    commit_hash=commit_hash,
+                    summary=f"Add new skill {name}",
+                    source_agent="tdd_developer",
+                )
+            )
+            return
+
+        issue_id = payload.get("issue_id")
+        if not issue_id:
             return
 
         branch = f"fix/{issue_id}"
@@ -138,9 +188,7 @@ class TDDDeveloper:
         git_checkout(repo_path, branch, self.agent)
 
         recommended_skill = (
-            payload.get("details", {}).get("recommended_skill")
-            if isinstance(payload.get("details"), dict)
-            else None
+            details.get("recommended_skill") if isinstance(details, dict) else None
         )
         if recommended_skill:
             self._use_recommended_skill(repo_path, branch, issue_id, recommended_skill)
