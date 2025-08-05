@@ -24,6 +24,11 @@ class SkillMetadata:
     description: str
     tags: List[str]
     parameters: Dict
+    dependencies_file: str | None = None
+    entry_point: str | None = None
+    return_type: str | None = None
+    author_agent: str | None = None
+    creation_timestamp: str | None = None
 
 
 @dataclass
@@ -134,6 +139,11 @@ class SkillLibrary:
                     "description": skill.description,
                     "tags": skill.tags,
                     "parameters": skill.parameters,
+                    "dependencies_file": skill.metadata.dependencies_file,
+                    "entry_point": skill.metadata.entry_point,
+                    "return_type": skill.metadata.return_type,
+                    "author_agent": skill.metadata.author_agent,
+                    "creation_timestamp": skill.metadata.creation_timestamp,
                 },
                 f,
                 indent=2,
@@ -162,10 +172,26 @@ class SkillLibrary:
         parameters: Dict,
         description: str,
         tags: List[str],
+        dependencies_file: str | None = None,
+        entry_point: str | None = None,
+        return_type: str | None = None,
+        author_agent: str | None = None,
+        creation_timestamp: str | None = None,
     ) -> Skill:
         """Create and persist a new skill."""
 
-        metadata = SkillMetadata(name, version, description, tags, parameters)
+        metadata = SkillMetadata(
+            name,
+            version,
+            description,
+            tags,
+            parameters,
+            dependencies_file,
+            entry_point,
+            return_type,
+            author_agent,
+            creation_timestamp,
+        )
         skill = Skill(metadata=metadata, code=code)
         text = f"{description}\n{' '.join(tags)}"
         embedding = get_embedding(text, self.config)
@@ -193,6 +219,11 @@ class SkillLibrary:
         parameters: Dict | None = None,
         description: str | None = None,
         tags: List[str] | None = None,
+        dependencies_file: str | None = None,
+        entry_point: str | None = None,
+        return_type: str | None = None,
+        author_agent: str | None = None,
+        creation_timestamp: str | None = None,
     ) -> Optional[Skill]:
         key = f"{name}_{version}"
         skill = self._skills.get(key)
@@ -207,6 +238,16 @@ class SkillLibrary:
             skill.metadata.description = description
         if tags is not None:
             skill.metadata.tags = tags
+        if dependencies_file is not None:
+            skill.metadata.dependencies_file = dependencies_file
+        if entry_point is not None:
+            skill.metadata.entry_point = entry_point
+        if return_type is not None:
+            skill.metadata.return_type = return_type
+        if author_agent is not None:
+            skill.metadata.author_agent = author_agent
+        if creation_timestamp is not None:
+            skill.metadata.creation_timestamp = creation_timestamp
 
         text = f"{skill.description}\n{' '.join(skill.tags)}"
         embedding = get_embedding(text, self.config)

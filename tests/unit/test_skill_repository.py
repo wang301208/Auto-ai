@@ -89,19 +89,23 @@ def test_repository_saves_structure_and_parses_metadata(
 
     with (skill_dir / "skill.json").open() as f:
         meta = json.load(f)
-    assert meta == {
-        "skill_name": "skill1",
-        "version": "1.0",
-        "description": "description1",
-        "tags": ["tag1"],
-        "parameters": {"a": 1},
-    }
+    assert meta["skill_name"] == "skill1"
+    assert meta["version"] == "1.0"
+    assert meta["description"] == "description1"
+    assert meta["tags"] == ["tag1"]
+    assert meta["parameters"] == {"a": 1}
+    assert "dependencies_file" in meta
+    assert "entry_point" in meta
+    assert "return_type" in meta
+    assert "author_agent" in meta
+    assert "creation_timestamp" in meta
 
     # Reload repository to ensure metadata is parsed from disk
     new_library = SkillLibrary(config, storage_path=storage, vector_db=DummyVectorDB())
     skill = new_library.get_skill("skill1", "1.0")
     assert skill and skill.description == "description1"
     assert skill.tags == ["tag1"]
+    assert skill.metadata.author_agent is None
 
 
 def test_repository_search_by_description_and_tags(
