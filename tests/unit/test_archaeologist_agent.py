@@ -233,6 +233,6 @@ def test_on_issue_detected_recommends_new_skill_when_none_found() -> None:
     diag = received[0]
     assert (
         diag.actionable_recommendations
-        == "No suitable skill found; consider developing a new skill."
+        == "No suitable skill found; consider developing a new skill. Start new skill development process."
     )
     assert diag.details["recommended_skill"] is None

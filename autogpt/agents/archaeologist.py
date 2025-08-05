@@ -154,7 +154,10 @@ class Archaeologist:
                 "parameters": params,
             }
         else:
-            skill_rec = "No suitable skill found; consider developing a new skill."
+            skill_rec = (
+                "No suitable skill found; consider developing a new skill. "
+                "Start new skill development process."
+            )
             details["recommended_skill"] = None
 
         base_rec = self._recommendations(analysis)
