@@ -10,6 +10,19 @@ kept in a dedicated folder named `<skill>_<version>` containing:
 - `requirements.txt` – optional dependencies
 - `skill.json` – metadata describing the skill
 
+## Example
+
+A minimal sample skill `hello_world_1.0` is available in the repository's
+`skill_library/` directory. Its `run` function simply returns the string
+`"Hello, world!"` and `skill.json` shows the required metadata layout. Run its
+unit test with:
+
+```bash
+pytest skill_library/hello_world_1.0/test_main.py
+```
+
+Use this folder as a template when creating your own skills.
+
 ## Metadata Schema
 
 `skill.json` provides structured information used when loading and searching

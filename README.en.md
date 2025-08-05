@@ -108,6 +108,10 @@ Select the backend with `SKILL_DB_PROVIDER` in `.env`:
 - `chroma` — install with `pip install chromadb` to persist data in `skill_library/chroma`.
 - `faiss` — install with `pip install faiss-cpu` to persist data in `skill_library/faiss`.
 
+An example skill `hello_world_1.0` lives in `skill_library/`.
+Run its unit test with `pytest skill_library/hello_world_1.0/test_main.py`
+and use it as a template for building your own skills.
+
 ## Running the app
 
 ```bash
