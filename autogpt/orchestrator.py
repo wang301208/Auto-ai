@@ -2,10 +2,14 @@ from __future__ import annotations
 
 """Simple orchestrator that starts core AutoGPT agents."""
 
-import threading
+import os
 import time
+import threading
+from dataclasses import dataclass
+from multiprocessing import Event, Process, Queue
 from pathlib import Path
-from typing import Callable
+from queue import Empty
+from typing import Callable, Dict, Iterable, Mapping
 
 from autogpt.agents import Archaeologist, QAAgent, SentryAgent, TDDDeveloper
 from autogpt.event_bus import EventBus, MessageQueue
@@ -23,79 +27,145 @@ class DummyAgent:
         self.config = type("Config", (), {"workspace_path": str(workspace_path)})()
 
 
+def _run_archaeologist(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+    """Entry point for the Archaeologist agent process."""
+
+    os.chdir(workdir)
+    message_queue = MessageQueue(EventBus(db_path))
+    Archaeologist(message_queue)
+    while not stop_event.is_set():
+        heartbeat.put(time.time())
+        time.sleep(1)
+
+
+def _run_tdd_developer(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+    os.chdir(workdir)
+    message_queue = MessageQueue(EventBus(db_path))
+    agent = DummyAgent(workdir)
+    TDDDeveloper(agent=agent, message_queue=message_queue)
+    while not stop_event.is_set():
+        heartbeat.put(time.time())
+        time.sleep(1)
+
+
+def _run_qa_agent(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+    os.chdir(workdir)
+    message_queue = MessageQueue(EventBus(db_path))
+    agent = DummyAgent(workdir)
+    QAAgent(agent=agent, message_queue=message_queue)
+    while not stop_event.is_set():
+        heartbeat.put(time.time())
+        time.sleep(1)
+
+
+def _run_sentry_agent(db_path: str, heartbeat: Queue, stop_event: Event, workdir: str) -> None:
+    os.chdir(workdir)
+    message_queue = MessageQueue(EventBus(db_path))
+    agent = SentryAgent(message_queue=message_queue, stop_event=stop_event)
+
+    def _beat() -> None:
+        while not stop_event.is_set():
+            heartbeat.put(time.time())
+            time.sleep(1)
+
+    threading.Thread(target=_beat, daemon=True).start()
+    agent.run()
+
+
+AGENT_TARGETS: Dict[str, Callable[[str, Queue, Event, str], None]] = {
+    "archaeologist": _run_archaeologist,
+    "tdd_developer": _run_tdd_developer,
+    "qa_agent": _run_qa_agent,
+    "sentry_agent": _run_sentry_agent,
+}
+
+AVAILABLE_AGENTS = list(AGENT_TARGETS.keys())
+
+
+@dataclass
+class ProcessInfo:
+    process: Process
+    target: Callable[[str, Queue, Event, str], None]
+    queue: Queue
+    last_heartbeat: float
+    workdir: str
+
+
 class Orchestrator:
     """Launch and supervise AutoGPT's event-driven helper agents."""
 
-    def __init__(self, db_path: str | Path = "events.db") -> None:
-        self.stop_event = threading.Event()
-        self.event_bus = EventBus(db_path)
-        self.message_queue = MessageQueue(self.event_bus)
-        self.threads: dict[str, tuple[threading.Thread, Callable[[], None]]] = {}
+    def __init__(
+        self,
+        db_path: str | Path = "events.db",
+        agents: Iterable[str] | None = None,
+        workdirs: Mapping[str, str | Path] | None = None,
+        heartbeat_timeout: float = 5.0,
+    ) -> None:
+        self.db_path = str(db_path)
+        self.stop_event = Event()
+        self.heartbeat_timeout = heartbeat_timeout
+        self.agents = list(agents) if agents is not None else list(AGENT_TARGETS.keys())
+        self.workdirs = {name: str(path) for name, path in (workdirs or {}).items()}
+        self.processes: Dict[str, ProcessInfo] = {}
 
     # ------------------------------------------------------------------
-    def _start_thread(self, name: str, target: Callable[[], None]) -> None:
-        thread = threading.Thread(target=target, name=name, daemon=True)
-        thread.start()
-        self.threads[name] = (thread, target)
-
-    # ------------------------------------------------------------------
-    def _run_archaeologist(self) -> None:
-        Archaeologist(self.message_queue)
-        while not self.stop_event.is_set():
-            time.sleep(1)
-
-    def _run_tdd_developer(self) -> None:
-        agent = DummyAgent()
-        TDDDeveloper(agent=agent, message_queue=self.message_queue)
-        while not self.stop_event.is_set():
-            time.sleep(1)
-
-    def _run_qa_agent(self) -> None:
-        agent = DummyAgent()
-        QAAgent(agent=agent, message_queue=self.message_queue)
-        while not self.stop_event.is_set():
-            time.sleep(1)
-
-    def _run_sentry_agent(self) -> None:
-        agent = SentryAgent(message_queue=self.message_queue, stop_event=self.stop_event)
-        agent.run()
+    def _start_process(self, name: str) -> None:
+        target = AGENT_TARGETS[name]
+        workdir = self.workdirs.get(name, ".")
+        queue: Queue = Queue()
+        process = Process(
+            target=target,
+            name=name,
+            args=(self.db_path, queue, self.stop_event, workdir),
+            daemon=True,
+        )
+        process.start()
+        self.processes[name] = ProcessInfo(
+            process=process,
+            target=target,
+            queue=queue,
+            last_heartbeat=time.time(),
+            workdir=workdir,
+        )
 
     # ------------------------------------------------------------------
     def start_agents(self) -> None:
-        """Start all helper agents."""
-
-        self._start_thread("archaeologist", self._run_archaeologist)
-        self._start_thread("tdd_developer", self._run_tdd_developer)
-        self._start_thread("qa_agent", self._run_qa_agent)
-        self._start_thread("sentry_agent", self._run_sentry_agent)
+        for name in self.agents:
+            self._start_process(name)
 
     # ------------------------------------------------------------------
     def monitor(self) -> None:
-        """Monitor agent threads and restart them if necessary."""
-
         try:
             while not self.stop_event.is_set():
-                for name, (thread, target) in list(self.threads.items()):
-                    if not thread.is_alive():
-                        self._start_thread(name, target)
+                for name, info in list(self.processes.items()):
+                    while True:
+                        try:
+                            info.last_heartbeat = info.queue.get_nowait()
+                        except Empty:
+                            break
+                    alive = info.process.is_alive()
+                    stale = time.time() - info.last_heartbeat > self.heartbeat_timeout
+                    if not alive or stale:
+                        if alive:
+                            info.process.terminate()
+                            info.process.join(timeout=1)
+                        self._start_process(name)
                 time.sleep(1)
         except KeyboardInterrupt:
             self.stop()
 
     # ------------------------------------------------------------------
     def start(self) -> None:
-        """Start the orchestrator."""
-
         self.start_agents()
         self.monitor()
 
     # ------------------------------------------------------------------
     def stop(self) -> None:
-        """Stop all agents and wait for their threads to exit."""
-
         self.stop_event.set()
-        for thread, _ in self.threads.values():
-            thread.join(timeout=1)
+        for info in self.processes.values():
+            info.process.join(timeout=1)
+            if info.process.is_alive():
+                info.process.terminate()
 
 
-__all__ = ["Orchestrator"]
+__all__ = ["Orchestrator", "AVAILABLE_AGENTS"]
