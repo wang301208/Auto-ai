@@ -120,6 +120,10 @@ class DiagnosisComplete(EventMessage):
         else:
             self.details.setdefault("recommended_skill", None)
 
+        rec = self.details.get("recommended_skill")
+        if isinstance(rec, dict):
+            rec.setdefault("parameters", {})
+
         self.payload = {
             "summary": self.summary,
             "actionable_recommendations": self.actionable_recommendations,

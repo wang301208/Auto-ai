@@ -109,7 +109,10 @@ archaeologist.librarian = librarian
 def handle_diagnostics(event: DiagnosisComplete) -> None:
     rec = event.details["recommended_skill"]
     if rec:
-        print(f"Matched skill: {rec['name']}")
+        call_name = f"skill_{rec['name']}_v{rec['version']}"
+        print(
+            f"Matched skill: {call_name} with parameters {rec['parameters']}"
+        )
     else:
         print("No matching skill found")
 
@@ -131,7 +134,7 @@ handle_diagnostics(
         },
         source_agent="archaeologist",
     )
-)  # -> Matched skill: skill_example
+)  # -> Matched skill: skill_skill_example_v1 with parameters {}
 handle_diagnostics(
     DiagnosisComplete(
         summary="",
@@ -188,7 +191,8 @@ Invoke skill_example_v1 with parameters: no parameters.
 ```
 
 The event's `details` include a `skill_search` array with the raw result and a
-`recommended_skill` entry containing the suggested skill (or `None`). Other
+`recommended_skill` entry containing the suggested skill's name, version, and
+parameter schema (or `None`). Other
 components subscribed to `DIAGNOSIS_COMPLETE` can display the message to users
 or log it for further analysis.
 
