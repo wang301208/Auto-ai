@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from autogpt.agents.sentry import SentryAgent
-from autogpt.event_bus import EventMessage, MessageQueue, ISSUE_DETECTED
+from autogpt.event_bus import ISSUE_DETECTED, EventMessage, MessageQueue
 
 
 class DummyResponse:
@@ -42,7 +42,7 @@ def test_sentry_agent_log_monitoring(tmp_path: Path) -> None:
     stop.set()
     thread.join(timeout=1)
 
-    assert any(e.payload.get("issue_type") == "log_error" for e in received)
+    assert any(e.payload.get("issue_type") == "bug" for e in received)
 
 
 def test_sentry_agent_healthcheck_failure(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -52,13 +52,13 @@ def test_sentry_agent_healthcheck_failure(monkeypatch: pytest.MonkeyPatch) -> No
 
     agent = SentryAgent(mq, plugin_endpoints={"plug": "http://example"})
 
-    def fake_get(url, timeout=5):
+    def fake_get(url: str, timeout: int = 5) -> DummyResponse:
         return DummyResponse(500)
 
     monkeypatch.setattr("requests.get", fake_get)
     agent._poll_health()
 
-    assert any(e.payload.get("issue_type") == "healthcheck" for e in received)
+    assert any(e.payload.get("issue_type") == "bug" for e in received)
 
 
 def test_sentry_agent_dependency_update(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -68,7 +68,7 @@ def test_sentry_agent_dependency_update(monkeypatch: pytest.MonkeyPatch) -> None
 
     agent = SentryAgent(mq, dependencies={"plug": {"pkg": "1.0"}})
 
-    def fake_get(url, timeout=5):
+    def fake_get(url: str, timeout: int = 5) -> DummyResponse:
         return DummyResponse(200, {"info": {"version": "2.0"}})
 
     monkeypatch.setattr("requests.get", fake_get)

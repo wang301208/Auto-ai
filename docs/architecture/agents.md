@@ -6,7 +6,10 @@ Auto‑GPT ships with a lightweight orchestrator that coordinates the helper
 agents over the shared event bus. It supervises the lifecycle of an issue from
 detection to resolution:
 
-1. **Detection** – A component emits `ISSUE_DETECTED` when a problem occurs.
+1. **Detection** – A component emits `ISSUE_DETECTED` when a problem occurs. The
+   payload **must** include an `issue_type` describing the nature of the
+   problem, such as `"bug"` for runtime errors or `"dependency_update"` when a
+   newer package version is available.
 2. **Diagnosis** – `ArchaeologistAgent` analyses the repository and publishes
    `DIAGNOSIS_COMPLETE`.
 3. **Development** – `TDDDeveloperAgent` creates a regression test, guides the
@@ -37,7 +40,11 @@ When an anomaly is found the agent emits:
 ```python
 EventMessage(
     ISSUE_DETECTED,
-    payload={"plugin": "example", "error_log": "...", "issue_type": "log_error"},
+    payload={
+        "plugin": "example",
+        "error_log": "...",
+        "issue_type": "bug",
+    },
     source_agent="sentry",
 )
 ```
@@ -49,9 +56,17 @@ crashes, ensuring continuous monitoring of plugin health.
 
 `ArchaeologistAgent` is an event‑driven diagnostic helper that assists plugin
 authors in understanding runtime failures. The agent listens for
-`ISSUE_DETECTED` events on Auto‑GPT's event bus. When triggered it performs a
-series of git and dependency checks and finally publishes a
+`ISSUE_DETECTED` events on Auto‑GPT's event bus. The agent tailors its analysis
+based on the event's `issue_type` and finally publishes a
 `DIAGNOSIS_COMPLETE` event summarising its findings.
+
+Expected `ISSUE_DETECTED` payload fields:
+
+- `plugin` – identifier of the emitting component.
+- `error_log` – log snippet or message describing the problem.
+- `issue_type` – categorisation such as `"bug"` or `"dependency_update"`.
+- Optional context like `file`, `line`, `commit` or `dependencies` may be
+  supplied when available.
 
 ### Workflow
 
@@ -60,9 +75,11 @@ series of git and dependency checks and finally publishes a
 2. **Collect context** – When an event is received the agent extracts metadata
    such as the affected file, line number and commit hash from the payload or
    the provided error log.
-3. **Analyse the repository** – The agent may temporarily check out the
-   referenced commit, run `git blame` on the file and scan the file for import
-   statements to gather dependency information.
+3. **Analyse the repository** – For `issue_type="bug"` the agent may parse the
+   log, check out the referenced commit, run `git blame` and gather surrounding
+   source context. For `issue_type="dependency_update"` it skips blame/context
+   gathering and instead compares installed versions against the proposed
+   update while scraping release notes for potential breaking changes.
 4. **Generate recommendations** – The results are condensed into a summary and
    simple actionable advice.
 5. **Publish results** – A `DIAGNOSIS_COMPLETE` event is emitted so other
@@ -107,6 +124,7 @@ message_queue.publish(
         payload={
             "plugin": "example-plugin",
             "error_log": 'File "example.py", line 10, in <module>\nImportError',
+            "issue_type": "bug",
         },
     )
 )
