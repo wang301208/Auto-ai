@@ -141,6 +141,22 @@ queue.subscribe("example", handler)
 queue.publish(EventMessage(event_type="example", payload={"foo": "bar"}, source_agent="demo"))
 ```
 
+## 编排器与仪表盘
+
+仓库包含一个简易的编排器，用于启动并监督这些事件驱动的代理：
+
+```bash
+python scripts/run_orchestrator.py
+```
+
+同时可以启动仪表盘以实时查看问题生命周期中的事件：
+
+```bash
+python -m autogpt.dashboard.app
+```
+
+仪表盘默认监听 `http://localhost:8000/`。若设置环境变量 `DASHBOARD_TOKEN`，访问时需在查询参数或 `X-Dashboard-Token` 请求头中提供相同的令牌。
+
 ## 运行应用
 
 ```bash
