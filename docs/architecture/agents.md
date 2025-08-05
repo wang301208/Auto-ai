@@ -347,6 +347,35 @@ from my_vectors import ChromaVectorDB
 library = SkillLibrary(config, vector_db=ChromaVectorDB())
 ```
 
+#### Built-in vector database providers
+
+Auto-GPT bundles three `VectorDBProvider` implementations. Choose one by
+setting the `SKILL_DB_PROVIDER` environment variable to `"memory"`,
+`"chroma"`, or `"faiss"`.
+
+##### MemoryVectorDB
+
+- **Setup**: No extra dependencies. Selected by default when
+  `SKILL_DB_PROVIDER` is unset or set to `memory`.
+- **Performance**: Fast and lightweight but data lives only in process
+  memory, so embeddings vanish between runs and do not scale beyond a single
+  process.
+
+##### ChromaVectorDB
+
+- **Setup**: `pip install chromadb` and set `SKILL_DB_PROVIDER=chroma`.
+  Embeddings persist on disk in `skill_library/chroma`.
+- **Performance**: Provides durable storage and suits moderate skill counts.
+  Query speed is slower than in-memory lookups due to disk access.
+
+##### FaissVectorDB
+
+- **Setup**: Install `faiss-cpu` (or `faiss-gpu` for GPU support) and set
+  `SKILL_DB_PROVIDER=faiss`. Data is stored under `skill_library/faiss`.
+- **Performance**: Optimised for large datasets and fast similarity search but
+  adds a heavier dependency. Rebuilding the FAISS index on updates can incur
+  additional overhead.
+
 ### Example usage
 
 ```python
