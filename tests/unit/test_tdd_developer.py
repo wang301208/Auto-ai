@@ -2,6 +2,7 @@ import importlib
 import sys
 import types
 from pathlib import Path
+from unittest.mock import ANY
 
 from pytest_mock import MockerFixture
 
@@ -169,3 +170,57 @@ def test_tdd_developer_generates_repro_test(
     content = captured.get("content", "")
     assert "from buggy import buggy_fn" in content
     assert "pytest.raises(ValueError)" in content
+
+
+def test_tdd_developer_handles_recommended_skill(
+    agent: Agent, workspace: Workspace, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    event_bus = EventBus(tmp_path / "events.db")
+    message_queue = MessageQueue(event_bus)
+    TDDDeveloper(agent=agent, message_queue=message_queue)
+
+    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
+    write_file = mocker.patch(
+        "autogpt.agents.tdd_developer.write_to_file", return_value=""
+    )
+    create_test = mocker.patch(
+        "autogpt.agents.tdd_developer.create_test_file", return_value=""
+    )
+    run = mocker.patch(
+        "autogpt.agents.tdd_developer.run_tests",
+        return_value={"exit_code": 0},
+    )
+    commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+
+    received: list[EventMessage] = []
+    message_queue.subscribe(CODE_FIX_PROPOSED, lambda msg: received.append(msg))
+
+    repo_path = str(workspace.root)
+    payload = {
+        "issue_id": "99",
+        "repo_path": repo_path,
+        "details": {
+            "recommended_skill": {
+                "name": "hello_world",
+                "version": "1.0",
+                "parameters": {"foo": "bar"},
+            }
+        },
+    }
+
+    message_queue.publish(
+        EventMessage(
+            event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester"
+        )
+    )
+
+    script_path = Path(repo_path) / "scripts" / "use_hello_world.py"
+    test_path = Path(repo_path) / "tests" / "test_use_hello_world.py"
+    write_file.assert_called_once_with(str(script_path), ANY, agent)
+    create_test.assert_called_once_with(str(test_path), ANY, agent)
+    run.assert_called_once_with(str(test_path), agent)
+    commit.assert_called_once_with(repo_path, "Use recommended skill hello_world", agent)
+    assert len(received) == 1
+    assert received[0].payload["branch_name"] == "fix/99"
+    assert received[0].payload["summary"] == "Use recommended skill hello_world"

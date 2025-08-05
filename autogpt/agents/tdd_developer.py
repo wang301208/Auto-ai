@@ -29,6 +29,96 @@ class TDDDeveloper:
         self.message_queue.subscribe(DIAGNOSIS_COMPLETE, self._on_diagnosis_complete)
 
     # ------------------------------------------------------------------
+    def _use_recommended_skill(
+        self,
+        repo_path: str,
+        branch: str,
+        issue_id: str,
+        skill: dict[str, Any],
+    ) -> None:
+        """Create a helper script that invokes a recommended skill.
+
+        A small wrapper is written to ``scripts/use_<skill>.py`` which loads the
+        skill's ``run`` function and executes it with the provided parameters.
+        A corresponding test ensures the script calls the skill. If the test
+        passes, the change is committed and a :class:`CodeFixProposed` event is
+        emitted.
+        """
+
+        name = skill.get("name")
+        version = skill.get("version", "")
+        params = skill.get("parameters", {}) or {}
+
+        script_path = Path(repo_path) / "scripts" / f"use_{name}.py"
+        arg_str = ", ".join(f"{k}={repr(v)}" for k, v in params.items())
+        call_line = f"module.run({arg_str})" if arg_str else "module.run()"
+        script_content = (
+            "from __future__ import annotations\n\n"
+            "import importlib.util\n"
+            "from importlib.machinery import ModuleSpec\n"
+            "from pathlib import Path\n"
+            "from types import ModuleType\n\n"
+            "def _load_skill() -> ModuleType:\n"
+            f"    spec: ModuleSpec | None = importlib.util.spec_from_file_location(\n"
+            f"        'skill', Path(__file__).resolve().parent.parent / 'skill_library' / '{name}_{version}' / 'main.py'\n"
+            "    )\n"
+            "    assert spec is not None and spec.loader is not None\n"
+            "    module = importlib.util.module_from_spec(spec)\n"
+            "    spec.loader.exec_module(module)\n"
+            "    return module\n\n"
+            "def main() -> None:\n"
+            "    module = _load_skill()\n"
+            f"    {call_line}\n\n"
+            "if __name__ == '__main__':\n"
+            "    main()\n"
+        )
+        write_to_file(str(script_path), script_content, self.agent)
+
+        test_path = Path(repo_path) / "tests" / f"test_use_{name}.py"
+        assert_line = (
+            f"    mock_run.assert_called_once_with({arg_str})\n"
+            if arg_str
+            else "    mock_run.assert_called_once_with()\n"
+        )
+        test_content = (
+            "from __future__ import annotations\n\n"
+            "from importlib.machinery import ModuleSpec\n"
+            "from types import ModuleType\n"
+            "from unittest.mock import MagicMock, patch\n\n"
+            f"import scripts.use_{name} as script\n\n"
+            "def test_main_calls_run() -> None:\n"
+            "    mock_run = MagicMock()\n"
+            "    module = ModuleType('skill')\n"
+            "    spec = ModuleSpec('skill', loader=MagicMock())\n"
+            "    spec.loader.exec_module.side_effect = lambda mod: setattr(mod, 'run', mock_run)\n"
+            "    with patch('importlib.util.spec_from_file_location', return_value=spec), patch(\n"
+            "        'importlib.util.module_from_spec', return_value=module\n"
+            "    ):\n"
+            "        script.main()\n"
+            f"{assert_line}"
+        )
+        create_test_file(str(test_path), test_content, self.agent)
+        result = run_tests(str(test_path), self.agent)
+        if result.get("exit_code", 1) != 0:
+            return
+
+        git_commit(repo_path, f"Use recommended skill {name}", self.agent)
+        try:
+            commit_hash = Repo(repo_path).head.commit.hexsha
+        except Exception:
+            commit_hash = ""
+
+        self.message_queue.publish(
+            CodeFixProposed(
+                branch_name=branch,
+                commit_hash=commit_hash,
+                summary=f"Use recommended skill {name}",
+                source_agent="tdd_developer",
+            )
+        )
+        return
+
+    # ------------------------------------------------------------------
     def _on_diagnosis_complete(self, event: EventMessage) -> None:
         """Handle a ``DIAGNOSIS_COMPLETE`` event."""
 
@@ -46,6 +136,15 @@ class TDDDeveloper:
         branch = f"fix/{issue_id}"
         git_create_branch(repo_path, branch, self.agent)
         git_checkout(repo_path, branch, self.agent)
+
+        recommended_skill = (
+            payload.get("details", {}).get("recommended_skill")
+            if isinstance(payload.get("details"), dict)
+            else None
+        )
+        if recommended_skill:
+            self._use_recommended_skill(repo_path, branch, issue_id, recommended_skill)
+            return
 
         test_file = Path(repo_path) / "tests" / f"test_issue_{issue_id}.py"
 
