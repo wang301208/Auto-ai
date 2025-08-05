@@ -12,7 +12,6 @@ from autogpt.app.i18n import _
 from autogpt.config import Config
 from autogpt.event_bus import (
     ISSUE_DETECTED,
-    TICKET_RECEIVED,
     DiagnosisComplete,
     EventMessage,
     MessageQueue,
@@ -45,8 +44,7 @@ class Archaeologist:
                 ``Config`` will be created.
         """
         self.message_queue = message_queue
-        self.message_queue.subscribe(ISSUE_DETECTED, self._on_ticket_received)
-        self.message_queue.subscribe(TICKET_RECEIVED, self._on_ticket_received)
+        self.message_queue.subscribe(ISSUE_DETECTED, self._on_issue_detected)
         self.config = config or Config()
         if self.config.use_librarian:
             self.librarian = librarian or LibrarianAgent(self.config)
@@ -54,8 +52,8 @@ class Archaeologist:
             self.librarian = None
 
     # ------------------------------------------------------------------
-    def _on_ticket_received(self, event: EventMessage) -> None:
-        """Handle an ISSUE_DETECTED or TICKET_RECEIVED event."""
+    def _on_issue_detected(self, event: EventMessage) -> None:
+        """Handle an ISSUE_DETECTED event."""
 
         payload = event.payload or {}
         if not isinstance(payload, dict):
