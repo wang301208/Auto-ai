@@ -99,6 +99,7 @@ class EventBus:
                     branch_name=str(payload_obj.get("branch_name", "")),
                     test_output=str(payload_obj.get("test_output", "")),
                     summary=str(payload_obj.get("summary", "")),
+                    diff=str(payload_obj.get("diff", "")),
                     source_agent=source_agent,
                     timestamp=ts,
                 )
