@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>AutoGPT Event Dashboard</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; }
+        th { background: #f0f0f0; }
+    </style>
+</head>
+<body>
+    <h1>AutoGPT Event Dashboard</h1>
+    <h2>Issues</h2>
+    <table id="issues">
+        <thead>
+            <tr><th>Issue</th><th>State</th><th>Source Agent</th><th>Timestamp</th></tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+    <h2>Event Log</h2>
+    <ul id="log"></ul>
+<script>
+const token = new URLSearchParams(window.location.search).get('token');
+const evtSource = new EventSource('/stream' + (token ? '?token='+token : ''));
+const issues = {};
+
+evtSource.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    const log = document.getElementById('log');
+    const item = document.createElement('li');
+    item.textContent = `${data.timestamp} [${data.event_type}] from ${data.source_agent} (${data.issue_id})`;
+    log.appendChild(item);
+    issues[data.issue_id] = data;
+    renderIssues();
+};
+
+function renderIssues() {
+    const tbody = document.querySelector('#issues tbody');
+    tbody.innerHTML = '';
+    Object.values(issues).forEach(issue => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${issue.issue_id}</td><td>${issue.event_type}</td><td>${issue.source_agent}</td><td>${issue.timestamp}</td>`;
+        tbody.appendChild(tr);
+    });
+}
+</script>
+</body>
+</html>
