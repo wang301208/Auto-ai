@@ -62,6 +62,8 @@ def test_qa_agent_flow(tmp_path: Path, mocker: MockerFixture) -> None:
         qa_module,
         "run_tests",
         return_value={
+            "status": "passed",
+            "exit_code": 0,
             "successes": 1,
             "failures": 0,
             "errors": 0,

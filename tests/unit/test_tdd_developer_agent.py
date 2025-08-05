@@ -83,8 +83,22 @@ def test_tdd_developer_agent_flow(tmp_path, mocker):
         tdd_module,
         "run_tests",
         side_effect=[
-            {"successes": 0, "failures": 1, "errors": 0, "logs": "1 failed"},
-            {"successes": 1, "failures": 0, "errors": 0, "logs": "1 passed"},
+            {
+                "status": "failed",
+                "exit_code": 1,
+                "successes": 0,
+                "failures": 1,
+                "errors": 0,
+                "logs": "1 failed",
+            },
+            {
+                "status": "passed",
+                "exit_code": 0,
+                "successes": 1,
+                "failures": 0,
+                "errors": 0,
+                "logs": "1 passed",
+            },
         ],
     )
     commit = mocker.patch.object(tdd_module, "git_commit", return_value="")

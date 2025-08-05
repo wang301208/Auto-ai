@@ -46,9 +46,30 @@ def test_tdd_developer_handles_diagnosis(
     run = mocker.patch(
         "autogpt.agents.tdd_developer.run_tests",
         side_effect=[
-            {"successes": 0, "failures": 1, "errors": 0, "logs": "1 failed"},
-            {"successes": 1, "failures": 1, "errors": 0, "logs": "1 failed"},
-            {"successes": 2, "failures": 0, "errors": 0, "logs": "2 passed"},
+            {
+                "status": "failed",
+                "exit_code": 1,
+                "successes": 0,
+                "failures": 1,
+                "errors": 0,
+                "logs": "1 failed",
+            },
+            {
+                "status": "failed",
+                "exit_code": 1,
+                "successes": 1,
+                "failures": 1,
+                "errors": 0,
+                "logs": "1 failed",
+            },
+            {
+                "status": "passed",
+                "exit_code": 0,
+                "successes": 2,
+                "failures": 0,
+                "errors": 0,
+                "logs": "2 passed",
+            },
         ],
     )
     commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
@@ -111,8 +132,20 @@ def test_tdd_developer_generates_repro_test(
     mocker.patch(
         "autogpt.agents.tdd_developer.run_tests",
         side_effect=[
-            {"successes": 0, "failures": 1, "errors": 0},
-            {"successes": 0, "failures": 1, "errors": 0},
+            {
+                "status": "failed",
+                "exit_code": 1,
+                "successes": 0,
+                "failures": 1,
+                "errors": 0,
+            },
+            {
+                "status": "failed",
+                "exit_code": 1,
+                "successes": 0,
+                "failures": 1,
+                "errors": 0,
+            },
         ],
     )
 
