@@ -22,10 +22,22 @@ from .archaeologist_dependency import analyze_dependency
 class Archaeologist:
     """Agent that inspects issues reported by plugins and emits diagnostics."""
 
-    def __init__(self, message_queue: MessageQueue) -> None:
+    def __init__(
+        self,
+        message_queue: MessageQueue,
+        librarian: LibrarianAgent | None = None,
+    ) -> None:
+        """Create a new instance of :class:`Archaeologist`.
+
+        Args:
+            message_queue: The message queue used for communication with other
+                agents.
+            librarian: Optional ``LibrarianAgent``. If not provided, a default
+                ``LibrarianAgent`` will be created.
+        """
         self.message_queue = message_queue
         self.message_queue.subscribe(ISSUE_DETECTED, self._on_issue_detected)
-        self.librarian = LibrarianAgent()
+        self.librarian = librarian or LibrarianAgent()
 
     # ------------------------------------------------------------------
     def _on_issue_detected(self, event: EventMessage) -> None:
@@ -129,9 +141,7 @@ class Archaeologist:
             param_list = ", ".join(params.keys()) if params else "no parameters"
             skill_rec = f"Invoke {call_name} with parameters: {param_list}."
         else:
-            skill_rec = (
-                "No suitable skill found; consider developing a new skill."
-            )
+            skill_rec = "No suitable skill found; consider developing a new skill."
 
         base_rec = self._recommendations(analysis)
         recs = []
