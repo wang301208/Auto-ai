@@ -61,6 +61,12 @@ def delete(name: str, version: str) -> None:
     get_library().delete_skill(name, version)
 
 
+def reindex() -> None:
+    """Rebuild the skill library index from disk."""
+
+    get_library().reindex()
+
+
 def list_skills() -> List[Skill]:
     """Return all stored skills."""
 
@@ -83,6 +89,7 @@ __all__ = [
     "get",
     "update",
     "delete",
+    "reindex",
     "list_skills",
     "search",
 ]

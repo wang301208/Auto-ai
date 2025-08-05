@@ -6,6 +6,34 @@ import pytest
 import yaml
 from pytest_mock import MockerFixture
 
+import sys
+from types import ModuleType
+
+# Stub out optional heavy dependencies
+sys.modules.setdefault("spacy", ModuleType("spacy"))
+sys.modules.setdefault("chromadb", ModuleType("chromadb"))
+sys.modules.setdefault("docx", ModuleType("docx"))
+sys.modules.setdefault("markdown", ModuleType("markdown"))
+sys.modules.setdefault("PyPDF2", ModuleType("PyPDF2"))
+bs4_stub = ModuleType("bs4")
+bs4_stub.BeautifulSoup = object
+sys.modules.setdefault("bs4", bs4_stub)
+ple_stub = ModuleType("pylatexenc")
+latex2text_stub = ModuleType("pylatexenc.latex2text")
+class LatexNodes2Text:  # type: ignore
+    def latex_to_text(self, s: str) -> str:
+        return s
+latex2text_stub.LatexNodes2Text = LatexNodes2Text
+ple_stub.latex2text = latex2text_stub
+sys.modules.setdefault("pylatexenc", ple_stub)
+sys.modules.setdefault("pylatexenc.latex2text", latex2text_stub)
+orjson_stub = ModuleType("orjson")
+orjson_stub.OPT_SERIALIZE_NUMPY = 0
+orjson_stub.OPT_SERIALIZE_DATACLASS = 0
+orjson_stub.dumps = lambda obj, option=0: b""
+orjson_stub.loads = lambda b: {}
+sys.modules.setdefault("orjson", orjson_stub)
+
 from autogpt.agents import Agent
 from autogpt.config import AIConfig, Config, ConfigBuilder
 from autogpt.llm.api_manager import ApiManager
@@ -18,7 +46,6 @@ from autogpt.workspace import Workspace
 pytest_plugins = [
     "tests.integration.agent_factory",
     "tests.integration.memory.utils",
-    "tests.vcr",
 ]
 
 
