@@ -290,7 +290,7 @@ def test_qa_agent_registers_new_skills(tmp_path: Path, mocker: MockerFixture) ->
     repo_mock = mocker.MagicMock()
     repo_mock.git.checkout.return_value = ""
     repo_mock.git.merge.return_value = ""
-    repo_mock.git.diff.return_value = "A\tskill_library/new_skill_1.0/skill.json"
+    repo_mock.git.diff.return_value = "A\tskill_library/test_skill/skill.json"
     origin_mock = mocker.MagicMock()
     origin_mock.url = "https://example.com/repo.git"
     remotes_mock = mocker.MagicMock()
@@ -301,21 +301,18 @@ def test_qa_agent_registers_new_skills(tmp_path: Path, mocker: MockerFixture) ->
         qa_module.subprocess, "run", return_value=mocker.MagicMock(returncode=0)
     )
 
-    skill_dir = tmp_path / "skill_library" / "new_skill_1.0"
+    skill_dir = tmp_path / "skill_library" / "test_skill"
     skill_dir.mkdir(parents=True)
     metadata = {
-        "skill_name": "new_skill",
-        "version": "1.0",
-        "description": "",
-        "parameters": {},
-        "tags": [],
+        "name": "Test Skill",
+        "entry_point": "run.py",
     }
     (skill_dir / "skill.json").write_text(json.dumps(metadata), encoding="utf-8")
-    (skill_dir / "main.py").write_text("def run(): pass", encoding="utf-8")
+    (skill_dir / "run.py").write_text("def run(): pass", encoding="utf-8")
 
     approval_event = ApprovalGranted(
         branch_name="fix/123", commit_hash="abc", summary="Fix bug"
     )
     on_approval_granted(approval_event)
 
-    librarian.add_skill.assert_called_once_with(metadata, str(skill_dir / "main.py"))
+    librarian.add_skill.assert_called_once_with(metadata, str(skill_dir / "run.py"))
