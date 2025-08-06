@@ -48,7 +48,7 @@ agpt
 首次运行会在工作目录中创建 `auto_gpt_workspace` 等文件。
 使用 `agpt --help` 查看所有可用参数。
 
-完整的设置和配置选项请参阅 [文档][docs]。
+完整的设置和配置选项请参阅 [文档][docs]，环境变量列表见 [配置选项](docs/configuration/options.md)。
 
 [docs]: https://docs.agpt.co/
 
@@ -255,6 +255,7 @@ python scripts/skill_cli.py test my_skill
 * [🧰 Git 命令指南](docs/commands/git_operations.md)
 * [🧪 测试命令指南](docs/commands/testing.md)
 * 配置
+  * [⚙️ 配置选项](docs/configuration/options.md)
   * [🔍 Web 搜索](https://docs.agpt.co/configuration/search/)
   * [🧠 记忆](https://docs.agpt.co/configuration/memory/)
   * [🗣️ 语音（TTS）](https://docs.agpt.co/configuration/voice/)

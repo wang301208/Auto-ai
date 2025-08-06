@@ -33,6 +33,7 @@
 - `OPENAI_API_KEY`：**必填**——你的 [OpenAI API Key](https://platform.openai.com/account/api-keys)。
 - `OPENAI_API_BASE_URL`：OpenAI API 的自定义 URL，用于连接自定义后端或本地代理。留空将使用官方端点。
 - `OPENAI_ORGANIZATION`：OpenAI 组织 ID。可选。
+- `OPENAI_FUNCTIONS`：启用 OpenAI Functions 功能（仅限支持函数调用的模型）。可选值：`True`、`False`。默认值：False
 - `PLAIN_OUTPUT`：纯文本输出，禁用旋转指示器。默认值：False
 - `PLUGINS_CONFIG_FILE`：插件配置文件相对于 Auto-GPT 根目录的路径。默认值：plugins_config.yaml
 - `PROMPT_SETTINGS_FILE`：提示词设置文件相对于 Auto-GPT 根目录的位置。默认值：prompt_settings.yaml
