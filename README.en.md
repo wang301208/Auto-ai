@@ -132,7 +132,7 @@ Common flags include:
 - `-w, --workspace-directory PATH` – directory used for the agent's workspace (defaults to `auto_gpt_workspace` inside the working directory).
 - `--ai-settings FILE` – path to a YAML file with AI configuration.
 - `--prompt-settings FILE` – path to a YAML file with prompt settings.
-- `--use-memory BACKEND` – choose a memory backend, e.g. `local`, `redis`.
+- `--use-memory BACKEND` – choose a memory backend, e.g. `json_file`, `chroma`.
 - `--speak` – enable text-to-speech.
 - `--continuous` – run without requiring user authorization.
 - `--gpt3only` – use GPT‑3.5 for all responses.
@@ -142,7 +142,7 @@ Common flags include:
 Example:
 
 ```bash
-agpt --ai-settings ai_settings.yaml --use-memory redis
+agpt --ai-settings ai_settings.yaml --use-memory chroma
 ```
 
 Run `agpt --help` for the full list of options.
