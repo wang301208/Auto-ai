@@ -12,13 +12,6 @@
 
 ---
 
-### 🔴 请使用 `stable` 而非 `master` 🔴
-
-**最新稳定版下载地址：https://github.com/Significant-Gravitas/Auto-GPT/releases/latest**
-`master` 分支处于快速开发中，可能经常处于 **不可用** 状态。
-
----
-
 Auto-GPT 是一个实验性的开源应用，用于展示 GPT-4 语言模型的能力。该程序由 GPT-4 驱动，将 LLM 的“思考”串联起来，自主完成你设定的任何目标。作为 GPT-4 完全自主运行的首批示例之一，Auto-GPT 正在推动 AI 的边界。
 
 ## 🚀 功能
@@ -59,7 +52,7 @@ Auto-GPT 需要 **Python 3.10 或更高版本**。
 克隆仓库并进入项目目录：
 
 ```bash
-git clone -b stable https://github.com/Significant-Gravitas/Auto-GPT.git
+git clone https://github.com/Significant-Gravitas/Auto-GPT.git
 cd Auto-GPT
 ```
 
