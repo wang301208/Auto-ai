@@ -127,7 +127,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     image_size: int = 256
     # Audio to text
     audio_to_text_provider: str = "huggingface"
-    huggingface_audio_to_text_model: Optional[str] = None
+    huggingface_audio_to_text_model: str = "openai/whisper-large-v2"
     # Web browsing
     selenium_web_browser: str = "chrome"
     selenium_headless: bool = True
