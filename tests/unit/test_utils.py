@@ -1,18 +1,13 @@
 import os
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 import pytest
 import requests
 
-from autogpt.app.utils import (
-    get_bulletin_from_web,
-    get_current_git_branch,
-    get_latest_bulletin,
-)
+from autogpt.app.utils import get_bulletin_from_web, get_latest_bulletin
 from autogpt.config import Config
 from autogpt.json_utils.utilities import extract_dict_from_response, validate_dict
 from autogpt.utils import validate_yaml_file
-from tests.utils import skip_in_ci
 
 
 @pytest.fixture
@@ -46,7 +41,7 @@ def invalid_json_response() -> dict:
     }
 
 
-def test_validate_yaml_file_valid():
+def test_validate_yaml_file_valid() -> None:
     with open("valid_test_file.yaml", "w") as f:
         f.write("setting: value")
     result, message = validate_yaml_file("valid_test_file.yaml")
@@ -56,14 +51,14 @@ def test_validate_yaml_file_valid():
     assert "Successfully validated" in message
 
 
-def test_validate_yaml_file_not_found():
+def test_validate_yaml_file_not_found() -> None:
     result, message = validate_yaml_file("non_existent_file.yaml")
 
     assert result == False
     assert "wasn't found" in message
 
 
-def test_validate_yaml_file_invalid():
+def test_validate_yaml_file_invalid() -> None:
     with open("invalid_test_file.yaml", "w") as f:
         f.write(
             "settings:\n  first_setting: value\n  second_setting: value\n    nested_setting: value\n  third_setting: value\nunindented_setting: value"
@@ -77,7 +72,7 @@ def test_validate_yaml_file_invalid():
 
 
 @patch("requests.get")
-def test_get_bulletin_from_web_success(mock_get):
+def test_get_bulletin_from_web_success(mock_get: MagicMock) -> None:
     expected_content = "Test bulletin from web"
 
     mock_get.return_value.status_code = 200
@@ -91,7 +86,7 @@ def test_get_bulletin_from_web_success(mock_get):
 
 
 @patch("requests.get")
-def test_get_bulletin_from_web_failure(mock_get):
+def test_get_bulletin_from_web_failure(mock_get: MagicMock) -> None:
     mock_get.return_value.status_code = 404
     bulletin = get_bulletin_from_web()
 
@@ -99,22 +94,22 @@ def test_get_bulletin_from_web_failure(mock_get):
 
 
 @patch("requests.get")
-def test_get_bulletin_from_web_exception(mock_get):
+def test_get_bulletin_from_web_exception(mock_get: MagicMock) -> None:
     mock_get.side_effect = requests.exceptions.RequestException()
     bulletin = get_bulletin_from_web()
 
     assert bulletin == ""
 
 
-def test_get_latest_bulletin_no_file():
+def test_get_latest_bulletin_no_file() -> None:
     if os.path.exists("data/CURRENT_BULLETIN.md"):
         os.remove("data/CURRENT_BULLETIN.md")
+    with patch("autogpt.app.utils.get_bulletin_from_web", return_value="bulletin"):
+        bulletin, is_new = get_latest_bulletin()
+        assert is_new
 
-    bulletin, is_new = get_latest_bulletin()
-    assert is_new
 
-
-def test_get_latest_bulletin_with_file():
+def test_get_latest_bulletin_with_file() -> None:
     expected_content = "Test bulletin"
     with open("data/CURRENT_BULLETIN.md", "w", encoding="utf-8") as f:
         f.write(expected_content)
@@ -127,7 +122,7 @@ def test_get_latest_bulletin_with_file():
     os.remove("data/CURRENT_BULLETIN.md")
 
 
-def test_get_latest_bulletin_with_new_bulletin():
+def test_get_latest_bulletin_with_new_bulletin() -> None:
     with open("data/CURRENT_BULLETIN.md", "w", encoding="utf-8") as f:
         f.write("Old bulletin")
 
@@ -143,7 +138,7 @@ def test_get_latest_bulletin_with_new_bulletin():
     os.remove("data/CURRENT_BULLETIN.md")
 
 
-def test_get_latest_bulletin_new_bulletin_same_as_old_bulletin():
+def test_get_latest_bulletin_new_bulletin_same_as_old_bulletin() -> None:
     expected_content = "Current bulletin"
     with open("data/CURRENT_BULLETIN.md", "w", encoding="utf-8") as f:
         f.write(expected_content)
@@ -158,50 +153,28 @@ def test_get_latest_bulletin_new_bulletin_same_as_old_bulletin():
     os.remove("data/CURRENT_BULLETIN.md")
 
 
-@skip_in_ci
-def test_get_current_git_branch():
-    branch_name = get_current_git_branch()
-
-    # Assuming that the branch name will be non-empty if the function is working correctly.
-    assert branch_name != ""
-
-
-@patch("autogpt.app.utils.Repo")
-def test_get_current_git_branch_success(mock_repo):
-    mock_repo.return_value.active_branch.name = "test-branch"
-    branch_name = get_current_git_branch()
-
-    assert branch_name == "test-branch"
-
-
-@patch("autogpt.app.utils.Repo")
-def test_get_current_git_branch_failure(mock_repo):
-    mock_repo.side_effect = Exception()
-    branch_name = get_current_git_branch()
-
-    assert branch_name == ""
-
-
-def test_validate_json_valid(valid_json_response, config: Config):
+def test_validate_json_valid(valid_json_response: dict, config: Config) -> None:
     valid, errors = validate_dict(valid_json_response, config)
     assert valid
     assert errors is None
 
 
-def test_validate_json_invalid(invalid_json_response, config: Config):
+def test_validate_json_invalid(invalid_json_response: dict, config: Config) -> None:
     valid, errors = validate_dict(valid_json_response, config)
     assert not valid
     assert errors is not None
 
 
-def test_extract_json_from_response(valid_json_response: dict):
+def test_extract_json_from_response(valid_json_response: dict) -> None:
     emulated_response_from_openai = str(valid_json_response)
     assert (
         extract_dict_from_response(emulated_response_from_openai) == valid_json_response
     )
 
 
-def test_extract_json_from_response_wrapped_in_code_block(valid_json_response: dict):
+def test_extract_json_from_response_wrapped_in_code_block(
+    valid_json_response: dict,
+) -> None:
     emulated_response_from_openai = "```" + str(valid_json_response) + "```"
     assert (
         extract_dict_from_response(emulated_response_from_openai) == valid_json_response
