@@ -7,12 +7,12 @@ from typing import Callable, List, Optional
 
 from openai import (
     APIError,
+    APITimeoutError,
     AsyncAzureOpenAI,
     AsyncOpenAI,
     AzureOpenAI,
     OpenAI,
     RateLimitError,
-    Timeout,
 )
 
 try:
@@ -237,8 +237,11 @@ def retry_api(
                         logger.debug(f"Response headers: {e.headers}")
                         user_warned = True
 
-                except (APIError, Timeout) as e:
-                    if (e.http_status not in [429, 502]) or (attempt == max_attempts):
+                except (APIError, APITimeoutError) as e:
+                    if isinstance(e, APITimeoutError):
+                        if attempt == max_attempts:
+                            raise
+                    elif (e.http_status not in [429, 502]) or (attempt == max_attempts):
                         raise
 
                 backoff = backoff_base ** (attempt + 2)
