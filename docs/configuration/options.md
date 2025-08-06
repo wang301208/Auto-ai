@@ -24,7 +24,7 @@
 - `GOOGLE_CUSTOM_SEARCH_ENGINE_ID`：[Google 自定义搜索引擎 ID](https://programmablesearchengine.google.com/controlpanel/all)。可选。
 - `HEADLESS_BROWSER`：在 Auto-GPT 使用浏览器时是否启用无头模式。设置为 `False` 可观察浏览器操作。默认值：True
 - `HUGGINGFACE_API_TOKEN`：HuggingFace API，用于图像生成和音频转文本。可选。
-- `HUGGINGFACE_AUDIO_TO_TEXT_MODEL`：HuggingFace 音频转文本模型。默认值：CompVis/stable-diffusion-v1-4
+- `HUGGINGFACE_AUDIO_TO_TEXT_MODEL`：HuggingFace 音频转文本模型。默认值：openai/whisper-large-v2（推荐使用的 OpenAI Whisper Large v2 模型，可在 Hugging Face 获取）
 - `HUGGINGFACE_IMAGE_MODEL`：用于图像生成的 HuggingFace 模型。默认值：CompVis/stable-diffusion-v1-4
 - `IMAGE_PROVIDER`：图像提供方。可选值：`dalle`、`huggingface`、`sdwebui`。默认值：dalle
 - `IMAGE_SIZE`：生成图像的默认尺寸。默认值：256
