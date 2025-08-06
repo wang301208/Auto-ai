@@ -52,7 +52,7 @@ Demo made by <a href=https://twitter.com/BlakeWerlinger>Blake Werlinger</a>
    The first run creates `auto_gpt_workspace` and other files in your working directory.
    Use `agpt --help` to see all available parameters.
 
-Please see the [documentation][docs] for full setup instructions and configuration options.
+Please see the [documentation][docs] for full setup instructions and [configuration options](docs/configuration/options.md).
 
 [docs]: https://docs.agpt.co/
 
@@ -188,6 +188,7 @@ pytest
 * [🧰 Git Command Guide](docs/commands/git_operations.md)
 * [🧪 Testing Command Guide](docs/commands/testing.md)
 * Configuration
+  * [⚙️ Options](docs/configuration/options.md)
   * [🔍 Web Search](https://docs.agpt.co/configuration/search/)
   * [🧠 Memory](https://docs.agpt.co/configuration/memory/)
   * [🗣️ Voice (TTS)](https://docs.agpt.co/configuration/voice/)
