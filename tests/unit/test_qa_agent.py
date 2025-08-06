@@ -1,4 +1,5 @@
 import importlib
+import json
 import sys
 import types
 from pathlib import Path
@@ -30,6 +31,7 @@ class Agent:  # minimal stub to satisfy imports
 
 agent_stub.Agent = Agent  # type: ignore[attr-defined]
 sys.modules.setdefault("autogpt.agents.agent", agent_stub)
+agents_pkg.Agent = Agent  # type: ignore[attr-defined]
 
 testing_stub = types.ModuleType("autogpt.commands.testing")
 testing_stub.run_tests = lambda *a, **k: ""  # type: ignore[attr-defined]
@@ -39,6 +41,10 @@ git_ops_stub = types.ModuleType("autogpt.commands.git_operations")
 git_ops_stub.git_checkout = lambda *a, **k: ""  # type: ignore[attr-defined]
 git_ops_stub.git_clone = lambda *a, **k: ""  # type: ignore[attr-defined]
 sys.modules.setdefault("autogpt.commands.git_operations", git_ops_stub)
+
+librarian_stub = types.ModuleType("autogpt.skills.librarian")
+librarian_stub.LibrarianAgent = object  # type: ignore[attr-defined]
+sys.modules.setdefault("autogpt.skills.librarian", librarian_stub)
 
 qa_module = importlib.import_module("autogpt.agents.qa_agent")
 QAAgent = qa_module.QAAgent
@@ -268,3 +274,48 @@ def test_qa_agent_handles_deployment_failure(
     assert len(message_queue.publish.call_args_list) == 2
     published_event = message_queue.publish.call_args_list[-1][0][0]
     assert isinstance(published_event, DeploymentFailed)
+
+
+def test_qa_agent_registers_new_skills(tmp_path: Path, mocker: MockerFixture) -> None:
+    message_queue = mocker.Mock(spec=["subscribe", "publish"])
+    agent = mocker.Mock()
+    agent.config.workspace_path = str(tmp_path)
+    librarian = mocker.Mock()
+
+    QAAgent(agent=agent, message_queue=message_queue, librarian=librarian)
+
+    callbacks = {call.args[0]: call.args[1] for call in message_queue.subscribe.call_args_list}
+    on_approval_granted = callbacks[APPROVAL_GRANTED]
+
+    repo_mock = mocker.MagicMock()
+    repo_mock.git.checkout.return_value = ""
+    repo_mock.git.merge.return_value = ""
+    repo_mock.git.diff.return_value = "A\tskill_library/new_skill_1.0/skill.json"
+    origin_mock = mocker.MagicMock()
+    origin_mock.url = "https://example.com/repo.git"
+    remotes_mock = mocker.MagicMock()
+    remotes_mock.origin = origin_mock
+    repo_mock.remotes = remotes_mock
+    mocker.patch.object(qa_module, "Repo", return_value=repo_mock)
+    mocker.patch.object(
+        qa_module.subprocess, "run", return_value=mocker.MagicMock(returncode=0)
+    )
+
+    skill_dir = tmp_path / "skill_library" / "new_skill_1.0"
+    skill_dir.mkdir(parents=True)
+    metadata = {
+        "skill_name": "new_skill",
+        "version": "1.0",
+        "description": "",
+        "parameters": {},
+        "tags": [],
+    }
+    (skill_dir / "skill.json").write_text(json.dumps(metadata), encoding="utf-8")
+    (skill_dir / "main.py").write_text("def run(): pass", encoding="utf-8")
+
+    approval_event = ApprovalGranted(
+        branch_name="fix/123", commit_hash="abc", summary="Fix bug"
+    )
+    on_approval_granted(approval_event)
+
+    librarian.add_skill.assert_called_once_with(metadata, str(skill_dir / "main.py"))
