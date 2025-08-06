@@ -361,7 +361,7 @@ The library indexes skills in a vector database. The default
 by implementing `VectorDBProvider`:
 
 1. Install and configure your vector DB, e.g. `pip install chromadb` for
-   Chroma or `pip install weaviate-client` for Weaviate.
+   Chroma.
 2. Implement a subclass of `VectorDBProvider` that wraps the database's API.
 3. Create the library with your provider:
 

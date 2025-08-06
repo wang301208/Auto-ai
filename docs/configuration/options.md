@@ -37,9 +37,6 @@
 - `PLAIN_OUTPUT`：纯文本输出，禁用旋转指示器。默认值：False
 - `PLUGINS_CONFIG_FILE`：插件配置文件相对于 Auto-GPT 根目录的路径。默认值：plugins_config.yaml
 - `PROMPT_SETTINGS_FILE`：提示词设置文件相对于 Auto-GPT 根目录的位置。默认值：prompt_settings.yaml
-- `REDIS_HOST`：Redis 主机。默认值：localhost
-- `REDIS_PASSWORD`：Redis 密码。可选。默认值为空
-- `REDIS_PORT`：Redis 端口。默认值：6379
 - `RESTRICT_TO_WORKSPACE`：是否将文件读写限制在工作空间目录内。默认值：True
 - `SD_WEBUI_AUTH`：Stable Diffusion Web UI 的 `username:password`。可选。
 - `SD_WEBUI_URL`：Stable Diffusion Web UI 的 URL。默认值：http://localhost:7860
@@ -54,7 +51,15 @@
 - `USE_AZURE`：是否使用 Azure 的 LLM。默认值：False
 - `USE_LIBRARIAN`：是否使用 LibrarianAgent 进行技能推荐。默认值：True
 - `USE_WEB_BROWSER`：使用的网页浏览器，选项有 `chrome`、`firefox`、`safari`、`edge`。默认值：chrome
-- `WIPE_REDIS_ON_START`：启动时是否清空数据/索引。默认值：True
 - `SELF_DEVELOP`：启用后台自我开发循环。默认值：False
 - `SELF_DEVELOP_INTERVAL`：启用自我开发时仓库扫描的间隔秒数。默认值：300
+
+### 已弃用的环境变量
+
+以下变量用于已移除的记忆后端（如 Redis），目前无效，仅保留作历史参考：
+
+- `REDIS_HOST`
+- `REDIS_PASSWORD`
+- `REDIS_PORT`
+- `WIPE_REDIS_ON_START`
 
