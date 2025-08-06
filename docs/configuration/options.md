@@ -31,6 +31,7 @@
 - `MEMORY_BACKEND`：使用的记忆后端。目前支持 `json_file` 和 `chroma`。默认值：json_file
 - `MEMORY_INDEX`：在记忆后端中用于作用域、命名或索引的值。默认值：auto-gpt
 - `OPENAI_API_KEY`：**必填**——你的 [OpenAI API Key](https://platform.openai.com/account/api-keys)。
+- `OPENAI_API_BASE_URL`：OpenAI API 的自定义 URL，用于连接自定义后端或本地代理。留空将使用官方端点。
 - `OPENAI_ORGANIZATION`：OpenAI 组织 ID。可选。
 - `PLAIN_OUTPUT`：纯文本输出，禁用旋转指示器。默认值：False
 - `PLUGINS_CONFIG_FILE`：插件配置文件相对于 Auto-GPT 根目录的路径。默认值：plugins_config.yaml
