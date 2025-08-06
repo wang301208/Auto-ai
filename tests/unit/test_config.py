@@ -2,12 +2,11 @@
 Test cases for the config class, which handles the configuration settings
 for the AI and ensures it behaves as a singleton.
 """
-import os
 import json
+import os
 from pathlib import Path
 from typing import Any
 from unittest import mock
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -27,6 +26,15 @@ def test_initial_values(config: Config) -> None:
     assert config.fast_llm == "gpt-3.5-turbo"
     assert config.smart_llm == "gpt-4-0314"
     assert config.use_librarian is True
+
+
+def test_execute_local_commands_default_true(
+    monkeypatch: pytest.MonkeyPatch, workspace: Workspace
+) -> None:
+    """Ensure execute_local_commands defaults to True when unset."""
+    monkeypatch.delenv("EXECUTE_LOCAL_COMMANDS", raising=False)
+    config = ConfigBuilder.build_config_from_env(workspace.root.parent)
+    assert config.execute_local_commands is True
 
 
 def test_set_continuous_mode(config: Config) -> None:
@@ -273,7 +281,9 @@ def test_apply_overlay(tmp_path: Path, config: Config) -> None:
     assert config.fast_llm == "gpt-4"
 
 
-def test_build_config_from_env_use_librarian(workspace: Workspace, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_build_config_from_env_use_librarian(
+    workspace: Workspace, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setenv("USE_LIBRARIAN", "False")
     config = ConfigBuilder.build_config_from_env(workspace.root.parent)
     assert config.use_librarian is False
