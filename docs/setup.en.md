@@ -42,7 +42,7 @@ Get your OpenAI API key from: [https://platform.openai.com/account/api-keys](htt
 1. Clone the repository
 
     ```shell
-    git clone -b stable https://github.com/Significant-Gravitas/Auto-GPT.git
+    git clone https://github.com/Significant-Gravitas/Auto-GPT.git
     ```
 
 2. Navigate to the directory where you downloaded the repository
@@ -53,7 +53,7 @@ Get your OpenAI API key from: [https://platform.openai.com/account/api-keys](htt
 
 ### Set up from release archive
 
-1. Download `Source code (zip)` from the [latest stable release](https://github.com/Significant-Gravitas/Auto-GPT/releases/latest)
+1. Download `Source code (zip)` from the [latest release](https://github.com/Significant-Gravitas/Auto-GPT/releases/latest)
 2. Extract the zip-file into a folder
 
 

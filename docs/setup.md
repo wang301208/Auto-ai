@@ -33,7 +33,7 @@ Auto-GPT 在本地运行，你需要：
 1. 克隆仓库
 
     ```shell
-    git clone -b stable https://github.com/Significant-Gravitas/Auto-GPT.git
+    git clone https://github.com/Significant-Gravitas/Auto-GPT.git
     ```
 
 2. 进入仓库目录
@@ -44,7 +44,7 @@ Auto-GPT 在本地运行，你需要：
 
 ### 使用发布包安装
 
-1. 从[最新稳定版本](https://github.com/Significant-Gravitas/Auto-GPT/releases/latest)下载 `Source code (zip)`。
+1. 从[最新发布版本](https://github.com/Significant-Gravitas/Auto-GPT/releases/latest)下载 `Source code (zip)`。
 2. 将压缩包解压到文件夹。
 
 ### 配置
