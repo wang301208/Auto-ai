@@ -2,8 +2,10 @@ from __future__ import annotations
 
 """QA agent that validates proposed code fixes before deployment."""
 
+import json
 import subprocess
 import tempfile
+from pathlib import Path
 from typing import Any
 
 from git import Repo
@@ -24,6 +26,7 @@ from autogpt.event_bus import (
     MessageQueue,
     TestsFailed,
 )
+from autogpt.skills.librarian import LibrarianAgent
 
 
 logger = logging.getLogger(__name__)
@@ -31,9 +34,15 @@ logger = logging.getLogger(__name__)
 class QAAgent:
     """Agent that verifies proposed fixes and merges them after approval."""
 
-    def __init__(self, agent: Agent, message_queue: MessageQueue) -> None:
+    def __init__(
+        self,
+        agent: Agent,
+        message_queue: MessageQueue,
+        librarian: LibrarianAgent | None = None,
+    ) -> None:
         self.agent = agent
         self.message_queue = message_queue
+        self.librarian = librarian or getattr(agent, "librarian", None)
         self.message_queue.subscribe(CODE_FIX_PROPOSED, self._on_code_fix_proposed)
         self.message_queue.subscribe(APPROVAL_GRANTED, self._on_approval_granted)
 
@@ -121,6 +130,43 @@ class QAAgent:
                 )
             )
             return
+
+        if self.librarian:
+            try:
+                diff_output = repo.git.diff(
+                    "main~1",
+                    "main",
+                    "--name-status",
+                    "--",
+                    "skill_library/*/skill.json",
+                )
+            except Exception:
+                diff_output = ""
+
+            for line in diff_output.splitlines():
+                try:
+                    status, path = line.split("\t", 1)
+                except ValueError:
+                    continue
+                if status != "A":
+                    continue
+                skill_json_path = Path(repo_path) / path
+                try:
+                    metadata = json.loads(skill_json_path.read_text(encoding="utf-8"))
+                except Exception:
+                    logger.exception(
+                        "Failed to load skill metadata from %s", skill_json_path
+                    )
+                    continue
+                skill_dir_path = (
+                    skill_json_path.parent / metadata.get("entry_point", "main.py")
+                )
+                try:
+                    self.librarian.add_skill(metadata, str(skill_dir_path))
+                except Exception:
+                    logger.exception(
+                        "Failed to add new skill from %s", skill_json_path
+                    )
 
         self.message_queue.publish(
             IssueResolved(
