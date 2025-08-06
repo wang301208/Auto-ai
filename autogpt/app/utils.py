@@ -3,18 +3,18 @@ import re
 
 import requests
 from colorama import Fore, Style
-from git.repo import Repo
 from prompt_toolkit import ANSI, PromptSession
 from prompt_toolkit.history import InMemoryHistory
 
 from autogpt.config import Config
 from autogpt.logs import logger
+
 from .i18n import _
 
 session = PromptSession(history=InMemoryHistory())
 
 
-def clean_input(config: Config, prompt: str = "", talk=False):
+def clean_input(config: Config, prompt: str = "", talk: bool = False) -> str:
     try:
         if config.chat_messages_enabled:
             for plugin in config.plugins:
@@ -58,7 +58,7 @@ def clean_input(config: Config, prompt: str = "", talk=False):
         exit(0)
 
 
-def get_bulletin_from_web():
+def get_bulletin_from_web() -> str:
     try:
         response = requests.get(
             "https://raw.githubusercontent.com/Significant-Gravitas/Auto-GPT/master/BULLETIN.md"
@@ -69,15 +69,6 @@ def get_bulletin_from_web():
         pass
 
     return ""
-
-
-def get_current_git_branch() -> str:
-    try:
-        repo = Repo(search_parent_directories=True)
-        branch = repo.active_branch
-        return branch.name
-    except:
-        return ""
 
 
 def get_latest_bulletin() -> tuple[str, bool]:
@@ -92,11 +83,9 @@ def get_latest_bulletin() -> tuple[str, bool]:
 
     news_header = Fore.YELLOW + _("Welcome to Auto-GPT!\n")
     if new_bulletin or current_bulletin:
-        news_header += (
-            _(
-                "Below you'll find the latest Auto-GPT News and updates regarding features!\n"
-                "If you don't wish to see this message, you can run Auto-GPT with the *--skip-news* flag.\n"
-            )
+        news_header += _(
+            "Below you'll find the latest Auto-GPT News and updates regarding features!\n"
+            "If you don't wish to see this message, you can run Auto-GPT with the *--skip-news* flag.\n"
         )
 
     if new_bulletin and is_new_news:
@@ -106,7 +95,7 @@ def get_latest_bulletin() -> tuple[str, bool]:
     return f"{news_header}\n{current_bulletin}", is_new_news
 
 
-def markdown_to_ansi_style(markdown: str):
+def markdown_to_ansi_style(markdown: str) -> str:
     ansi_lines: list[str] = []
     for line in markdown.split("\n"):
         line_style = ""

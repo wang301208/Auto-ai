@@ -23,7 +23,6 @@ from autogpt.app.setup import prompt_user
 from autogpt.app.spinner import Spinner
 from autogpt.app.utils import (
     clean_input,
-    get_current_git_branch,
     get_latest_bulletin,
     get_legal_warning,
     markdown_to_ansi_style,
@@ -126,15 +125,6 @@ def run_auto_gpt(
                     + Style.RESET_ALL
                 )
 
-        git_branch = get_current_git_branch()
-        if git_branch and git_branch != "stable":
-            logger.typewriter_log(
-                "WARNING: ",
-                Fore.RED,
-                _(
-                    "You are running on `{git_branch}` branch - this is not a supported branch."
-                ).format(git_branch=git_branch),
-            )
         if sys.version_info < (3, 10):
             logger.typewriter_log(
                 "WARNING: ",
