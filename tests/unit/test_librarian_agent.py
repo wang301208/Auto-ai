@@ -225,17 +225,22 @@ def test_get_source_code_path_allowed(
 
 
 def test_get_source_code_path_restricted(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     plugin_dir, _ = _create_plugin_spec(tmp_path, "restricted", "RESTRICTED")
     agent = _setup_agent(tmp_path, monkeypatch)
     agent.skill_library.config.plugins_dir = str(plugin_dir)
 
-    telemetry.reset()
-    with caplog.at_level("WARNING"):
-        path = agent.get_source_code_path("restricted")
-    assert path is None
-    assert any(
-        "Access to source code for plugin" in rec.message for rec in caplog.records
+    from autogpt.telemetry import audit as audit_module
+
+    monkeypatch.setattr(
+        audit_module, "AUDIT_LOG_FILE", tmp_path / "audit.log", raising=False
     )
+
+    telemetry.reset()
+    path = agent.get_source_code_path("restricted", requester="TestAgent")
+    assert path is None
+    entries = audit_module.load_log()
+    assert entries[-1]["plugin"] == "restricted"
+    assert entries[-1]["agent"] == "TestAgent"
     assert telemetry.get_counts().get("get_source_code_path.denied", 0) == 1

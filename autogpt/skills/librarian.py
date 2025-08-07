@@ -12,6 +12,7 @@ from autogpt.logs import logger
 from autogpt.plugins.loader import PluginMetaValidationError, load_plugin_meta
 from autogpt.plugins.models import SourceCodeAccessPolicy
 from autogpt.telemetry import telemetry
+from autogpt.telemetry.audit import log_denied_access
 
 from .library import SkillLibrary, SkillMetadata
 
@@ -157,13 +158,17 @@ class LibrarianAgent:
             ) from err
 
     # ------------------------------------------------------------------
-    def get_source_code_path(self, plugin_name: str) -> str | None:
+    def get_source_code_path(
+        self, plugin_name: str, requester: str | None = None
+    ) -> str | None:
         """Return the local source path for a plugin if access is allowed.
 
         Parameters
         ----------
         plugin_name: str
             Name of the plugin whose source path is requested.
+        requester: str | None
+            Name of the agent requesting access, used for audit logging.
         """
 
         plugins_dir = Path(self.skill_library.config.plugins_dir)
@@ -181,11 +186,7 @@ class LibrarianAgent:
             if policy == SourceCodeAccessPolicy.ALLOWED_FOR_READ_ONLY:
                 return meta.underlying_library.local_source_path
 
-            logger.warn(
-                "Access to source code for plugin '%s' denied by policy '%s'",
-                plugin_name,
-                policy,
-            )
+            log_denied_access(plugin_name, requester or self.__class__.__name__)
             telemetry.increment("get_source_code_path.denied")
             return None
 
