@@ -11,6 +11,7 @@ from types import SimpleNamespace
 from typing import Dict, List, Optional
 
 from autogpt.config import Config
+from autogpt.logs import logger
 from autogpt.memory.vector.utils import get_embedding
 
 from .vector_db import (
@@ -175,39 +176,56 @@ class SkillLibrary:
         return skill_dir
 
     def _git_commit(
-        self, path: Path, message: str, branch_name: str | None = None
+        self,
+        path: Path,
+        message: str,
+        branch_name: str | None = None,
+        repo_path: str | Path | None = None,
     ) -> None:
-        repo = path.resolve()
+        repo = Path(repo_path).resolve() if repo_path else path.resolve()
         while repo != repo.parent and not (repo / ".git").exists():
             repo = repo.parent
         if not (repo / ".git").exists():
+            logger.debug("No git repository found for %s", path)
             return
         rel = path.resolve().relative_to(repo)
         try:
-            subprocess.run(["git", "add", str(rel)], cwd=repo, check=True)
+            add_proc = subprocess.run(
+                ["git", "add", str(rel)], cwd=repo, capture_output=True, text=True
+            )
+            if add_proc.returncode != 0:
+                logger.error("git add failed: %s", add_proc.stderr.strip())
+                return
             commit_proc = subprocess.run(
-                ["git", "commit", "-m", message], cwd=repo, check=False
+                ["git", "commit", "-m", message],
+                cwd=repo,
+                capture_output=True,
+                text=True,
             )
             if commit_proc.returncode != 0:
+                logger.error("git commit failed: %s", commit_proc.stderr.strip())
                 return
             if branch_name is None:
                 branch_name = getattr(self.config, "git_branch", None)
             if branch_name is None:
-                branch_name = subprocess.run(
+                branch_proc = subprocess.run(
                     ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                     cwd=repo,
-                    check=True,
                     capture_output=True,
                     text=True,
-                ).stdout.strip()
+                )
+                if branch_proc.returncode != 0:
+                    logger.error("git rev-parse failed: %s", branch_proc.stderr.strip())
+                    return
+                branch_name = branch_proc.stdout.strip()
             from autogpt.commands.git_operations import git_push
 
             agent = SimpleNamespace(config=self.config)
             result = git_push(str(repo), branch_name, agent)
             if isinstance(result, str) and result.startswith("Error"):
-                print(result)
-        except Exception as e:
-            print(f"Error: {e}")
+                logger.error(result)
+        except Exception as e:  # pragma: no cover - best effort
+            logger.exception("Error during git commit: %s", e)
 
     # ------------------------------------------------------------------
     def add_skill(
@@ -225,6 +243,7 @@ class SkillLibrary:
         creation_timestamp: str | None = None,
         approved_by: str | None = None,
         approval_timestamp: str | None = None,
+        repo_path: str | Path | None = None,
     ) -> Skill:
         """Create and persist a new skill."""
 
@@ -255,7 +274,7 @@ class SkillLibrary:
             {"description": description, "tags": tags, "parameters": parameters},
         )
         skill_dir = self._write_skill(skill)
-        self._git_commit(skill_dir, f"Add skill {name} {version}")
+        self._git_commit(skill_dir, f"Add skill {name} {version}", repo_path=repo_path)
         return skill
 
     def get_skill(self, name: str, version: str) -> Optional[Skill]:
@@ -276,6 +295,7 @@ class SkillLibrary:
         creation_timestamp: str | None = None,
         approved_by: str | None = None,
         approval_timestamp: str | None = None,
+        repo_path: str | Path | None = None,
     ) -> Optional[Skill]:
         key = f"{name}_{version}"
         skill = self._skills.get(key)
@@ -318,10 +338,14 @@ class SkillLibrary:
             },
         )
         skill_dir = self._write_skill(skill)
-        self._git_commit(skill_dir, f"Update skill {name} {version}")
+        self._git_commit(
+            skill_dir, f"Update skill {name} {version}", repo_path=repo_path
+        )
         return skill
 
-    def delete_skill(self, name: str, version: str) -> None:
+    def delete_skill(
+        self, name: str, version: str, repo_path: str | Path | None = None
+    ) -> None:
         key = f"{name}_{version}"
         if key in self._skills:
             del self._skills[key]
@@ -329,7 +353,9 @@ class SkillLibrary:
             skill_dir = self._skill_dir(name, version)
             if skill_dir.exists():
                 shutil.rmtree(skill_dir)
-                self._git_commit(skill_dir, f"Delete skill {name} {version}")
+                self._git_commit(
+                    skill_dir, f"Delete skill {name} {version}", repo_path=repo_path
+                )
 
     def list_skills(self) -> List[Skill]:
         return list(self._skills.values())

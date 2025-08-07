@@ -7,8 +7,8 @@ from typing import Dict, List, Optional
 
 from autogpt.config import ConfigBuilder
 
-from .library import Skill, SkillLibrary
 from .librarian import LibrarianAgent
+from .library import Skill, SkillLibrary
 from .vector_db import ChromaVectorDB, MemoryVectorDB, VectorDBProvider
 
 _default_library: SkillLibrary | None = None
@@ -38,6 +38,7 @@ def add(
     creation_timestamp: str | None = None,
     approved_by: str | None = None,
     approval_timestamp: str | None = None,
+    repo_path: str | Path | None = None,
 ) -> Skill:
     """Add a new skill to the library."""
 
@@ -55,6 +56,7 @@ def add(
         creation_timestamp,
         approved_by,
         approval_timestamp,
+        repo_path,
     )
 
 
@@ -78,6 +80,7 @@ def update(
     creation_timestamp: str | None = None,
     approved_by: str | None = None,
     approval_timestamp: str | None = None,
+    repo_path: str | Path | None = None,
 ) -> Optional[Skill]:
     """Update an existing skill."""
 
@@ -95,13 +98,14 @@ def update(
         creation_timestamp,
         approved_by,
         approval_timestamp,
+        repo_path,
     )
 
 
-def delete(name: str, version: str) -> None:
+def delete(name: str, version: str, repo_path: str | Path | None = None) -> None:
     """Remove a skill from the library."""
 
-    get_library().delete_skill(name, version)
+    get_library().delete_skill(name, version, repo_path=repo_path)
 
 
 def reindex() -> None:

@@ -9,9 +9,9 @@ from typing import Dict, List, Tuple
 
 from autogpt.config import Config
 from autogpt.logs import logger
+from autogpt.plugins.library import PluginLibrary
 from autogpt.plugins.loader import PluginMetaValidationError, load_plugin_meta
 from autogpt.plugins.models import SourceCodeAccessPolicy
-from autogpt.plugins.library import PluginLibrary
 from autogpt.telemetry import telemetry
 from autogpt.telemetry.audit import log_denied_access
 
@@ -102,11 +102,18 @@ class LibrarianAgent:
 
         plugin_ids = self.plugin_library.search(query, top_k=top_k)
         self._plugin_cache[cache_key] = plugin_ids
-        telemetry.increment("find_plugin.success" if plugin_ids else "find_plugin.failure")
+        telemetry.increment(
+            "find_plugin.success" if plugin_ids else "find_plugin.failure"
+        )
         return plugin_ids
 
     # ------------------------------------------------------------------
-    def add_skill(self, skill_metadata: dict, skill_code_path: str) -> bool:
+    def add_skill(
+        self,
+        skill_metadata: dict,
+        skill_code_path: str,
+        repo_path: str | Path | None = None,
+    ) -> bool:
         """Add a new skill to the library.
 
         Parameters
@@ -115,6 +122,8 @@ class LibrarianAgent:
             Metadata describing the skill. Must conform to :class:`SkillMetadata`.
         skill_code_path: str
             Path to the Python file containing the skill's code.
+        repo_path: str | None
+            Path to the git repository where the skill should be committed.
         """
 
         try:
@@ -159,6 +168,7 @@ class LibrarianAgent:
                 creation_timestamp=metadata.creation_timestamp,
                 approved_by=metadata.approved_by,
                 approval_timestamp=metadata.approval_timestamp,
+                repo_path=repo_path,
             )
             return True
         except Exception as err:
