@@ -32,6 +32,8 @@ plugin_b:
      "name": "sample",
      "description": "sample plugin",
      "instructions": "describe the behaviour",
+     "developer": "plugin author",
+     "policy_maker": "responsible organisation",
      "underlying_library": {
        "name": "some-lib",
        "version": "1.0.0",
@@ -44,7 +46,8 @@ plugin_b:
 
    其中 `source_code_access_policy` 的可选值为 `ALLOWED_FOR_READ_ONLY` 或
    `RESTRICTED`；`underlying_library` 字段需包含库名称、版本、仓库地址
-   以及本地源码路径。
+   以及本地源码路径。同时还需提供 `developer` 和 `policy_maker` 字段，分别
+   表示插件的开发者和负责其使用策略的主体。
 
 3. 运行以下命令将规范转换为 Python 模块：
 

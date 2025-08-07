@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from enum import Enum
+
 from pydantic import BaseModel, HttpUrl
 
 
@@ -26,6 +27,8 @@ class PluginMeta(BaseModel):
     name: str
     description: str
     instructions: str
+    developer: str
+    policy_maker: str
     underlying_library: UnderlyingLibrary
     source_code_access_policy: SourceCodeAccessPolicy
 

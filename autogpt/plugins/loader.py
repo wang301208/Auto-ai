@@ -6,10 +6,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from autogpt.plugins.models import (
-    PluginMeta,
-    PluginMetaValidationError,
-)
+from autogpt.plugins.models import PluginMeta, PluginMetaValidationError
 
 
 def load_plugin_meta(path: str | Path) -> PluginMeta:
@@ -35,8 +32,28 @@ def load_plugin_meta(path: str | Path) -> PluginMeta:
 
     try:
         data: dict[str, Any] = json.loads(raw)
+    except json.JSONDecodeError as e:
+        raise PluginMetaValidationError(f"Invalid plugin metadata: {e}") from e
+
+    required_fields = {
+        "name",
+        "description",
+        "instructions",
+        "developer",
+        "policy_maker",
+        "underlying_library",
+        "source_code_access_policy",
+    }
+    missing_fields = required_fields.difference(data)
+    if missing_fields:
+        raise PluginMetaValidationError(
+            "Plugin metadata missing required field(s): "
+            + ", ".join(sorted(missing_fields))
+        )
+
+    try:
         meta = PluginMeta.parse_obj(data)
-    except (json.JSONDecodeError, ValidationError) as e:
+    except ValidationError as e:
         raise PluginMetaValidationError(f"Invalid plugin metadata: {e}") from e
 
     source_path = Path(meta.underlying_library.local_source_path).expanduser()
