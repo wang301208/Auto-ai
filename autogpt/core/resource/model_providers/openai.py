@@ -6,9 +6,14 @@ import time
 from typing import Callable, ParamSpec, TypeVar
 
 import openai
-from openai import AsyncOpenAI, AsyncAzureOpenAI, OpenAI, AzureOpenAI
-from autogpt.llm.providers.openai import _get_client, _get_async_client
-from openai.error import APIError, RateLimitError
+from openai import (
+    APIError,
+    AsyncAzureOpenAI,
+    AsyncOpenAI,
+    AzureOpenAI,
+    OpenAI,
+    RateLimitError,
+)
 
 from autogpt.core.configuration import (
     Configurable,
@@ -32,6 +37,7 @@ from autogpt.core.resource.model_providers.schema import (
     ModelProviderSettings,
     ModelProviderUsage,
 )
+from autogpt.llm.providers.openai import _get_async_client, _get_client
 
 OpenAIEmbeddingParser = Callable[[Embedding], Embedding]
 OpenAIChatParser = Callable[[str], dict]
