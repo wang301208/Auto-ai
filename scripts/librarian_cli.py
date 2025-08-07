@@ -6,7 +6,9 @@ import argparse
 import json
 import logging
 from pathlib import Path
+from types import SimpleNamespace
 
+from autogpt.commands.code_reader import read_and_understand_code
 from autogpt.config import Config
 from autogpt.skills import LibrarianAgent
 
@@ -25,13 +27,17 @@ def main() -> None:
     add_p.add_argument("metadata", help="Path to JSON metadata file")
     add_p.add_argument("code", help="Path to Python file containing the skill")
 
+    read_p = sub.add_parser("read-code", help="Summarize Python files under a path")
+    read_p.add_argument("path", help="File or directory to analyze")
+
     src_p = sub.add_parser(
         "source-path", help="Print the source code path for a plugin"
     )
     src_p.add_argument("plugin_name", help="Name of the plugin")
 
     args = parser.parse_args()
-    agent = LibrarianAgent(Config())
+    config = Config()
+    agent = LibrarianAgent(config)
 
     if args.command == "find":
         results = agent.find_skill(args.query, args.k)
@@ -56,6 +62,12 @@ def main() -> None:
             print(path)
         else:
             print("Access denied or plugin not found")
+    elif args.command == "read-code":
+        dummy_agent = SimpleNamespace(
+            config=config, llm=SimpleNamespace(name=config.fast_llm)
+        )
+        report = read_and_understand_code(args.path, dummy_agent)
+        print(report)
     else:
         parser.print_help()
 

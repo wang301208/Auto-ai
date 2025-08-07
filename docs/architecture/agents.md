@@ -226,7 +226,9 @@ how to proceed.
    shared `MessageQueue`.
 2. **Learn from borrowed code** – If diagnostics contain `source_code_paths`,
    the agent invokes `read_and_understand_code` for each provided library path
-   and stores the resulting summaries before proceeding.
+   and stores the resulting summaries before proceeding. Developers can invoke
+   `python -m scripts.librarian_cli read-code <path>` to generate a similar
+   summary for any local Python project.
 3. **Check `recommended_skill`** – If the diagnostics include a
    `recommended_skill` object, the agent writes a small wrapper script under
    `scripts/use_<name>.py` and a matching test under
