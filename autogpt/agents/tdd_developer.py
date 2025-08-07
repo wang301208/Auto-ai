@@ -14,6 +14,7 @@ from autogpt.agents.agent import Agent
 from autogpt.commands.file_operations import write_to_file
 from autogpt.commands.git_operations import git_checkout, git_commit, git_create_branch
 from autogpt.commands.testing import create_test_file, run_tests
+from autogpt.commands.code_reader import read_and_understand_code
 from autogpt.event_bus import (
     DIAGNOSIS_COMPLETE,
     CodeFixProposed,
@@ -43,6 +44,7 @@ class TDDDeveloper:
         self.agent = agent
         self.message_queue = message_queue
         self.librarian = librarian
+        self.learned_sources: dict[str, str] = {}
         self.message_queue.subscribe(DIAGNOSIS_COMPLETE, self._on_diagnosis_complete)
 
     # ------------------------------------------------------------------
@@ -158,6 +160,19 @@ class TDDDeveloper:
 
         if not repo_path:
             return
+
+        # Perform learning phase if source code paths are provided
+        source_paths: dict[str, str] = {}
+        if isinstance(diagnostics, dict):
+            source_paths = diagnostics.get("source_code_paths", {}) or source_paths
+        if isinstance(details, dict) and not source_paths:
+            source_paths = details.get("source_code_paths", {}) or {}
+        for name, lib_path in source_paths.items():
+            try:
+                report = read_and_understand_code(lib_path, self.agent)
+                self.learned_sources[name] = report
+            except Exception:
+                logger.exception("Failed to learn from source path %s", lib_path)
 
         new_skill = details.get("new_skill") if isinstance(details, dict) else None
         if new_skill:

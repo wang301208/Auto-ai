@@ -224,20 +224,23 @@ how to proceed.
 
 1. **Receive diagnostics** – Listen for `DIAGNOSIS_COMPLETE` messages on the
    shared `MessageQueue`.
-2. **Check `recommended_skill`** – If the diagnostics include a
+2. **Learn from borrowed code** – If diagnostics contain `source_code_paths`,
+   the agent invokes `read_and_understand_code` for each provided library path
+   and stores the resulting summaries before proceeding.
+3. **Check `recommended_skill`** – If the diagnostics include a
    `recommended_skill` object, the agent writes a small wrapper script under
    `scripts/use_<name>.py` and a matching test under
    `tests/test_use_<name>.py`. The script loads the skill from
    `skill_library/<name>_<version>/main.py` and invokes its `run` function with
    any provided parameters. The change is committed and a `CODE_FIX_PROPOSED`
    event is published.
-3. **Start TDD skill development** – When no recommendation exists, the agent
+4. **Start TDD skill development** – When no recommendation exists, the agent
    creates a branch and derives failing tests from the diagnostics. It iterates
    on the code until tests pass. If the diagnostics contain a `new_skill`
    payload, the agent scaffolds a new skill in
    `skill_library/<skill_name>_<version>/` and ensures a corresponding
    `skill.json` metadata file is written alongside `main.py`.
-4. **Publish** – Once a usage script or new skill passes its tests, the agent
+5. **Publish** – Once a usage script or new skill passes its tests, the agent
    commits the result and emits `CODE_FIX_PROPOSED` for downstream review.
 
 ### Example wrapper and test
