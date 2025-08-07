@@ -327,3 +327,42 @@ def test_tdd_developer_aborts_on_failed_add_skill(
 
     librarian.add_skill.assert_called_once()
     commit.assert_not_called()
+
+
+def test_tdd_developer_learning_phase(
+    agent: Agent, workspace: Workspace, tmp_path: Path, mocker: MockerFixture
+) -> None:
+    event_bus = EventBus(tmp_path / "events.db")
+    message_queue = MessageQueue(event_bus)
+    dev = TDDDeveloper(agent=agent, message_queue=message_queue)
+
+    learn = mocker.patch(
+        "autogpt.agents.tdd_developer.read_and_understand_code", return_value="report"
+    )
+    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
+    mocker.patch(
+        "autogpt.agents.tdd_developer.create_test_file", return_value=""
+    )
+    mocker.patch(
+        "autogpt.agents.tdd_developer.run_tests",
+        return_value={"status": "failed", "exit_code": 1, "successes": 0, "failures": 1, "errors": 0, "logs": ""},
+    )
+    mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+    mocker.patch("autogpt.agents.tdd_developer.write_to_file", return_value="")
+
+    repo_path = str(workspace.root)
+    payload = {
+        "issue_id": "1",
+        "repo_path": repo_path,
+        "diagnostics": {"source_code_paths": {"lib": str(tmp_path)}}
+    }
+
+    message_queue.publish(
+        EventMessage(
+            event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester"
+        )
+    )
+
+    learn.assert_called_once_with(str(tmp_path), agent)
+    assert dev.learned_sources["lib"] == "report"
