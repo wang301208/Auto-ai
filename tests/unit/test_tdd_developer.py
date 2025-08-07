@@ -1,4 +1,5 @@
 import importlib
+import logging
 import sys
 import types
 from pathlib import Path
@@ -330,7 +331,11 @@ def test_tdd_developer_aborts_on_failed_add_skill(
 
 
 def test_tdd_developer_learning_phase(
-    agent: Agent, workspace: Workspace, tmp_path: Path, mocker: MockerFixture
+    agent: Agent,
+    workspace: Workspace,
+    tmp_path: Path,
+    mocker: MockerFixture,
+    caplog,
 ) -> None:
     event_bus = EventBus(tmp_path / "events.db")
     message_queue = MessageQueue(event_bus)
@@ -358,11 +363,14 @@ def test_tdd_developer_learning_phase(
         "diagnostics": {"source_code_paths": {"lib": str(tmp_path)}}
     }
 
-    message_queue.publish(
-        EventMessage(
-            event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester"
+    with caplog.at_level(logging.INFO):
+        message_queue.publish(
+            EventMessage(
+                event_type=DIAGNOSIS_COMPLETE, payload=payload, source_agent="tester"
+            )
         )
-    )
 
     learn.assert_called_once_with(str(tmp_path), agent)
     assert dev.learned_sources["lib"] == "report"
+    record = next(r for r in caplog.records if r.msg == "learned_source")
+    assert record.library == "lib"

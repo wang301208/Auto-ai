@@ -6,11 +6,15 @@ COMMAND_CATEGORY = "code_reader"
 COMMAND_CATEGORY_TITLE = "Code Reader"
 
 from pathlib import Path
+import logging
 
 from autogpt.agents.agent import Agent
 from autogpt.command_decorator import command
 from autogpt.llm.base import ChatSequence, Message
 from autogpt.llm.utils import create_chat_completion
+
+logger = logging.getLogger(__name__)
+CALL_COUNT = 0
 
 # Template used to prompt the model for code analysis
 PROMPT_TEMPLATE = (
@@ -33,6 +37,7 @@ PROMPT_TEMPLATE = (
 def read_and_understand_code(path: str, agent: Agent) -> str:
     """Recursively read `.py` files under ``path`` and summarize their contents."""
 
+    global CALL_COUNT
     base = Path(path)
     files: list[Path]
     if base.is_dir():
@@ -41,6 +46,17 @@ def read_and_understand_code(path: str, agent: Agent) -> str:
         files = [base]
     else:
         files = []
+
+    file_count = len(files)
+    CALL_COUNT += 1
+    logger.info(
+        "code_reader",
+        extra={
+            "path_analyzed": str(base),
+            "file_count": file_count,
+            "call_count": CALL_COUNT,
+        },
+    )
 
     code_parts: list[str] = []
     for file in files:
