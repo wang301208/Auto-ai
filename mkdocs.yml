@@ -8,6 +8,7 @@ nav:
   - 插件: plugins.md
   - 架构:
       - 代理: architecture/agents.md
+      - 插件: architecture/plugins.md
   - 配置:
       - 选项: configuration/options.md
       - 搜索: configuration/search.md

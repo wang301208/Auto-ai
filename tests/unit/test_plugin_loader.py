@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from autogpt.plugins.loader import load_plugin_meta, PluginMetaValidationError
+from autogpt.plugins.loader import PluginMetaValidationError, load_plugin_meta
 
 
 def test_load_plugin_meta_success(tmp_path: Path) -> None:
@@ -13,6 +13,8 @@ def test_load_plugin_meta_success(tmp_path: Path) -> None:
         "name": "demo",
         "description": "demo plugin",
         "instructions": "do things",
+        "developer": "Auto-GPT",
+        "policy_maker": "Auto-GPT",
         "underlying_library": {
             "name": "lib",
             "version": "0.1",
@@ -33,11 +35,18 @@ def test_load_plugin_meta_missing_field(tmp_path: Path) -> None:
         "name": "demo",
         "description": "demo plugin",
         "instructions": "do things",
+        "developer": "Auto-GPT",
+        "underlying_library": {
+            "name": "lib",
+            "version": "0.1",
+            "repo_url": "https://example.com/lib",
+            "local_source_path": "src.py",
+        },
         "source_code_access_policy": "ALLOWED_FOR_READ_ONLY",
     }
     spec_file = tmp_path / "plugin.json"
     spec_file.write_text(json.dumps(spec))
-    with pytest.raises(PluginMetaValidationError):
+    with pytest.raises(PluginMetaValidationError, match="policy_maker"):
         load_plugin_meta(spec_file)
 
 
@@ -48,6 +57,8 @@ def test_load_plugin_meta_invalid_policy(tmp_path: Path) -> None:
         "name": "demo",
         "description": "demo plugin",
         "instructions": "do things",
+        "developer": "Auto-GPT",
+        "policy_maker": "Auto-GPT",
         "underlying_library": {
             "name": "lib",
             "version": "0.1",
