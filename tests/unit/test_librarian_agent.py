@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
@@ -36,6 +37,28 @@ def _metadata() -> dict:
         "author_agent": "tester",
         "creation_timestamp": "2024-01-01T00:00:00Z",
     }
+
+
+def _create_plugin_spec(tmp_path: Path, name: str, policy: str) -> tuple[Path, Path]:
+    plugin_dir = tmp_path / "plugins"
+    plugin_dir.mkdir()
+    source_file = plugin_dir / f"{name}.py"
+    source_file.write_text("print('hi')\n")
+
+    meta = {
+        "name": name,
+        "description": "Test plugin",
+        "instructions": "",
+        "underlying_library": {
+            "name": "lib",
+            "version": "0.1",
+            "repo_url": "https://example.com/lib",
+            "local_source_path": str(source_file),
+        },
+        "source_code_access_policy": policy,
+    }
+    (plugin_dir / f"{name}.json").write_text(json.dumps(meta))
+    return plugin_dir, source_file
 
 
 def test_add_and_find_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -175,3 +198,35 @@ def test_find_skill_records_telemetry(
     counts = telemetry.get_counts()
     assert counts.get("find_skill.success", 0) == 1
     assert counts.get("find_skill.failure", 0) == 1
+
+
+def test_get_source_code_path_allowed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    plugin_dir, source_file = _create_plugin_spec(
+        tmp_path, "allowed", "ALLOWED_FOR_READ_ONLY"
+    )
+    agent = _setup_agent(tmp_path, monkeypatch)
+    agent.skill_library.config.plugins_dir = str(plugin_dir)
+
+    telemetry.reset()
+    path = agent.get_source_code_path("allowed")
+    assert path == str(source_file)
+    assert telemetry.get_counts().get("get_source_code_path.denied", 0) == 0
+
+
+def test_get_source_code_path_restricted(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    plugin_dir, _ = _create_plugin_spec(tmp_path, "restricted", "RESTRICTED")
+    agent = _setup_agent(tmp_path, monkeypatch)
+    agent.skill_library.config.plugins_dir = str(plugin_dir)
+
+    telemetry.reset()
+    with caplog.at_level("WARNING"):
+        path = agent.get_source_code_path("restricted")
+    assert path is None
+    assert any(
+        "Access to source code for plugin" in rec.message for rec in caplog.records
+    )
+    assert telemetry.get_counts().get("get_source_code_path.denied", 0) == 1

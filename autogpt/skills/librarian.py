@@ -9,6 +9,8 @@ from typing import Dict, List, Tuple
 
 from autogpt.config import Config
 from autogpt.logs import logger
+from autogpt.plugins.loader import PluginMetaValidationError, load_plugin_meta
+from autogpt.plugins.models import SourceCodeAccessPolicy
 from autogpt.telemetry import telemetry
 
 from .library import SkillLibrary, SkillMetadata
@@ -40,11 +42,11 @@ class LibrarianAgent:
 
         cache_key = (query, top_k)
         if cache_key in self._search_cache:
-            results = self._search_cache[cache_key]
+            cached_results = self._search_cache[cache_key]
             telemetry.increment(
-                "find_skill.success" if results else "find_skill.failure"
+                "find_skill.success" if cached_results else "find_skill.failure"
             )
-            return results
+            return cached_results
 
         skills = self.skill_library.search(query, top_k=top_k)
         top_metadata = asdict(skills[0].metadata) if skills else None
@@ -136,9 +138,43 @@ class LibrarianAgent:
             )
             return True
         except Exception as err:
-            logger.error(
-                f"Failed to register skill {metadata.skill_name}: {err}"
-            )
+            logger.error(f"Failed to register skill {metadata.skill_name}: {err}")
             raise RuntimeError(
                 f"Failed to register skill {metadata.skill_name}"
             ) from err
+
+    # ------------------------------------------------------------------
+    def get_source_code_path(self, plugin_name: str) -> str | None:
+        """Return the local source path for a plugin if access is allowed.
+
+        Parameters
+        ----------
+        plugin_name: str
+            Name of the plugin whose source path is requested.
+        """
+
+        plugins_dir = Path(self.skill_library.config.plugins_dir)
+        for meta_file in plugins_dir.rglob("*.json"):
+            try:
+                meta = load_plugin_meta(meta_file)
+            except PluginMetaValidationError:
+                logger.warn("Skipping invalid plugin metadata: %s", meta_file)
+                continue
+
+            if meta.name != plugin_name:
+                continue
+
+            policy = meta.source_code_access_policy
+            if policy == SourceCodeAccessPolicy.ALLOWED_FOR_READ_ONLY:
+                return meta.underlying_library.local_source_path
+
+            logger.warn(
+                "Access to source code for plugin '%s' denied by policy '%s'",
+                plugin_name,
+                policy,
+            )
+            telemetry.increment("get_source_code_path.denied")
+            return None
+
+        logger.warn("Plugin '%s' not found", plugin_name)
+        return None

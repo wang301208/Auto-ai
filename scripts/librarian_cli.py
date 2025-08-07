@@ -4,15 +4,14 @@ from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
-
 import logging
+from pathlib import Path
 
 from autogpt.config import Config
 from autogpt.skills import LibrarianAgent
 
-
 logger = logging.getLogger(__name__)
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Interact with the librarian agent")
@@ -25,6 +24,11 @@ def main() -> None:
     add_p = sub.add_parser("add", help="Add a new skill")
     add_p.add_argument("metadata", help="Path to JSON metadata file")
     add_p.add_argument("code", help="Path to Python file containing the skill")
+
+    src_p = sub.add_parser(
+        "source-path", help="Print the source code path for a plugin"
+    )
+    src_p.add_argument("plugin_name", help="Name of the plugin")
 
     args = parser.parse_args()
     agent = LibrarianAgent(Config())
@@ -46,6 +50,12 @@ def main() -> None:
                 print("Failed to add skill")
         except Exception:
             logger.exception("Failed to add skill")
+    elif args.command == "source-path":
+        path = agent.get_source_code_path(args.plugin_name)
+        if path:
+            print(path)
+        else:
+            print("Access denied or plugin not found")
     else:
         parser.print_help()
 
