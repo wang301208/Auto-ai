@@ -1,4 +1,5 @@
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
 
 import pytest
 from pytest_mock import MockerFixture
@@ -76,13 +77,25 @@ class TestApiManager:
         assert api_manager.get_total_cost() == (prompt_tokens * 0.0004) / 1000
 
     @staticmethod
+    def test_update_cost_unknown_model(caplog):
+        """Ensure unknown models do not crash and are ignored."""
+        api_manager.update_cost(100, 50, "unknown-model")
+
+        assert api_manager.get_total_prompt_tokens() == 0
+        assert api_manager.get_total_completion_tokens() == 0
+        assert api_manager.get_total_cost() == 0
+        assert "Unknown model" in caplog.text
+
+    @staticmethod
     def test_get_models():
         """Test if getting models works correctly."""
-        with patch("openai.OpenAI") as mock_openai:
+        with patch("autogpt.llm.providers.openai.OpenAI") as mock_openai:
             mock_client = MagicMock()
-            mock_client.models.list.return_value.data = [{"id": "gpt-3.5-turbo"}]
+            mock_client.models.list.return_value.data = [
+                SimpleNamespace(id="gpt-3.5-turbo")
+            ]
             mock_openai.return_value = mock_client
             result = api_manager.get_models()
 
-            assert result[0]["id"] == "gpt-3.5-turbo"
-            assert api_manager.models[0]["id"] == "gpt-3.5-turbo"
+            assert result[0].id == "gpt-3.5-turbo"
+            assert api_manager.models[0].id == "gpt-3.5-turbo"

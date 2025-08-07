@@ -15,14 +15,19 @@ sys.modules.setdefault("chromadb", ModuleType("chromadb"))
 sys.modules.setdefault("docx", ModuleType("docx"))
 sys.modules.setdefault("markdown", ModuleType("markdown"))
 sys.modules.setdefault("PyPDF2", ModuleType("PyPDF2"))
+sys.modules.setdefault("faiss", ModuleType("faiss"))
 bs4_stub = ModuleType("bs4")
 bs4_stub.BeautifulSoup = object
 sys.modules.setdefault("bs4", bs4_stub)
 ple_stub = ModuleType("pylatexenc")
 latex2text_stub = ModuleType("pylatexenc.latex2text")
+
+
 class LatexNodes2Text:  # type: ignore
     def latex_to_text(self, s: str) -> str:
         return s
+
+
 latex2text_stub.LatexNodes2Text = LatexNodes2Text
 ple_stub.latex2text = latex2text_stub
 sys.modules.setdefault("pylatexenc", ple_stub)
