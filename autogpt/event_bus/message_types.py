@@ -43,6 +43,12 @@ TESTS_FAILED = "TESTS_FAILED"
 DEPLOYMENT_FAILED = "DEPLOYMENT_FAILED"
 """Event type emitted when deployment fails."""
 
+SKILL_CREATED = "SKILL_CREATED"
+"""Event type emitted when a new skill is registered."""
+
+SKILL_REQUESTED = "SKILL_REQUESTED"
+"""Event type emitted when an agent requests execution of a skill."""
+
 
 @dataclass(kw_only=True)
 class IssueDetected(EventMessage):
@@ -266,6 +272,68 @@ class DeploymentFailed(EventMessage):
         }
 
 
+@dataclass(kw_only=True)
+class SkillCreated(EventMessage):
+    """Schema for :data:`SKILL_CREATED` events.
+
+    Expected payload fields:
+        skill_name: Name of the created skill.
+        version: Version string of the skill.
+        description: Short summary of what the skill does.
+        tags: Optional list of categorisation tags.
+        parameters: Optional parameter schema for the skill.
+    """
+
+    skill_name: str
+    version: str
+    description: str | None = None
+    tags: list[str] | None = None
+    parameters: dict[str, Any] | None = None
+    event_type: str = field(init=False, default=SKILL_CREATED)
+    payload: dict[str, Any] | str | None = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.payload = {
+            "skill_name": self.skill_name,
+            "version": self.version,
+            "description": self.description,
+            "tags": self.tags,
+            "parameters": self.parameters,
+        }
+        self.payload = {k: v for k, v in self.payload.items() if v is not None}
+
+
+@dataclass(kw_only=True)
+class SkillRequested(EventMessage):
+    """Schema for :data:`SKILL_REQUESTED` events.
+
+    Expected payload fields:
+        skill_name: Name of the requested skill.
+        request_id: Optional identifier for the request.
+        parameters: Parameters provided with the request.
+        requester: Identifier of the requesting agent.
+        context: Optional additional context for the request.
+    """
+
+    skill_name: str
+    request_id: str | None = None
+    parameters: dict[str, Any] | None = None
+    requester: str | None = None
+    context: dict[str, Any] | None = None
+    event_type: str = field(init=False, default=SKILL_REQUESTED)
+    payload: dict[str, Any] | str | None = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.payload = {
+            "skill_name": self.skill_name,
+            "request_id": self.request_id,
+            "parameters": self.parameters,
+            "requester": self.requester,
+            "context": self.context,
+        }
+        self.payload = {k: v for k, v in self.payload.items() if v is not None}
+
+
 __all__ = [
     "EventMessage",
     "IssueDetected",
@@ -276,6 +344,8 @@ __all__ = [
     "ApprovalGranted",
     "IssueResolved",
     "DeploymentFailed",
+    "SkillCreated",
+    "SkillRequested",
     "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "CODE_FIX_PROPOSED",
@@ -284,4 +354,6 @@ __all__ = [
     "APPROVAL_GRANTED",
     "ISSUE_RESOLVED",
     "DEPLOYMENT_FAILED",
+    "SKILL_CREATED",
+    "SKILL_REQUESTED",
 ]

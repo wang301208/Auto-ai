@@ -16,6 +16,8 @@ from .message_types import (
     HUMAN_APPROVAL_REQUIRED,
     ISSUE_DETECTED,
     ISSUE_RESOLVED,
+    SKILL_CREATED,
+    SKILL_REQUESTED,
     TESTS_FAILED,
     ApprovalGranted,
     CodeFixProposed,
@@ -24,6 +26,8 @@ from .message_types import (
     EventMessage,
     HumanApprovalRequired,
     IssueResolved,
+    SkillCreated,
+    SkillRequested,
     TestsFailed,
 )
 
@@ -139,6 +143,26 @@ class EventBus:
                     source_agent=source_agent,
                     timestamp=ts,
                 )
+            elif et == SKILL_CREATED and isinstance(payload_obj, dict):
+                yield SkillCreated(
+                    skill_name=str(payload_obj.get("skill_name", "")),
+                    version=str(payload_obj.get("version", "")),
+                    description=payload_obj.get("description"),
+                    tags=payload_obj.get("tags"),
+                    parameters=payload_obj.get("parameters"),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
+            elif et == SKILL_REQUESTED and isinstance(payload_obj, dict):
+                yield SkillRequested(
+                    skill_name=str(payload_obj.get("skill_name", "")),
+                    request_id=payload_obj.get("request_id"),
+                    parameters=payload_obj.get("parameters"),
+                    requester=payload_obj.get("requester"),
+                    context=payload_obj.get("context"),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
             else:
                 yield EventMessage(
                     event_type=et,
@@ -161,6 +185,8 @@ __all__ = [
     "ApprovalGranted",
     "IssueResolved",
     "DeploymentFailed",
+    "SkillCreated",
+    "SkillRequested",
     "ISSUE_DETECTED",
     "DIAGNOSIS_COMPLETE",
     "CODE_FIX_PROPOSED",
@@ -169,6 +195,8 @@ __all__ = [
     "APPROVAL_GRANTED",
     "ISSUE_RESOLVED",
     "DEPLOYMENT_FAILED",
+    "SKILL_CREATED",
+    "SKILL_REQUESTED",
     "redis_connect",
     "redis_publish",
     "redis_subscribe",
