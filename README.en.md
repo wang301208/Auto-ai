@@ -44,6 +44,8 @@ Demo made by <a href=https://twitter.com/BlakeWerlinger>Blake Werlinger</a>
    The first run creates `auto_gpt_workspace` and other files in your working directory.
    Use `agpt --help` to see all available parameters.
 
+For using a locally hosted or proxy model, see [Using a local model server](docs/setup.en.md#using-a-local-model-server).
+
 Please see the [documentation][docs] for full setup instructions and [configuration options](docs/configuration/options.md).
 
 [docs]: https://docs.agpt.co/

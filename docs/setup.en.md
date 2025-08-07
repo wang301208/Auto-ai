@@ -28,6 +28,14 @@ Get your OpenAI API key from: [https://platform.openai.com/account/api-keys](htt
 ![For OpenAI API key to work, set up paid account at OpenAI API > Billing](./imgs/openai-api-key-billing-paid-account.png)
 
 
+### Using a local model server
+
+To point Auto-GPT to a locally served model, set `OPENAI_API_BASE_URL` to your
+server's endpoint, e.g. `http://localhost:8000/v1`. Update `SMART_LLM`,
+`FAST_LLM`, and `EMBEDDING_MODEL` to match the model names your server
+provides. If the server does not require authentication, any placeholder value
+for `OPENAI_API_KEY` will suffice.
+
 ## Setting up Auto-GPT
 
 ### Set up with Git
