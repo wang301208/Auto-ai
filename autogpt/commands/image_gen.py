@@ -9,7 +9,6 @@ import time
 import uuid
 from base64 import b64decode
 
-import openai
 from openai import OpenAI
 import requests
 from PIL import Image
@@ -146,7 +145,7 @@ def generate_image_with_dalle(
 
     logger.info(f"Image Generated for prompt:{prompt}")
 
-    image_data = b64decode(response["data"][0]["b64_json"])
+    image_data = b64decode(response.data[0].b64_json)
 
     with open(filename, mode="wb") as png:
         png.write(image_data)
