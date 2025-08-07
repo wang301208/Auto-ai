@@ -311,8 +311,20 @@ def test_qa_agent_registers_new_skills(tmp_path: Path, mocker: MockerFixture) ->
     (skill_dir / "run.py").write_text("def run(): pass", encoding="utf-8")
 
     approval_event = ApprovalGranted(
-        branch_name="fix/123", commit_hash="abc", summary="Fix bug"
+        branch_name="fix/123",
+        commit_hash="abc",
+        summary="Fix bug",
+        approved_by="alice",
+        approval_timestamp="2024-01-02T00:00:00Z",
     )
     on_approval_granted(approval_event)
 
-    librarian.add_skill.assert_called_once_with(metadata, str(skill_dir / "run.py"))
+    expected_metadata = {
+        "name": "Test Skill",
+        "entry_point": "run.py",
+        "approved_by": "alice",
+        "approval_timestamp": "2024-01-02T00:00:00Z",
+    }
+    librarian.add_skill.assert_called_once_with(
+        expected_metadata, str(skill_dir / "run.py")
+    )

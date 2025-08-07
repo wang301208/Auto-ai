@@ -36,6 +36,8 @@ def add(
     return_type: str | None = None,
     author_agent: str | None = None,
     creation_timestamp: str | None = None,
+    approved_by: str | None = None,
+    approval_timestamp: str | None = None,
 ) -> Skill:
     """Add a new skill to the library."""
 
@@ -51,6 +53,8 @@ def add(
         return_type,
         author_agent,
         creation_timestamp,
+        approved_by,
+        approval_timestamp,
     )
 
 
@@ -72,6 +76,8 @@ def update(
     return_type: str | None = None,
     author_agent: str | None = None,
     creation_timestamp: str | None = None,
+    approved_by: str | None = None,
+    approval_timestamp: str | None = None,
 ) -> Optional[Skill]:
     """Update an existing skill."""
 
@@ -87,6 +93,8 @@ def update(
         return_type,
         author_agent,
         creation_timestamp,
+        approved_by,
+        approval_timestamp,
     )
 
 

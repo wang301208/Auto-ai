@@ -36,6 +36,8 @@ class SkillMetadata:
     return_type: str | None = None
     author_agent: str | None = None
     creation_timestamp: str | None = None
+    approved_by: str | None = None
+    approval_timestamp: str | None = None
 
 
 @dataclass
@@ -164,6 +166,8 @@ class SkillLibrary:
                     "return_type": skill.metadata.return_type,
                     "author_agent": skill.metadata.author_agent,
                     "creation_timestamp": skill.metadata.creation_timestamp,
+                    "approved_by": skill.metadata.approved_by,
+                    "approval_timestamp": skill.metadata.approval_timestamp,
                 },
                 f,
                 indent=2,
@@ -219,6 +223,8 @@ class SkillLibrary:
         return_type: str | None = None,
         author_agent: str | None = None,
         creation_timestamp: str | None = None,
+        approved_by: str | None = None,
+        approval_timestamp: str | None = None,
     ) -> Skill:
         """Create and persist a new skill."""
 
@@ -233,6 +239,8 @@ class SkillLibrary:
             return_type,
             author_agent,
             creation_timestamp,
+            approved_by,
+            approval_timestamp,
         )
         skill = Skill(metadata=metadata, code=code)
         text = f"{description}\n{' '.join(tags)}"
@@ -266,6 +274,8 @@ class SkillLibrary:
         return_type: str | None = None,
         author_agent: str | None = None,
         creation_timestamp: str | None = None,
+        approved_by: str | None = None,
+        approval_timestamp: str | None = None,
     ) -> Optional[Skill]:
         key = f"{name}_{version}"
         skill = self._skills.get(key)
@@ -290,6 +300,10 @@ class SkillLibrary:
             skill.metadata.author_agent = author_agent
         if creation_timestamp is not None:
             skill.metadata.creation_timestamp = creation_timestamp
+        if approved_by is not None:
+            skill.metadata.approved_by = approved_by
+        if approval_timestamp is not None:
+            skill.metadata.approval_timestamp = approval_timestamp
 
         text = f"{skill.description}\n{' '.join(skill.tags)}"
         embedding = get_embedding(text, self.config)
