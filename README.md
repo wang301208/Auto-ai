@@ -41,6 +41,8 @@ agpt
 首次运行会在工作目录中创建 `auto_gpt_workspace` 等文件。
 使用 `agpt --help` 查看所有可用参数。
 
+如果要使用本地托管或代理模型，请参阅 [使用本地模型服务器](docs/setup.md#使用本地模型服务器)。
+
 完整的设置和配置选项请参阅 [文档][docs]，环境变量列表见 [配置选项](docs/configuration/options.md)。
 
 [docs]: https://docs.agpt.co/

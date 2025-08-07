@@ -20,6 +20,13 @@ Auto-GPT 在本地运行，你需要：
 
 ![为使 OpenAI API key 正常工作，请在 OpenAI API > Billing 中设置付费账号](./imgs/openai-api-key-billing-paid-account.png)
 
+### 使用本地模型服务器
+
+要使用本地提供的模型，将 `OPENAI_API_BASE_URL` 设置为服务器地址，例
+如 `http://localhost:8000/v1`。同时把 `SMART_LLM`、`FAST_LLM` 和
+`EMBEDDING_MODEL` 调整为该服务器提供的模型名称。若服务端无需验证，
+`OPENAI_API_KEY` 可使用任意占位值。
+
 ## 设置 Auto-GPT
 
 ### 使用 Git 安装
