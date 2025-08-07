@@ -6,7 +6,7 @@
     "name": "python",
     "version": "3.11",
     "repo_url": "https://github.com/python/cpython",
-    "local_source_path": "plugins/stubs/echo.spec.json"
+    "local_source_path": "echo.spec.json"
   },
   "source_code_access_policy": "ALLOWED_FOR_READ_ONLY"
 }

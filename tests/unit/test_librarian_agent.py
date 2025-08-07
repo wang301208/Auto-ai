@@ -55,7 +55,7 @@ def _create_plugin_spec(tmp_path: Path, name: str, policy: str) -> tuple[Path, P
             "name": "lib",
             "version": "0.1",
             "repo_url": "https://example.com/lib",
-            "local_source_path": str(source_file),
+            "local_source_path": source_file.name,
         },
         "source_code_access_policy": policy,
     }

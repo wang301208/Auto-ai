@@ -1,10 +1,14 @@
-import json
 import importlib
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+from pytest_mock import MockerFixture
 
-def test_generate_plugins(tmp_path):
-    from scripts.generate_plugins import generate_plugins, AUTO_HEADER
+
+def test_generate_plugins(tmp_path: Path) -> None:
+    from scripts.generate_plugins import AUTO_HEADER, generate_plugins
 
     stubs = tmp_path / "plugins" / "stubs"
     stubs.mkdir(parents=True)
@@ -17,7 +21,7 @@ def test_generate_plugins(tmp_path):
             "name": "python",
             "version": "3.11",
             "repo_url": "https://github.com/python/cpython",
-            "local_source_path": str(spec_file),
+            "local_source_path": spec_file.name,
         },
         "source_code_access_policy": "ALLOWED_FOR_READ_ONLY",
     }
@@ -31,7 +35,9 @@ def test_generate_plugins(tmp_path):
     assert AUTO_HEADER.strip() in content
 
 
-def test_llm_generate_uses_chat_completions(mocker, monkeypatch):
+def test_llm_generate_uses_chat_completions(
+    mocker: MockerFixture, monkeypatch: pytest.MonkeyPatch
+) -> None:
     spec = {"name": "sample"}
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     import scripts.generate_plugins as gp

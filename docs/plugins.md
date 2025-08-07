@@ -44,7 +44,8 @@ plugin_b:
 
    其中 `source_code_access_policy` 的可选值为 `ALLOWED_FOR_READ_ONLY` 或
    `RESTRICTED`；`underlying_library` 字段需包含库名称、版本、仓库地址
-   以及本地源码路径。
+   以及本地源码路径。`local_source_path` 可以是绝对路径，也可以是
+   相对于该元数据文件的相对路径，但必须指向本地存在的文件。
 
 3. 运行以下命令将规范转换为 Python 模块：
 

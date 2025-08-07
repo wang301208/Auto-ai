@@ -6,10 +6,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
-from autogpt.plugins.models import (
-    PluginMeta,
-    PluginMetaValidationError,
-)
+from autogpt.plugins.models import PluginMeta, PluginMetaValidationError
 
 
 def load_plugin_meta(path: str | Path) -> PluginMeta:
@@ -39,10 +36,20 @@ def load_plugin_meta(path: str | Path) -> PluginMeta:
     except (json.JSONDecodeError, ValidationError) as e:
         raise PluginMetaValidationError(f"Invalid plugin metadata: {e}") from e
 
+    # Resolve the referenced source path. If a relative path is provided it is
+    # interpreted relative to the metadata file's directory so that specs can be
+    # relocated without breaking their source references.
     source_path = Path(meta.underlying_library.local_source_path).expanduser()
+    if not source_path.is_absolute():
+        source_path = (metadata_path.parent / source_path).resolve()
+
     if not source_path.exists():
         raise PluginMetaValidationError(
             f"local_source_path '{meta.underlying_library.local_source_path}' does not exist"
         )
+
+    # Store the resolved absolute path so consumers always receive a concrete
+    # filesystem location.
+    meta.underlying_library.local_source_path = str(source_path)
 
     return meta
