@@ -171,6 +171,10 @@ class TDDDeveloper:
             try:
                 report = read_and_understand_code(lib_path, self.agent)
                 self.learned_sources[name] = report
+                logger.info(
+                    "learned_source",
+                    extra={"library": name, "path": lib_path},
+                )
             except Exception:
                 logger.exception("Failed to learn from source path %s", lib_path)
 
