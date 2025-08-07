@@ -5,6 +5,9 @@ import sqlite3
 from pathlib import Path
 from typing import Iterable
 
+from .event_bus import connect as redis_connect
+from .event_bus import publish as redis_publish
+from .event_bus import subscribe as redis_subscribe
 from .message_types import (
     APPROVAL_GRANTED,
     CODE_FIX_PROPOSED,
@@ -166,4 +169,7 @@ __all__ = [
     "APPROVAL_GRANTED",
     "ISSUE_RESOLVED",
     "DEPLOYMENT_FAILED",
+    "redis_connect",
+    "redis_publish",
+    "redis_subscribe",
 ]
