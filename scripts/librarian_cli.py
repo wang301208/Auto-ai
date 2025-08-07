@@ -35,6 +35,14 @@ def main() -> None:
     )
     src_p.add_argument("plugin_name", help="Name of the plugin")
 
+    audit_p = sub.add_parser(
+        "audit-log", help="Display or export denied access attempts"
+    )
+    audit_p.add_argument(
+        "--export",
+        help="Path to export audit log in JSON format",
+    )
+
     args = parser.parse_args()
     config = Config()
     agent = LibrarianAgent(config)
@@ -68,6 +76,21 @@ def main() -> None:
         )
         report = read_and_understand_code(args.path, dummy_agent)
         print(report)
+    elif args.command == "audit-log":
+        from autogpt.telemetry.audit import load_log
+
+        entries = load_log()
+        if args.export:
+            Path(args.export).write_text(
+                json.dumps(entries, indent=2), encoding="utf-8"
+            )
+            print(f"Audit log exported to {args.export}")
+        else:
+            if not entries:
+                print("Audit log is empty")
+            else:
+                for entry in entries:
+                    print(json.dumps(entry, indent=2))
     else:
         parser.print_help()
 
