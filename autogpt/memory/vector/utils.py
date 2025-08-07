@@ -64,10 +64,10 @@ def get_embedding(
     ).data
 
     if not multiple:
-        return embeddings[0]["embedding"]
+        return embeddings[0].embedding
 
-    embeddings = sorted(embeddings, key=lambda x: x["index"])
-    return [d["embedding"] for d in embeddings]
+    embeddings = sorted(embeddings, key=lambda x: x.index)
+    return [d.embedding for d in embeddings]
 
 
 def _get_embedding_with_plugin(text: str, config: Config) -> Embedding:
