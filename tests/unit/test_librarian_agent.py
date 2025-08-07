@@ -4,6 +4,7 @@ import json
 from dataclasses import asdict
 from pathlib import Path
 from types import SimpleNamespace
+from typing import List
 
 import pytest
 
@@ -20,6 +21,15 @@ def _setup_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> LibrarianAg
     monkeypatch.setattr(
         "autogpt.skills.librarian.SkillLibrary",
         lambda config: library_module.SkillLibrary(config, storage_path=tmp_path),
+    )
+    from autogpt.plugins import library as plugin_library_module
+    from autogpt.skills.vector_db import MemoryVectorDB
+
+    monkeypatch.setattr(
+        "autogpt.skills.librarian.PluginLibrary",
+        lambda config, _repo_path=None: plugin_library_module.PluginLibrary(
+            config, tmp_path, vector_db=MemoryVectorDB()
+        ),
     )
     return LibrarianAgent(Config())
 
@@ -51,6 +61,8 @@ def _create_plugin_spec(tmp_path: Path, name: str, policy: str) -> tuple[Path, P
         "name": name,
         "description": "Test plugin",
         "instructions": "",
+        "developer": "AutoGPT",
+        "policy_maker": "AutoGPT",
         "underlying_library": {
             "name": "lib",
             "version": "0.1",
@@ -111,6 +123,37 @@ def test_add_skill_missing_code_path_raises(
         with pytest.raises(FileNotFoundError):
             agent.add_skill(metadata, str(missing_path))
     assert any("Skill code path is not a file" in rec.title for rec in caplog.records)
+
+
+def test_find_plugin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (tmp_path / "p1.spec.json").write_text(
+        json.dumps({"name": "p1", "description": "desc1", "tags": ["tag1"]})
+    )
+    (tmp_path / "p2.spec.json").write_text(
+        json.dumps({"name": "p2", "description": "desc2", "tags": ["tag2"]})
+    )
+
+    embeddings = {
+        "desc1\ntag1": [1.0, 0.0, 0.0],
+        "desc2\ntag2": [0.0, 1.0, 0.0],
+        "desc1": [1.0, 0.0, 0.0],
+        "desc2": [0.0, 1.0, 0.0],
+        "tag1": [1.0, 0.0, 0.0],
+        "tag2": [0.0, 1.0, 0.0],
+    }
+
+    def fake_get_embedding(text: str, _config: Config) -> List[float]:
+        return embeddings[text]
+
+    monkeypatch.setattr("autogpt.plugins.library.get_embedding", fake_get_embedding)
+
+    agent = _setup_agent(tmp_path, monkeypatch)
+
+    results = agent.find_plugin("desc1", top_k=1)
+    assert results == ["p1"]
+
+    tag_results = agent.find_plugin("tag2", top_k=1)
+    assert tag_results == ["p2"]
 
 
 def test_find_skill_caches_results(

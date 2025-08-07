@@ -11,6 +11,7 @@ from autogpt.config import Config
 from autogpt.logs import logger
 from autogpt.plugins.loader import PluginMetaValidationError, load_plugin_meta
 from autogpt.plugins.models import SourceCodeAccessPolicy
+from autogpt.plugins.library import PluginLibrary
 from autogpt.telemetry import telemetry
 from autogpt.telemetry.audit import log_denied_access
 
@@ -21,8 +22,10 @@ class LibrarianAgent:
     """High level interface for managing the skill library."""
 
     def __init__(self, config: Config | None = None) -> None:
-        self.skill_library = SkillLibrary(config or Config())
+        self.config = config or Config()
+        self.skill_library = SkillLibrary(self.config)
         storage = self.skill_library.storage_path
+        self.plugin_library = PluginLibrary(self.config, Path(self.config.plugins_dir))
         if not any(storage.rglob("skill.json")):
             logger.warn(
                 "No existing skill index found at %s; starting with empty library",
@@ -32,6 +35,7 @@ class LibrarianAgent:
         # requests. This keeps ``find_skill`` simple and synchronous while
         # still improving performance for common lookups.
         self._search_cache: Dict[Tuple[str, int], List[dict]] = {}
+        self._plugin_cache: Dict[Tuple[str, int], List[str]] = {}
 
     # ------------------------------------------------------------------
     def find_skill(self, query: str, top_k: int = 3) -> List[dict]:
@@ -85,15 +89,21 @@ class LibrarianAgent:
         return results
 
     # ------------------------------------------------------------------
-    def find_plugin(self, query: str) -> List[str]:
-        """Search for plugins related to ``query``.
+    def find_plugin(self, query: str, top_k: int = 3) -> List[str]:
+        """Search for plugins matching ``query`` and return their identifiers."""
 
-        This is a lightweight placeholder that integrations may override with
-        real plugin discovery. It returns an empty list by default.
-        """
+        cache_key = (query, top_k)
+        if cache_key in self._plugin_cache:
+            cached = self._plugin_cache[cache_key]
+            telemetry.increment(
+                "find_plugin.success" if cached else "find_plugin.failure"
+            )
+            return cached
 
-        telemetry.increment("find_plugin.failure")
-        return []
+        plugin_ids = self.plugin_library.search(query, top_k=top_k)
+        self._plugin_cache[cache_key] = plugin_ids
+        telemetry.increment("find_plugin.success" if plugin_ids else "find_plugin.failure")
+        return plugin_ids
 
     # ------------------------------------------------------------------
     def add_skill(self, skill_metadata: dict, skill_code_path: str) -> bool:
