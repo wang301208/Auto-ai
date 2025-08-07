@@ -10,7 +10,6 @@ from ..api_manager import ApiManager
 from ..base import (
     ChatModelResponse,
     ChatSequence,
-    FunctionCallDict,
     Message,
     ResponseMessageDict,
 )
@@ -171,7 +170,7 @@ def create_chat_completion(
 
     first_message: ResponseMessageDict = response.choices[0].message
     content: str | None = first_message.content
-    function_call: FunctionCallDict | None = first_message.function_call
+    function_call: OpenAIFunctionCall | None = first_message.function_call
 
     for plugin in config.plugins:
         if not plugin.can_handle_on_response():
@@ -183,7 +182,7 @@ def create_chat_completion(
         model_info=OPEN_AI_CHAT_MODELS[model],
         content=content,
         function_call=OpenAIFunctionCall(
-            name=function_call["name"], arguments=function_call["arguments"]
+            name=function_call.name, arguments=function_call.arguments
         )
         if function_call
         else None,
