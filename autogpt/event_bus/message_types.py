@@ -198,11 +198,15 @@ class ApprovalGranted(EventMessage):
         branch_name: Branch containing the approved fix.
         commit_hash: Hash of the commit that was approved.
         summary: Short description of the approved fix.
+        approved_by: Identity of the approver.
+        approval_timestamp: Timestamp when approval was granted.
     """
 
     branch_name: str
     commit_hash: str
     summary: str
+    approved_by: str | None = None
+    approval_timestamp: str | None = None
     event_type: str = field(init=False, default=APPROVAL_GRANTED)
     payload: dict[str, Any] | str | None = field(init=False)
 
@@ -212,6 +216,10 @@ class ApprovalGranted(EventMessage):
             "commit_hash": self.commit_hash,
             "summary": self.summary,
         }
+        if self.approved_by is not None:
+            self.payload["approved_by"] = self.approved_by
+        if self.approval_timestamp is not None:
+            self.payload["approval_timestamp"] = self.approval_timestamp
 
 
 @dataclass(kw_only=True)

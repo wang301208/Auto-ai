@@ -54,6 +54,8 @@ class QAAgent:
             event.payload if isinstance(event.payload, dict) else None
         )
         repo_path = (payload or {}).get("repo_path", self.agent.config.workspace_path)
+        approved_by = (payload or {}).get("approved_by")
+        approval_timestamp = (payload or {}).get("approval_timestamp")
 
         branch = event.branch_name
         if not branch or not repo_path:
@@ -103,6 +105,8 @@ class QAAgent:
             event.payload if isinstance(event.payload, dict) else None
         )
         repo_path = (payload or {}).get("repo_path", self.agent.config.workspace_path)
+        approved_by = (payload or {}).get("approved_by")
+        approval_timestamp = (payload or {}).get("approval_timestamp")
 
         branch = event.branch_name
         if not branch or not repo_path:
@@ -158,6 +162,8 @@ class QAAgent:
                         "Failed to load skill metadata from %s", skill_json_path
                     )
                     continue
+                metadata["approved_by"] = approved_by
+                metadata["approval_timestamp"] = approval_timestamp
                 skill_dir_path = (
                     skill_json_path.parent / metadata.get("entry_point", "main.py")
                 )

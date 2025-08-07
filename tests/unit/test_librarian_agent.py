@@ -36,6 +36,8 @@ def _metadata() -> dict:
         "return_type": "str",
         "author_agent": "tester",
         "creation_timestamp": "2024-01-01T00:00:00Z",
+        "approved_by": "qa_tester",
+        "approval_timestamp": "2024-01-02T00:00:00Z",
     }
 
 
@@ -72,6 +74,13 @@ def test_add_and_find_skill(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> 
 
     results = agent.find_skill("Test skill")
     assert results == [metadata]
+
+    skill_json = (
+        tmp_path / f"{metadata['skill_name']}_{metadata['version']}" / "skill.json"
+    )
+    saved = json.loads(skill_json.read_text(encoding="utf-8"))
+    assert saved["approved_by"] == metadata["approved_by"]
+    assert saved["approval_timestamp"] == metadata["approval_timestamp"]
 
 
 def test_add_skill_invalid_metadata_raises(

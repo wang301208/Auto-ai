@@ -146,6 +146,8 @@ class LibrarianAgent:
                 return_type=metadata.return_type,
                 author_agent=metadata.author_agent,
                 creation_timestamp=metadata.creation_timestamp,
+                approved_by=metadata.approved_by,
+                approval_timestamp=metadata.approval_timestamp,
             )
             return True
         except Exception as err:
