@@ -319,6 +319,108 @@ def test_on_issue_detected_recommends_new_skill_when_none_found(
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
+def test_on_issue_detected_recommends_plugin_combo(event_type: str) -> None:
+    message_queue = MessageQueue()
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    with (
+        patch.object(arch_module, "LibrarianAgent") as MockLib,
+        patch.object(arch_module.Archaeologist, "evaluate_plugin_combo", return_value=True),
+    ):
+        MockLib.return_value.find_skill.return_value = []
+        MockLib.return_value.find_plugin.return_value = ["PluginA", "PluginB"]
+        Archaeologist(message_queue)
+
+        payload = {
+            "plugin": "test_plugin",
+            "issue_type": "bug",
+            "error_log": "runtime error",
+            "description": "runtime error",
+        }
+        message_queue.publish(
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
+        )
+
+    assert len(received) == 1
+    diag = received[0]
+    assert "Combine PluginA -> PluginB" in diag.actionable_recommendations
+    assert diag.details is not None
+    details = cast(dict[str, Any], diag.details)
+    assert details["plugin_combo"] == ["PluginA", "PluginB"]
+    assert details["recommended_skill"] is None
+
+
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
+def test_on_issue_detected_source_code_borrowing_allowed(event_type: str) -> None:
+    message_queue = MessageQueue()
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    with (
+        patch.object(arch_module, "LibrarianAgent") as MockLib,
+        patch.object(arch_module.Archaeologist, "evaluate_plugin_combo", return_value=False),
+    ):
+        MockLib.return_value.find_skill.return_value = []
+        MockLib.return_value.find_plugin.return_value = ["PluginC"]
+        MockLib.return_value.get_source_code_path.return_value = "/src/path"
+        Archaeologist(message_queue)
+
+        payload = {
+            "plugin": "test_plugin",
+            "issue_type": "bug",
+            "error_log": "runtime error",
+            "description": "runtime error",
+        }
+        message_queue.publish(
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
+        )
+
+    assert len(received) == 1
+    diag = received[0]
+    assert "Enter source-code borrowing mode" in diag.actionable_recommendations
+    assert "/src/path" in diag.actionable_recommendations
+    assert diag.details is not None
+    details = cast(dict[str, Any], diag.details)
+    assert details["source_code_paths"] == {"PluginC": "/src/path"}
+    assert details["recommended_skill"] is None
+
+
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
+def test_on_issue_detected_source_code_borrowing_restricted(event_type: str) -> None:
+    message_queue = MessageQueue()
+    received: list[DiagnosisComplete] = []
+    message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
+
+    with (
+        patch.object(arch_module, "LibrarianAgent") as MockLib,
+        patch.object(arch_module.Archaeologist, "evaluate_plugin_combo", return_value=False),
+    ):
+        MockLib.return_value.find_skill.return_value = []
+        MockLib.return_value.find_plugin.return_value = ["PluginC"]
+        MockLib.return_value.get_source_code_path.return_value = None
+        Archaeologist(message_queue)
+
+        payload = {
+            "plugin": "test_plugin",
+            "issue_type": "bug",
+            "error_log": "runtime error",
+            "description": "runtime error",
+        }
+        message_queue.publish(
+            EventMessage(event_type=event_type, payload=payload, source_agent="tester")
+        )
+
+    assert len(received) == 1
+    diag = received[0]
+    assert diag.actionable_recommendations == _("New skill development recommended.")
+    assert diag.details is not None
+    details = cast(dict[str, Any], diag.details)
+    assert details["source_code_paths"] == {}
+    assert details["recommended_skill"] is None
+
+
+@pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
 def test_on_issue_detected_with_missing_index(
     event_type: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

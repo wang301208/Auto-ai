@@ -151,12 +151,17 @@ class Archaeologist:
         query = self._generate_query(query_payload)
 
         skills: list[dict[str, Any]] = []
+        plugins: list[str] = []
         top_k = 3
         if self.librarian:
             try:
                 skills = self.librarian.find_skill(query, top_k=top_k)
             except Exception as err:  # noqa: BLE001
                 logger.error(f"Error searching for skill: {err}")
+            try:
+                plugins = self.librarian.find_plugin(query)
+            except Exception as err:  # noqa: BLE001
+                logger.error(f"Error searching for plugin: {err}")
         if skills:
             if any("score" in s for s in skills):
                 skill = max(skills, key=lambda s: s.get("score", float("-inf")))
@@ -167,29 +172,55 @@ class Archaeologist:
             param_list = ", ".join(params.keys()) if params else "no parameters"
             desc = skill.get("description")
             if desc:
-                skill_rec = _(
-                    "Issue can be solved by invoking {call_name} ({desc}) with parameters: {param_list}."
+                action_rec = _(
+                    "Call existing skill {call_name} ({desc}) with parameters: {param_list}."
                 ).format(call_name=call_name, desc=desc, param_list=param_list)
             else:
-                skill_rec = _(
-                    "Issue can be solved by invoking {call_name} with parameters: {param_list}."
+                action_rec = _(
+                    "Call existing skill {call_name} with parameters: {param_list}."
                 ).format(call_name=call_name, param_list=param_list)
             details["recommended_skill"] = {
                 "name": skill["skill_name"],
                 "version": skill["version"],
                 "parameters": params,
             }
+        elif plugins and self.evaluate_plugin_combo(plugins):
+            combo = " -> ".join(plugins)
+            action_rec = _("Combine {combo}.").format(combo=combo)
+            details["recommended_skill"] = None
+            details["plugin_combo"] = plugins
         else:
-            skill_rec = _("New skill development recommended.")
+            source_paths: dict[str, str] = {}
+            if self.librarian:
+                for plugin in plugins:
+                    try:
+                        path = self.librarian.get_source_code_path(plugin)
+                    except Exception as err:  # noqa: BLE001
+                        logger.error(
+                            f"Error retrieving source path for plugin '{plugin}': {err}"
+                        )
+                        path = None
+                    if path:
+                        source_paths[plugin] = path
+            if source_paths:
+                path_list = ", ".join(f"{p}: {pth}" for p, pth in source_paths.items())
+                action_rec = _(
+                    "Enter source-code borrowing mode. Sources: {paths}."
+                ).format(paths=path_list)
+                details["source_code_paths"] = source_paths
+            else:
+                action_rec = _("New skill development recommended.")
+                details["source_code_paths"] = {}
             details["recommended_skill"] = None
 
         base_rec = self._recommendations(analysis)
         recs = []
         if base_rec and base_rec != "No recommendations.":
             recs.append(base_rec)
-        recs.append(skill_rec)
+        recs.append(action_rec)
         recommendations = " ".join(recs)
         details["skill_search"] = skills[:top_k]
+        details["plugin_search"] = plugins
 
         event = DiagnosisComplete(
             summary=summary,
@@ -361,6 +392,15 @@ class Archaeologist:
                 analyze_dependency(dep, source_path, new_version=new_version)
             )
         return analyses
+
+    def evaluate_plugin_combo(self, plugin_ids: list[str]) -> bool:
+        """Assess whether combining ``plugin_ids`` solves the issue simply.
+
+        This stub always returns ``False``; tests may patch it with heuristic or
+        LLM-backed logic.
+        """
+
+        return False
 
     def _recommendations(self, analysis: dict[str, Any]) -> str:
         """Create a simple recommendation string from analysis data."""

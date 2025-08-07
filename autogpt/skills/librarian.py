@@ -84,6 +84,17 @@ class LibrarianAgent:
         return results
 
     # ------------------------------------------------------------------
+    def find_plugin(self, query: str) -> List[str]:
+        """Search for plugins related to ``query``.
+
+        This is a lightweight placeholder that integrations may override with
+        real plugin discovery. It returns an empty list by default.
+        """
+
+        telemetry.increment("find_plugin.failure")
+        return []
+
+    # ------------------------------------------------------------------
     def add_skill(self, skill_metadata: dict, skill_code_path: str) -> bool:
         """Add a new skill to the library.
 
