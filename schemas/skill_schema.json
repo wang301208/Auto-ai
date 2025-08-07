@@ -1,0 +1,31 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/schemas/skill_schema.json",
+  "$comment": "Example: {\"name\": \"Summarize\", \"description\": \"Summarizes text\", \"parameters\": {\"text\": {\"type\": \"string\", \"required\": true}}, \"dependencies\": [\"text-preprocess\"]}",
+  "title": "Skill Metadata Schema",
+  "type": "object",
+  "required": ["name", "description"],
+  "properties": {
+    "name": {"type": "string"},
+    "description": {"type": "string"},
+    "parameters": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["type", "required"],
+        "properties": {
+          "type": {"type": "string"},
+          "required": {"type": "boolean"},
+          "default": {},
+          "description": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "items": {"type": "string"}
+    }
+  },
+  "additionalProperties": false
+}
