@@ -76,6 +76,16 @@ A standard message therefore contains:
 }
 ```
 
+Auto-GPT defines additional structured event types. For skills, two relevant
+events are provided:
+
+* **`SKILL_CREATED`** – emitted when a new skill is registered. The payload
+  contains `skill_name`, `version`, optional `description`, `tags`, and
+  `parameters` describing the skill.
+* **`SKILL_REQUESTED`** – emitted when an agent requests execution of a skill.
+  The payload includes `skill_name` as well as optional `request_id`,
+  `parameters`, `requester`, and extra `context`.
+
 ## Examples
 
 ### Publishing an event
@@ -88,6 +98,35 @@ queue = MessageQueue(bus)
 
 queue.publish(
     EventMessage(event_type="status", payload={"msg": "hi"}, source_agent="agent"),
+)
+```
+
+### Publishing skill events
+
+```python
+from autogpt.event_bus import SkillCreated, SkillRequested
+
+# Skill registration
+queue.publish(
+    SkillCreated(
+        skill_name="hello_world",
+        version="1.0",
+        description="Return a friendly greeting",
+        tags=["example"],
+        parameters={},
+        source_agent="librarian",
+    )
+)
+
+# Skill request
+queue.publish(
+    SkillRequested(
+        skill_name="hello_world",
+        request_id="req-1",
+        parameters={},
+        requester="agent",
+        context={"message": "say hi"},
+    )
 )
 ```
 
