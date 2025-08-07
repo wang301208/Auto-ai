@@ -73,20 +73,29 @@ Expected `ISSUE_DETECTED` payload fields:
 1. **Extract issue** – Parse event payloads to pull out metadata like file,
    line, commit hash and dependency information.
 2. **Query librarian** – Build a search string from the issue details and call
-   `LibrarianAgent.find_skill` to look for existing remediation skills.
-3. **Branch on results** – If a relevant skill is found, recommend invoking it;
-    otherwise recommend developing a new skill or apply manual fixes.
+   `LibrarianAgent.find_skill` followed by `LibrarianAgent.find_plugin` to
+   surface reusable skills or related plugins.
+3. **Branch on results** – The archaeologist chooses one of three paths:
+   - *Call existing skill* when a suitable skill is found.
+   - *Combine Plugin_A → Plugin_B* if `find_plugin` returns candidates and
+     `evaluate_plugin_combo` deems a simple composition viable.
+   - *Enter source-code borrowing mode* when combos are insufficient; it then
+     asks the librarian for each candidate's source via
+     `get_source_code_path` and proceeds only with accessible paths.
 4. **Publish `DIAGNOSIS_COMPLETE`** – Emit diagnostics summarising the issue
-   and the skill search outcome for downstream agents.
+   and the chosen remediation strategy for downstream agents.
 
 ### Librarian integration and event payload
 
-`LibrarianAgent.find_skill` enables the archaeologist to reuse prior work. The
-agent includes the raw search results in the `skill_search` field and the top
-match in `recommended_skill` within the `DIAGNOSIS_COMPLETE` event's
-`details`. When a match is found the event's `actionable_recommendations`
-directs consumers to invoke the suggested skill; otherwise it signals that new
-skill development is recommended.
+`LibrarianAgent.find_skill` enables the archaeologist to reuse prior work while
+`find_plugin` and `get_source_code_path` provide guidance when no skill
+matches. The agent includes the raw search results in `skill_search` and
+`plugin_search` and records the top match in `recommended_skill`, the chosen
+plugin chain in `plugin_combo`, or any retrieved source locations in
+`source_code_paths`. When a match is found the event's
+`actionable_recommendations` directs consumers to invoke the suggested skill,
+combine plugins or borrow source code; otherwise it signals that new skill
+development is recommended.
 
 Repeated calls to `find_skill` are cached by the librarian so common queries do
 not repeatedly hit the underlying skill library. This keeps the interface
