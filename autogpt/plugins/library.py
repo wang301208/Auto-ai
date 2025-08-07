@@ -23,7 +23,7 @@ Embedding = List[float]
 class PluginSpec:
     """Representation of a plugin specification with optional embedding."""
 
-    name: str
+    id: str
     description: str
     tags: List[str]
     spec: Dict
@@ -62,18 +62,18 @@ class PluginLibrary:
                     spec = json.load(f)
             except Exception:
                 continue
-            name = spec.get("name")
-            if not name:
+            plugin_id = spec.get("id") or spec.get("name")
+            if not plugin_id:
                 continue
             description = spec.get("description", "")
             tags = spec.get("tags", [])
-            plugin = PluginSpec(name=name, description=description, tags=tags, spec=spec)
+            plugin = PluginSpec(id=plugin_id, description=description, tags=tags, spec=spec)
             text = f"{description}\n{' '.join(tags)}"
             embedding = get_embedding(text, self.config)
             plugin.embedding = list(map(float, embedding))
-            self._plugins[name] = plugin
+            self._plugins[plugin_id] = plugin
             self.vector_db.add(
-                name,
+                plugin_id,
                 plugin.embedding,
                 {"description": description, "tags": tags},
             )
@@ -90,10 +90,10 @@ class PluginLibrary:
         self._load()
 
     # ------------------------------------------------------------------
-    def get_plugin(self, name: str) -> Optional[PluginSpec]:
-        """Return plugin specification by name if present."""
+    def get_plugin(self, plugin_id: str) -> Optional[PluginSpec]:
+        """Return plugin specification by identifier if present."""
 
-        return self._plugins.get(name)
+        return self._plugins.get(plugin_id)
 
     # ------------------------------------------------------------------
     def list_plugins(self) -> List[PluginSpec]:
@@ -102,12 +102,12 @@ class PluginLibrary:
         return list(self._plugins.values())
 
     # ------------------------------------------------------------------
-    def search(self, query: str, top_k: int = 5) -> List[PluginSpec]:
-        """Search for plugins semantically matching ``query``."""
+    def search(self, query: str, top_k: int = 5) -> List[str]:
+        """Search for plugins semantically matching ``query`` and return their IDs."""
 
         embedding = get_embedding(query, self.config)
         results = self.vector_db.query(list(map(float, embedding)), top_k=top_k)
-        return [self._plugins[key] for key, _ in results if key in self._plugins]
+        return [key for key, _ in results if key in self._plugins]
 
 
 __all__ = ["PluginSpec", "PluginLibrary"]

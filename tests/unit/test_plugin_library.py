@@ -59,8 +59,8 @@ def test_plugin_library_load_and_search(tmp_path: Path, monkeypatch: pytest.Monk
     assert p1 and p1.description == "desc1"
 
     results = library.search("desc1", top_k=1)
-    assert results and results[0].name == "p1"
+    assert results == ["p1"]
 
     tag_results = library.search("tag2", top_k=1)
-    assert tag_results and tag_results[0].name == "p2"
+    assert tag_results == ["p2"]
 
