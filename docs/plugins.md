@@ -30,9 +30,21 @@ plugin_b:
    ```json
    {
      "name": "sample",
-     "description": "sample plugin"
+     "description": "sample plugin",
+     "instructions": "describe the behaviour",
+     "underlying_library": {
+       "name": "some-lib",
+       "version": "1.0.0",
+       "repo_url": "https://example.com/some-lib",
+       "local_source_path": "relative/path/to/lib"
+     },
+     "source_code_access_policy": "ALLOWED_FOR_READ_ONLY"
    }
    ```
+
+   其中 `source_code_access_policy` 的可选值为 `ALLOWED_FOR_READ_ONLY` 或
+   `RESTRICTED`；`underlying_library` 字段需包含库名称、版本、仓库地址
+   以及本地源码路径。
 
 3. 运行以下命令将规范转换为 Python 模块：
 

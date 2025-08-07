@@ -1,5 +1,12 @@
 {
   "name": "echo",
   "description": "A simple plugin that echoes input",
-  "instructions": "Create a function echo(text: str) -> str that returns text"
+  "instructions": "Create a function echo(text: str) -> str that returns text",
+  "underlying_library": {
+    "name": "python",
+    "version": "3.11",
+    "repo_url": "https://github.com/python/cpython",
+    "local_source_path": "plugins/stubs/echo.spec.json"
+  },
+  "source_code_access_policy": "ALLOWED_FOR_READ_ONLY"
 }

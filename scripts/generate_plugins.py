@@ -8,11 +8,12 @@ a basic stub implementation.
 
 from __future__ import annotations
 
-import json
 import os
 from pathlib import Path
+import json
 
 from black import FileMode, format_str
+from autogpt.plugins.loader import load_plugin_meta
 
 try:
     import openai
@@ -54,10 +55,9 @@ def generate_plugins(base_dir: Path | str = Path(__file__).resolve().parents[1])
     out_dir = base / "plugins"
     out_dir.mkdir(exist_ok=True)
     for spec_file in stubs_dir.glob("*.spec.json"):
-        with open(spec_file, "r", encoding="utf-8") as f:
-            spec = json.load(f)
-        name = spec.get("name") or spec_file.stem
-        code = llm_generate(spec)
+        spec = load_plugin_meta(spec_file)
+        name = spec.name or spec_file.stem
+        code = llm_generate(spec.dict())
         formatted = format_str(AUTO_HEADER + "\n" + code, mode=FileMode())
         target = out_dir / f"{name}.py"
         with open(target, "w", encoding="utf-8") as f:
