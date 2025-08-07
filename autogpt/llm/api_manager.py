@@ -38,7 +38,10 @@ class ApiManager(metaclass=Singleton):
         from autogpt.llm.providers.openai import OPEN_AI_MODELS
 
         model = model[:-3] if model.endswith("-v2") else model
-        model_info = OPEN_AI_MODELS[model]
+        model_info = OPEN_AI_MODELS.get(model)
+        if not model_info:
+            logger.warn("Unknown model %s – skipping cost update", model)
+            return
 
         self.total_prompt_tokens += prompt_tokens
         self.total_completion_tokens += completion_tokens
