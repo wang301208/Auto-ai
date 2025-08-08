@@ -317,7 +317,10 @@ the shared message bus.
 2. **Verify** – It checks out the proposed branch and runs `run_tests` to
    ensure the regression is solved.
 3. **Request approval** – If tests pass, `QAAgent` emits a
-   `HUMAN_APPROVAL_REQUIRED` event to optionally pause for manual review.
+   `HUMAN_APPROVAL_REQUIRED` event to optionally pause for manual review. A
+   human operator can approve the fix by running
+   `python scripts/approve_fix.py --branch <branch> --commit <hash> --summary "..." --approved-by <name>`
+   which publishes an `APPROVAL_GRANTED` event.
 4. **Merge and deploy** – Once approved, the agent merges the branch with
    `git_merge` and can invoke a deployment script before broadcasting
    `ISSUE_RESOLVED`.
@@ -344,6 +347,8 @@ message_queue.publish(EventMessage(CODE_FIX_PROPOSED, payload={"branch": "fix/12
 # QAAgent responds
 run_tests("/path/to/repo", agent)  # -> 'all passed'
 message_queue.publish(EventMessage(HUMAN_APPROVAL_REQUIRED, payload={"branch": "fix/123"}))
+# Operator approves the fix
+# python scripts/approve_fix.py --branch fix/123 --commit abc123 --summary "Example fix" --approved-by alice
 # optional human approval received
 git_merge("/path/to/repo", "fix/123", "main", agent)
 subprocess.run(["./deploy.sh", "fix/123"])
