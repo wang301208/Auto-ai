@@ -1,51 +1,43 @@
 # Message Queue
 
 Auto-GPT includes a lightweight publish/subscribe system for agents to exchange events.
-It consists of a `MessageQueue` for in-memory dispatch and an optional `EventBus`
+It consists of a `MessageQueue` for dispatch and an optional `EventBus`
 that persists events to a SQLite database.
 
 ## Architecture
 
 ```text
-Agent -> MessageQueue -> (PyPubSub backend | in-process fallback) -> Subscribers
+Agent -> MessageQueue -> (Redis Pub/Sub | in-process fallback) -> Subscribers
                                   |
                                   -> EventBus (SQLite)
 ```
 
-* **MessageQueue** – routes messages between agents. If the optional
-  [PyPubSub](https://github.com/schollii/pypubsub) package is installed, it is
-  used as a backend; otherwise Auto-GPT falls back to an internal dispatcher.
+* **MessageQueue** – routes messages between agents. If a Redis connection is
+  configured it is used for Pub/Sub; otherwise Auto-GPT falls back to an
+  internal dispatcher.
 * **EventBus** – persists every event in `events.db` inside the agent's workspace
   for later inspection.
 
 ## Configuration
-
-No configuration is required to use the built‑in queue. Installing PyPubSub
-enables cross-module communication through a shared bus. The event database is
+No configuration is required to use the in‑process queue. The event database is
 created at `<workspace>/events.db` by default.
 
-### Installing the default backend (PyPubSub)
+### Enabling Redis Pub/Sub
 
-Install the optional dependency to enable the PyPubSub backend:
+To share events between processes, provide Redis connection settings via
+environment variables or your configuration file:
 
 ```bash
-pip install agpt[pubsub]  # or: pip install pypubsub
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_DB=0
+REDIS_PASSWORD=yourpassword  # optional
 ```
 
-Once installed, Auto‑GPT will automatically use PyPubSub when creating a
-`MessageQueue`.
-
-### Alternative brokers
-
-You can run an external message broker and provide your own backend
-integration. Example commands to start common brokers locally:
+Run a local Redis instance using Docker:
 
 ```bash
-# Redis
 docker run -p 6379:6379 redis
-
-# RabbitMQ
-docker run -p 5672:5672 rabbitmq
 ```
 
 ## Message format
