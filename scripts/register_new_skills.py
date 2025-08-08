@@ -13,6 +13,8 @@ import os
 import subprocess
 from pathlib import Path
 
+import argparse
+
 from autogpt.skills import LibrarianAgent
 
 
@@ -50,17 +52,27 @@ def find_new_skill_files(base_ref: str) -> list[Path]:
     return added
 
 
-def register_skill(skill_json: Path, librarian: LibrarianAgent) -> None:
+def register_skill(
+    skill_json: Path, librarian: LibrarianAgent, repo_path: str | Path | None = None
+) -> None:
     """Register a single skill given its ``skill.json`` file."""
     metadata = json.loads(skill_json.read_text(encoding="utf-8"))
     code_path = skill_json.parent / metadata.get("entry_point", "main.py")
-    if librarian.add_skill(metadata, str(code_path)):
+    if librarian.add_skill(metadata, str(code_path), repo_path=repo_path):
         print(f"Registered skill from {skill_json}")
     else:
         print(f"Failed to register skill from {skill_json}")
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="Register new skills")
+    parser.add_argument(
+        "--repo-path",
+        default=None,
+        help="Path to the skill repository for committing changes",
+    )
+    args = parser.parse_args()
+
     base_ref = _get_base_ref()
     new_skills = find_new_skill_files(base_ref)
     if not new_skills:
@@ -69,7 +81,7 @@ def main() -> None:
 
     librarian = LibrarianAgent()
     for skill_file in new_skills:
-        register_skill(skill_file, librarian)
+        register_skill(skill_file, librarian, repo_path=args.repo_path)
 
 
 if __name__ == "__main__":
