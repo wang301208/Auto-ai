@@ -26,6 +26,10 @@ def main() -> None:
     add_p = sub.add_parser("add", help="Add a new skill")
     add_p.add_argument("metadata", help="Path to JSON metadata file")
     add_p.add_argument("code", help="Path to Python file containing the skill")
+    add_p.add_argument(
+        "--repo-path",
+        help="Path to the skill repository for committing changes",
+    )
 
     read_p = sub.add_parser("read-code", help="Summarize Python files under a path")
     read_p.add_argument("path", help="File or directory to analyze")
@@ -58,7 +62,7 @@ def main() -> None:
         with Path(args.metadata).open("r", encoding="utf-8") as f:
             metadata = json.load(f)
         try:
-            if agent.add_skill(metadata, args.code):
+            if agent.add_skill(metadata, args.code, repo_path=args.repo_path):
                 print("Skill added successfully")
             else:
                 print("Failed to add skill")

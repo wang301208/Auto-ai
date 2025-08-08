@@ -87,10 +87,24 @@ class SkillLibrary:
             provider = getattr(config, "skill_db_provider", "memory").lower()
             if provider == "chroma":
                 persist = self.storage_path / "chroma"
-                self.vector_db = ChromaVectorDB(persist)
+                try:
+                    self.vector_db = ChromaVectorDB(persist)
+                except Exception as e:  # pragma: no cover - fallback for missing deps
+                    logger.warn(
+                        "ChromaDB unavailable (%s); falling back to in-memory store",
+                        e,
+                    )
+                    self.vector_db = MemoryVectorDB()
             elif provider == "faiss":
                 persist = self.storage_path / "faiss"
-                self.vector_db = FaissVectorDB(persist)
+                try:
+                    self.vector_db = FaissVectorDB(persist)
+                except Exception as e:  # pragma: no cover - fallback for missing deps
+                    logger.warn(
+                        "Faiss unavailable (%s); falling back to in-memory store",
+                        e,
+                    )
+                    self.vector_db = MemoryVectorDB()
             else:
                 self.vector_db = MemoryVectorDB()
         self._skills: Dict[str, Skill] = {}
@@ -274,7 +288,9 @@ class SkillLibrary:
             {"description": description, "tags": tags, "parameters": parameters},
         )
         skill_dir = self._write_skill(skill)
-        self._git_commit(skill_dir, f"Add skill {name} {version}", repo_path=repo_path)
+        self._git_commit(
+            skill_dir, f"Add skill {name} v{version}", repo_path=repo_path
+        )
         return skill
 
     def get_skill(self, name: str, version: str) -> Optional[Skill]:
@@ -339,7 +355,7 @@ class SkillLibrary:
         )
         skill_dir = self._write_skill(skill)
         self._git_commit(
-            skill_dir, f"Update skill {name} {version}", repo_path=repo_path
+            skill_dir, f"Update skill {name} v{version}", repo_path=repo_path
         )
         return skill
 
@@ -354,7 +370,7 @@ class SkillLibrary:
             if skill_dir.exists():
                 shutil.rmtree(skill_dir)
                 self._git_commit(
-                    skill_dir, f"Delete skill {name} {version}", repo_path=repo_path
+                    skill_dir, f"Delete skill {name} v{version}", repo_path=repo_path
                 )
 
     def list_skills(self) -> List[Skill]:
