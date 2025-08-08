@@ -6,8 +6,11 @@ import re
 import threading
 from pathlib import Path
 from typing import Any, Dict, Mapping
+from urllib.parse import urlparse
 
 import requests
+from bs4 import BeautifulSoup
+from packaging.version import InvalidVersion, Version
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -25,7 +28,7 @@ class SentryAgent:
         *,
         plugin_log_dirs: Mapping[str, Path] | None = None,
         plugin_endpoints: Mapping[str, str] | None = None,
-        dependencies: Mapping[str, Mapping[str, str]] | None = None,
+        dependencies: Mapping[str, Mapping[str, Any]] | None = None,
         poll_interval: float = 5.0,
         stop_event: threading.Event | None = None,
     ) -> None:
@@ -93,17 +96,74 @@ class SentryAgent:
     # ------------------------------------------------------------------
     def _check_dependencies(self) -> None:
         for plugin, deps in self.dependencies.items():
-            for name, current in deps.items():
-                try:
-                    resp = requests.get(f"https://pypi.org/pypi/{name}/json", timeout=5)
-                    if resp.status_code == 200:
-                        latest = resp.json().get("info", {}).get("version")
-                        if latest and latest != current:
-                            self._publish_issue(
-                                plugin, f"{name} {latest}", "dependency_update"
-                            )
-                except Exception:  # pragma: no cover - network errors
-                    continue
+            for name, info in deps.items():
+                repo_url: str | None = None
+                current: str | None = None
+
+                if isinstance(info, dict):
+                    repo_url = info.get("repo_url")
+                    current = info.get("version") or info.get("current")
+                else:
+                    current = str(info)
+
+                if repo_url:
+                    latest = self._get_latest_repo_release(repo_url)
+                    if latest and current and self._is_newer_version(latest, current):
+                        self._publish_issue(
+                            plugin, f"{name} {latest}", "dependency_update"
+                        )
+                elif current:
+                    try:
+                        resp = requests.get(
+                            f"https://pypi.org/pypi/{name}/json", timeout=5
+                        )
+                        if resp.status_code == 200:
+                            latest = resp.json().get("info", {}).get("version")
+                            if latest and self._is_newer_version(latest, current):
+                                self._publish_issue(
+                                    plugin, f"{name} {latest}", "dependency_update"
+                                )
+                    except Exception:  # pragma: no cover - network errors
+                        continue
+
+    def _get_latest_repo_release(self, repo_url: str) -> str | None:
+        """Return latest release tag for a GitHub repository."""
+        parsed = urlparse(repo_url)
+        path_parts = [p for p in parsed.path.strip("/").split("/") if p]
+        if len(path_parts) < 2:
+            return None
+        owner, repo = path_parts[:2]
+        api_url = f"https://api.github.com/repos/{owner}/{repo}/releases/latest"
+        try:
+            resp = requests.get(api_url, timeout=5)
+            if resp.status_code == 200:
+                tag = resp.json().get("tag_name")
+                if tag:
+                    return tag
+        except Exception:
+            pass
+
+        html_url = f"https://github.com/{owner}/{repo}/releases"
+        try:
+            resp = requests.get(html_url, timeout=5)
+            if resp.status_code == 200:
+                soup = BeautifulSoup(resp.text, "html.parser")
+                for a in soup.find_all("a"):
+                    href = a.get("href", "")
+                    if "/releases/tag/" in href:
+                        return href.rstrip("/").split("/")[-1]
+        except Exception:
+            pass
+        return None
+
+    def _is_newer_version(self, latest: str, current: str) -> bool:
+        """Return True if *latest* is newer than *current*."""
+        latest = latest.lstrip("v")
+        current = current.lstrip("v")
+        try:
+            return Version(latest) > Version(current)
+        except InvalidVersion:
+            return latest != current
 
     # ------------------------------------------------------------------
     def _publish_issue(self, plugin: str, error_log: str, issue_type: str) -> None:
