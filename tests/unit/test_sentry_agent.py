@@ -66,10 +66,16 @@ def test_sentry_agent_dependency_update(monkeypatch: pytest.MonkeyPatch) -> None
     received: list[EventMessage] = []
     mq.subscribe(ISSUE_DETECTED, lambda m: received.append(m))
 
-    agent = SentryAgent(mq, dependencies={"plug": {"pkg": "1.0"}})
+    deps = {
+        "plug": {"pkg": {"version": "1.0", "repo_url": "https://github.com/owner/repo"}}
+    }
+    agent = SentryAgent(mq, dependencies=deps)
 
     def fake_get(url: str, timeout: int = 5) -> DummyResponse:
-        return DummyResponse(200, {"info": {"version": "2.0"}})
+        assert "owner/repo" in url
+        if "api.github.com" in url:
+            return DummyResponse(200, {"tag_name": "2.0"})
+        raise AssertionError("Unexpected URL")
 
     monkeypatch.setattr("requests.get", fake_get)
     agent._check_dependencies()
