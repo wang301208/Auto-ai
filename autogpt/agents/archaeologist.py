@@ -19,6 +19,8 @@ from autogpt.event_bus import (
 from autogpt.event_bus.message_types import DiagnosisDetails
 from autogpt.logs import logger
 from autogpt.skills.librarian import LibrarianAgent
+from autogpt.llm import ChatSequence, Message
+from autogpt.llm.utils import create_chat_completion
 
 from .archaeologist_dependency import analyze_dependency
 
@@ -50,6 +52,7 @@ class Archaeologist:
             self.librarian = librarian or LibrarianAgent(self.config)
         else:
             self.librarian = None
+        self._combo_eval_cache: dict[tuple[str, ...], bool] = {}
 
     # ------------------------------------------------------------------
     def _on_issue_detected(self, event: EventMessage) -> None:
@@ -394,13 +397,48 @@ class Archaeologist:
         return analyses
 
     def evaluate_plugin_combo(self, plugin_ids: list[str]) -> bool:
-        """Assess whether combining ``plugin_ids`` solves the issue simply.
+        """Assess whether combining ``plugin_ids`` solves the issue simply."""
 
-        This stub always returns ``False``; tests may patch it with heuristic or
-        LLM-backed logic.
-        """
+        key = tuple(plugin_ids)
+        if key in self._combo_eval_cache:
+            return self._combo_eval_cache[key]
 
-        return False
+        lower_ids = [pid.lower() for pid in plugin_ids]
+        input_terms = {"read", "fetch", "get", "search", "load"}
+        output_terms = {"write", "send", "post", "save", "create", "upload"}
+
+        has_input = any(any(term in pid for term in input_terms) for pid in lower_ids)
+        has_output = any(any(term in pid for term in output_terms) for pid in lower_ids)
+
+        if not (has_input and has_output):
+            self._combo_eval_cache[key] = False
+            return False
+
+        prompt = ChatSequence.for_model(
+            self.config.fast_llm,
+            [
+                Message(
+                    "system",
+                    "Evaluate whether chaining these plugins enables problem solving."
+                    " Respond with 'yes' or 'no'.",
+                ),
+                Message(
+                    "user",
+                    f"Plugin chain: {', '.join(plugin_ids)}",
+                ),
+            ],
+        )
+
+        try:
+            response = create_chat_completion(prompt, self.config, temperature=0)
+            content = (response.content or "").strip().lower()
+            result = "yes" in content
+        except Exception as err:  # noqa: BLE001
+            logger.error(f"LLM evaluation failed: {err}")
+            result = False
+
+        self._combo_eval_cache[key] = result
+        return result
 
     def _recommendations(self, analysis: dict[str, Any]) -> str:
         """Create a simple recommendation string from analysis data."""
