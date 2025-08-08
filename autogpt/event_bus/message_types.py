@@ -43,6 +43,9 @@ TESTS_FAILED = "TESTS_FAILED"
 DEPLOYMENT_FAILED = "DEPLOYMENT_FAILED"
 """Event type emitted when deployment fails."""
 
+HUMAN_ARCHITECT_APPROVAL_REQUIRED = "HUMAN_ARCHITECT_APPROVAL_REQUIRED"
+"""Event type emitted when an organizational change proposal requires human architect approval."""
+
 SKILL_CREATED = "SKILL_CREATED"
 """Event type emitted when a new skill is registered."""
 
@@ -176,6 +179,34 @@ class HumanApprovalRequired(EventMessage):
             "summary": self.summary,
             "diff": self.diff,
         }
+
+
+@dataclass(kw_only=True)
+class HumanArchitectApprovalRequired(EventMessage):
+    """Schema for :data:`HUMAN_ARCHITECT_APPROVAL_REQUIRED` events.
+
+    Expected payload fields:
+        proposal_branch_name: Branch containing the organization change proposal.
+        proposal_branch_url: Optional URL to view the branch/PR diff.
+        rationale: Diagnosis and reasons produced by LLM.
+        changes_summary: Short summary of proposed blueprint file changes.
+    """
+
+    proposal_branch_name: str
+    proposal_branch_url: str | None = None
+    rationale: str | None = None
+    changes_summary: str | None = None
+    event_type: str = field(init=False, default=HUMAN_ARCHITECT_APPROVAL_REQUIRED)
+    payload: dict[str, Any] | str | None = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.payload = {
+            "proposal_branch_name": self.proposal_branch_name,
+            "proposal_branch_url": self.proposal_branch_url,
+            "rationale": self.rationale,
+            "changes_summary": self.changes_summary,
+        }
+        self.payload = {k: v for k, v in self.payload.items() if v is not None}
 
 
 @dataclass(kw_only=True)
@@ -340,6 +371,7 @@ __all__ = [
     "DiagnosisComplete",
     "CodeFixProposed",
     "HumanApprovalRequired",
+    "HumanArchitectApprovalRequired",
     "TestsFailed",
     "ApprovalGranted",
     "IssueResolved",
@@ -350,6 +382,7 @@ __all__ = [
     "DIAGNOSIS_COMPLETE",
     "CODE_FIX_PROPOSED",
     "HUMAN_APPROVAL_REQUIRED",
+    "HUMAN_ARCHITECT_APPROVAL_REQUIRED",
     "TESTS_FAILED",
     "APPROVAL_GRANTED",
     "ISSUE_RESOLVED",

@@ -1,0 +1,225 @@
+# 能力归属决策框架配置文件
+# 用于自定义四大决策原则的阈值和权重
+
+# 决策阈值配置
+thresholds:
+  # 普适性阈值
+  universal_threshold: 0.8      # 高度普适的阈值
+  common_threshold: 0.6         # 较为普适的阈值
+  
+  # 频率阈值
+  every_step_threshold: 0.9     # 每步调用的阈值
+  high_frequency_threshold: 0.7 # 高频调用的阈值
+  
+  # 抽象层次阈值
+  metacognitive_threshold: 0.8  # 元认知层次的阈值
+  reasoning_threshold: 0.6      # 推理层次的阈值
+  
+  # 稳定性阈值
+  proven_stable_threshold: 0.9  # 高度稳定的阈值
+  
+  # 综合决策阈值
+  innate_confidence_threshold: 0.8    # 内化决策的置信度阈值
+  acquired_default_threshold: 0.5     # 技能化决策的默认阈值
+
+# 关键词权重配置
+keyword_weights:
+  # 普适性关键词
+  universal_keywords:
+    - "memory"
+    - "planning"
+    - "reasoning"
+    - "decision"
+    - "thinking"
+    - "optimization"
+    - "efficiency"
+    - "cost"
+    - "budget"
+    - "resource"
+    weight: 1.0
+  
+  # 领域特定关键词
+  domain_keywords:
+    - "web"
+    - "scrape"
+    - "api"
+    - "database"
+    - "file"
+    - "email"
+    - "chart"
+    - "report"
+    - "analysis"
+    - "test"
+    - "validate"
+    weight: 0.5
+  
+  # 任务特定关键词
+  task_keywords:
+    - "specific"
+    - "custom"
+    - "unique"
+    - "particular"
+    - "specialized"
+    weight: 0.2
+
+# 频率分析配置
+frequency_analysis:
+  # 每步调用关键词
+  every_step_keywords:
+    - "every"
+    - "each"
+    - "step"
+    - "cycle"
+    - "iteration"
+    - "loop"
+    - "continuous"
+    - "ongoing"
+    - "persistent"
+    - "always"
+    weight: 1.0
+  
+  # 高频调用关键词
+  high_freq_keywords:
+    - "frequent"
+    - "often"
+    - "repeated"
+    - "multiple"
+    - "batch"
+    - "stream"
+    - "real-time"
+    - "live"
+    - "monitor"
+    weight: 0.8
+  
+  # 中等频率关键词
+  medium_freq_keywords:
+    - "periodic"
+    - "scheduled"
+    - "regular"
+    - "routine"
+    - "daily"
+    weight: 0.5
+
+# 抽象层次分析配置
+abstraction_analysis:
+  # 元认知关键词
+  metacognitive_keywords:
+    - "strategy"
+    - "planning"
+    - "optimization"
+    - "efficiency"
+    - "methodology"
+    - "approach"
+    - "framework"
+    - "principle"
+    - "heuristic"
+    - "meta"
+    weight: 1.0
+  
+  # 推理关键词
+  reasoning_keywords:
+    - "reasoning"
+    - "logic"
+    - "decision"
+    - "analysis"
+    - "evaluation"
+    - "assessment"
+    - "judgment"
+    - "inference"
+    - "deduction"
+    weight: 0.8
+  
+  # 功能性关键词
+  functional_keywords:
+    - "process"
+    - "transform"
+    - "convert"
+    - "generate"
+    - "create"
+    - "build"
+    - "construct"
+    - "assemble"
+    - "compose"
+    weight: 0.5
+  
+  # 具体动作关键词
+  concrete_keywords:
+    - "read"
+    - "write"
+    - "send"
+    - "receive"
+    - "download"
+    - "upload"
+    - "copy"
+    - "move"
+    - "delete"
+    - "execute"
+    - "run"
+    weight: 0.2
+
+# 稳定性分析配置
+stability_analysis:
+  # 成熟度评分
+  maturity_scores:
+    experimental: 0.2
+    alpha: 0.4
+    beta: 0.6
+    stable: 0.8
+    production: 0.9
+  
+  # 版本号权重
+  version_weight: 0.25
+  
+  # 测试覆盖率权重
+  test_coverage_weight: 0.25
+  
+  # 使用次数权重
+  usage_count_weight: 0.25
+  
+  # 成熟度权重
+  maturity_weight: 0.25
+
+# 决策权重配置
+decision_weights:
+  # 各原则在最终决策中的权重
+  universality_weight: 0.3
+  frequency_weight: 0.3
+  abstraction_weight: 0.25
+  stability_weight: 0.15
+
+# 系统配置
+system:
+  # 是否启用详细日志
+  enable_detailed_logging: true
+  
+  # 是否启用决策解释
+  enable_decision_explanation: true
+  
+  # 是否启用统计分析
+  enable_statistics: true
+  
+  # 分析历史保留天数
+  history_retention_days: 30
+
+# 进化配置
+evolution:
+  # 是否启用自动进化
+  enable_auto_evolution: true
+  
+  # 是否需要人工审批
+  require_human_approval: true
+  
+  # 每日最大进化次数
+  max_evolution_per_day: 10
+  
+  # 是否监控进化影响
+  monitor_evolution_impact: true
+  
+  # 影响评估周期（天）
+  impact_evaluation_period: 7
+  
+  # 是否启用回滚
+  enable_rollback: true
+  
+  # 回滚阈值
+  rollback_threshold: 0.3

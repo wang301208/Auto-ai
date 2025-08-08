@@ -1,0 +1,12 @@
+{
+  "redis_host": "localhost",
+  "redis_port": 6379,
+  "redis_db": 0,
+  "skill_library_path": "skill_library",
+  "plugin_library_path": "plugins",
+  "vector_db_path": "vector_db",
+  "workspace_path": "workspace",
+  "enable_genesis": true,
+  "enable_executor": true,
+  "enable_dashboard": true
+}

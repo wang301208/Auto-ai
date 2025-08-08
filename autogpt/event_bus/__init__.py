@@ -13,6 +13,7 @@ from .message_types import (
     CODE_FIX_PROPOSED,
     DEPLOYMENT_FAILED,
     DIAGNOSIS_COMPLETE,
+    HUMAN_ARCHITECT_APPROVAL_REQUIRED,
     HUMAN_APPROVAL_REQUIRED,
     ISSUE_DETECTED,
     ISSUE_RESOLVED,
@@ -24,6 +25,7 @@ from .message_types import (
     DeploymentFailed,
     DiagnosisComplete,
     EventMessage,
+    HumanArchitectApprovalRequired,
     HumanApprovalRequired,
     IssueResolved,
     SkillCreated,
@@ -110,6 +112,15 @@ class EventBus:
                     source_agent=source_agent,
                     timestamp=ts,
                 )
+            elif et == HUMAN_ARCHITECT_APPROVAL_REQUIRED and isinstance(payload_obj, dict):
+                yield HumanArchitectApprovalRequired(
+                    proposal_branch_name=str(payload_obj.get("proposal_branch_name", "")),
+                    proposal_branch_url=payload_obj.get("proposal_branch_url"),
+                    rationale=payload_obj.get("rationale"),
+                    changes_summary=payload_obj.get("changes_summary"),
+                    source_agent=source_agent,
+                    timestamp=ts,
+                )
             elif et == APPROVAL_GRANTED and isinstance(payload_obj, dict):
                 yield ApprovalGranted(
                     branch_name=str(payload_obj.get("branch_name", "")),
@@ -180,6 +191,7 @@ __all__ = [
     "EventMessage",
     "DiagnosisComplete",
     "CodeFixProposed",
+    "HumanArchitectApprovalRequired",
     "HumanApprovalRequired",
     "TestsFailed",
     "ApprovalGranted",
@@ -191,6 +203,7 @@ __all__ = [
     "DIAGNOSIS_COMPLETE",
     "CODE_FIX_PROPOSED",
     "HUMAN_APPROVAL_REQUIRED",
+    "HUMAN_ARCHITECT_APPROVAL_REQUIRED",
     "TESTS_FAILED",
     "APPROVAL_GRANTED",
     "ISSUE_RESOLVED",

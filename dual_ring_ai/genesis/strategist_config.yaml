@@ -1,0 +1,58 @@
+# 策略师代理配置
+strategist:
+  # 分析间隔（秒）
+  analysis_interval: 3600
+  
+  # 最少案例数才开始分析
+  min_cases_for_analysis: 10
+  
+  # 置信度阈值
+  confidence_threshold: 0.7
+  
+  # 最大原则数量
+  max_principles: 20
+  
+  # 数据库路径
+  database_path: "strategist_knowledge.db"
+  
+  # 启用自动优化
+  enable_auto_optimization: true
+  
+  # 分析设置
+  analysis:
+    # 模式识别设置
+    pattern_recognition:
+      min_pattern_frequency: 3
+      success_rate_threshold: 0.8
+      
+    # 失败分析设置
+    failure_analysis:
+      min_failure_count: 3
+      include_partial_failures: true
+      
+    # 效率分析设置
+    efficiency_analysis:
+      long_task_threshold: 60  # 秒
+      high_cost_threshold: 1.0  # 美元
+      
+  # 原则分类
+  principle_categories:
+    - planning      # 计划制定
+    - execution     # 执行策略
+    - optimization  # 优化策略
+    - recovery      # 恢复策略
+    
+  # 任务分类关键词
+  task_categories:
+    web_scraping:
+      keywords: ["web", "scrape", "crawl", "download"]
+    data_analysis:
+      keywords: ["analyze", "data", "report", "chart"]
+    code_development:
+      keywords: ["code", "develop", "program", "script"]
+    testing:
+      keywords: ["test", "validate", "verify"]
+    file_operations:
+      keywords: ["file", "read", "write", "process"]
+    general:
+      keywords: []
