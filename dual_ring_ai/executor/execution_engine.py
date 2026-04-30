@@ -256,19 +256,17 @@ class ExecutionEngine:
             if not main_file.exists():
                 raise Exception(f"Main file not found for skill: {skill_name}")
             
-            # 准备参数
-            param_str = " ".join([f"--{k} {v}" for k, v in parameters.items()])
-            
-            # 执行技能
-            cmd = f"python {main_file} {param_str}"
+            # 执行技能。Use argv list form to avoid shell injection and
+            # quoting bugs with generated parameters.
+            cmd = self._build_skill_command(main_file, parameters)
             
             result = subprocess.run(
                 cmd,
-                shell=True,
                 capture_output=True,
                 text=True,
                 timeout=self.execution_timeout,
-                cwd=str(skill_dir)
+                cwd=str(skill_dir),
+                shell=False,
             )
             
             if result.returncode == 0:
@@ -291,6 +289,15 @@ class ExecutionEngine:
             raise Exception(f"Skill execution timed out after {self.execution_timeout} seconds")
         except Exception as e:
             raise Exception(f"Failed to run skill {skill_name}: {e}")
+
+    def _build_skill_command(
+        self, main_file: Path, parameters: Dict[str, Any]
+    ) -> List[str]:
+        """Build a safe argv command for running a skill."""
+        command = [sys.executable, str(main_file)]
+        for key, value in parameters.items():
+            command.extend([f"--{key}", str(value)])
+        return command
     
     def _publish_execution_started(self, plan_id: str, step_id: str, subtask_id: str, 
                                   skill_name: str, parameters: Dict[str, Any]):

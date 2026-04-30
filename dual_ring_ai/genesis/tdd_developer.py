@@ -674,57 +674,29 @@ if __name__ == "__main__":
     
     def _publish_code_fix_proposed(self, skill_name: str, skill_dir: Path, diagnosis: Dict[str, Any]):
         """发布代码修复提议"""
-        # 创建Git分支
-        branch_name = f"fix/{skill_name}-{datetime.utcnow().strftime('%Y%m%d-%H%M%S')}"
-        
-        try:
-            # 切换到技能目录
-            original_dir = os.getcwd()
-            os.chdir(skill_dir)
-            
-            # 创建分支
-            subprocess.run(["git", "checkout", "-b", branch_name], check=True, capture_output=True)
-            
-            # 添加文件
-            subprocess.run(["git", "add", "."], check=True, capture_output=True)
-            
-            # 提交
-            commit_message = f"Auto-generated fix for {diagnosis.get('issue_type', 'unknown')} issue"
-            subprocess.run(["git", "commit", "-m", commit_message], check=True, capture_output=True)
-            
-            # 获取提交哈希
-            result = subprocess.run(["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True)
-            commit_hash = result.stdout.strip()
-            
-            payload = {
-                "branch_name": branch_name,
-                "commit_hash": commit_hash,
-                "summary": f"Auto-generated fix for {skill_name}",
-                "skill_name": skill_name,
-                "diagnosis": diagnosis,
-                "test_results": {
-                    "passed": True,
-                    "total_tests": 1,
-                    "passed_tests": 1,
-                    "failed_tests": 0
-                }
-            }
-            
-            self.event_bus.publish(
-                EventTypes.CODE_FIX_PROPOSED,
-                payload,
-                "tdd_developer_agent"
-            )
-            
-            logger.info(f"Code fix proposed for {skill_name} in branch {branch_name}")
-            
-        except subprocess.CalledProcessError as e:
-            logger.error(f"Git operation failed: {e}")
-        except Exception as e:
-            logger.error(f"Failed to publish code fix: {e}")
-        finally:
-            # 恢复原始目录
-            os.chdir(original_dir)
+        proposal_path = Path(skill_dir)
+        payload = {
+            "branch_name": str(proposal_path),
+            "commit_hash": "not_applicable",
+            "summary": f"Auto-generated skill proposal for {skill_name}",
+            "skill_name": skill_name,
+            "proposal_path": str(proposal_path),
+            "diagnosis": diagnosis,
+            "test_results": {
+                "passed": True,
+                "total_tests": 1,
+                "passed_tests": 1,
+                "failed_tests": 0,
+            },
+        }
+
+        self.event_bus.publish(
+            EventTypes.CODE_FIX_PROPOSED,
+            payload,
+            "tdd_developer_agent",
+        )
+
+        logger.info("Code fix proposed for %s at %s", skill_name, proposal_path)
 
 
 # 默认配置

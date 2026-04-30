@@ -15,26 +15,29 @@
 __version__ = "1.0.0"
 __author__ = "Dual Ring AI Team"
 
-from .core.event_bus import EventBus
-from .core.librarian import Librarian
-from .genesis.sentry import SentryAgent
-from .genesis.archaeologist import ArchaeologistAgent
-from .genesis.tdd_developer import TDDDeveloperAgent
-from .genesis.qa_agent import QAAgent
-from .executor.task_planner import TaskPlanner
-from .executor.skill_composer import SkillComposer
-from .executor.execution_engine import ExecutionEngine
-from .dashboard.monitor import Dashboard
+_EXPORTS = {
+    "EventBus": "dual_ring_ai.core.event_bus",
+    "Librarian": "dual_ring_ai.core.librarian",
+    "SentryAgent": "dual_ring_ai.genesis.sentry",
+    "ArchaeologistAgent": "dual_ring_ai.genesis.archaeologist",
+    "TDDDeveloperAgent": "dual_ring_ai.genesis.tdd_developer",
+    "QAAgent": "dual_ring_ai.genesis.qa_agent",
+    "TaskPlanner": "dual_ring_ai.executor.task_planner",
+    "SkillComposer": "dual_ring_ai.executor.skill_composer",
+    "ExecutionEngine": "dual_ring_ai.executor.execution_engine",
+    "Dashboard": "dual_ring_ai.dashboard.monitor",
+}
 
-__all__ = [
-    "EventBus",
-    "Librarian", 
-    "SentryAgent",
-    "ArchaeologistAgent",
-    "TDDDeveloperAgent",
-    "QAAgent",
-    "TaskPlanner",
-    "SkillComposer",
-    "ExecutionEngine",
-    "Dashboard"
-]
+__all__ = ["__version__", "__author__", *_EXPORTS.keys()]
+
+
+def __getattr__(name):
+    if name not in _EXPORTS:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+    import importlib
+
+    module = importlib.import_module(_EXPORTS[name])
+    value = getattr(module, name)
+    globals()[name] = value
+    return value

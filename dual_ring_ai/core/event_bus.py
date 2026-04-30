@@ -8,10 +8,10 @@ import json
 import logging
 from typing import Any, Callable, Dict, Optional
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 
 # 导入现有的event_bus实现
-from autogpt.event_bus import connect, publish, subscribe
+from autogpt.event_bus import redis_connect, redis_publish, redis_subscribe
 from autogpt.event_bus.message_types import EventMessage
 
 logger = logging.getLogger(__name__)
@@ -41,7 +41,7 @@ class EventBus:
     def connect(self) -> bool:
         """连接到Redis"""
         try:
-            connect(host=self.redis_host, port=self.redis_port, db=self.redis_db)
+            redis_connect(host=self.redis_host, port=self.redis_port, db=self.redis_db)
             self._connected = True
             logger.info(f"Connected to Redis at {self.redis_host}:{self.redis_port}")
             return True
@@ -61,18 +61,21 @@ class EventBus:
             event_type=event_type,
             payload=payload,
             source_agent=source_agent,
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(UTC).isoformat(),
             correlation_id=correlation_id
         )
         
         # 使用现有的publish函数
-        publish(event_type, {
+        redis_publish(event_type, {
             "event_type": event.event_type,
             "payload": event.payload,
             "source_agent": event.source_agent,
             "timestamp": event.timestamp,
             "correlation_id": event.correlation_id
         })
+
+        for handler in self._subscribers.get(event_type, []):
+            handler(event)
         
         logger.info(f"Published event {event_type} from {source_agent}")
     
@@ -84,16 +87,10 @@ class EventBus:
             
         def wrapped_handler(event_message: EventMessage):
             """包装处理器以适配现有的事件消息格式"""
-            dual_ring_event = DualRingEvent(
-                event_type=event_message.event_type,
-                payload=event_message.payload if isinstance(event_message.payload, dict) else {},
-                source_agent=event_message.source_agent or "unknown",
-                timestamp=event_message.timestamp
-            )
-            handler(dual_ring_event)
+            handler(self._coerce_event_message(event_message))
         
         # 使用现有的subscribe函数
-        subscribe(event_type, wrapped_handler)
+        redis_subscribe(event_type, wrapped_handler)
         
         if event_type not in self._subscribers:
             self._subscribers[event_type] = []
@@ -104,6 +101,38 @@ class EventBus:
     def is_connected(self) -> bool:
         """检查连接状态"""
         return self._connected
+
+    def disconnect(self) -> None:
+        """Disconnect the wrapper event bus.
+
+        The underlying Redis helper owns its global connection, so this method
+        marks this wrapper as disconnected and clears local subscribers.
+        """
+        self._connected = False
+        self._subscribers.clear()
+
+    @staticmethod
+    def _coerce_event_message(event_message: EventMessage) -> DualRingEvent:
+        """Convert the underlying event bus message into a DualRingEvent."""
+        payload = event_message.payload if isinstance(event_message.payload, dict) else {}
+
+        if isinstance(payload, dict) and isinstance(payload.get("payload"), dict):
+            return DualRingEvent(
+                event_type=str(payload.get("event_type", event_message.event_type)),
+                payload=payload["payload"],
+                source_agent=str(
+                    payload.get("source_agent") or event_message.source_agent or "unknown"
+                ),
+                timestamp=str(payload.get("timestamp") or event_message.timestamp),
+                correlation_id=payload.get("correlation_id"),
+            )
+
+        return DualRingEvent(
+            event_type=event_message.event_type,
+            payload=payload,
+            source_agent=event_message.source_agent or "unknown",
+            timestamp=event_message.timestamp,
+        )
 
 
 # 预定义的事件类型
@@ -140,6 +169,11 @@ class EventTypes:
     STRATEGIC_ANALYSIS_COMPLETED = "STRATEGIC_ANALYSIS_COMPLETED"
     PRINCIPLE_EXTRACTED = "PRINCIPLE_EXTRACTED"
     KNOWLEDGE_UPDATED = "KNOWLEDGE_UPDATED"
+
+    # 算法进化事件
+    ALGORITHM_RESEARCH_PROPOSED = "ALGORITHM_RESEARCH_PROPOSED"
+    ALGORITHM_EXPERIMENT_COMPLETED = "ALGORITHM_EXPERIMENT_COMPLETED"
+    ALGORITHM_APPROVAL_REQUIRED = "ALGORITHM_APPROVAL_REQUIRED"
 
     # 元级别（Meta）事件
     META_REFLECTION_TRIGGERED = "META_REFLECTION_TRIGGERED"

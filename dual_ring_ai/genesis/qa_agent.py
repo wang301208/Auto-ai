@@ -8,13 +8,14 @@ import json
 import logging
 import subprocess
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
 from ..core.event_bus import EventBus, EventTypes
 from ..core.librarian import Librarian
+from ..core.skill_lifecycle import SkillLifecycleManager
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +56,13 @@ class QAAgent:
         self.librarian = librarian
         self.config = config
         self.running = False
+        self.skill_lifecycle = SkillLifecycleManager(
+            config.get("skill_library_path", "skill_library"),
+            self.event_bus,
+            audit_log_path=config.get(
+                "skill_lifecycle_audit_path", "logs/skill_lifecycle_audit.jsonl"
+            ),
+        )
         
         # 订阅代码修复提议事件
         self.event_bus.subscribe(EventTypes.CODE_FIX_PROPOSED, self._handle_code_fix_proposed)
@@ -434,29 +442,24 @@ class QAAgent:
     def _deploy_approved_fix(self, branch_name: str, approved_by: str):
         """部署已批准的修复"""
         try:
-            logger.info(f"Deploying approved fix from branch: {branch_name}")
-            
-            # 合并到主分支
-            subprocess.run(["git", "checkout", "main"], check=True, capture_output=True)
-            subprocess.run(["git", "merge", branch_name], check=True, capture_output=True)
-            
-            # 推送到远程仓库
-            subprocess.run(["git", "push"], check=True, capture_output=True)
-            
-            # 删除临时分支
-            subprocess.run(["git", "branch", "-d", branch_name], check=True, capture_output=True)
-            
-            # 获取提交哈希
-            result = subprocess.run(["git", "rev-parse", "HEAD"], check=True, capture_output=True, text=True)
-            commit_hash = result.stdout.strip()
-            
+            logger.info(f"Publishing approved skill proposal: {branch_name}")
+
+            published = self.skill_lifecycle.publish_approved_skill(
+                branch_name,
+                approved_by=approved_by,
+                source_request_id=Path(branch_name).name,
+            )
+
             # 发布问题解决事件
             payload = {
                 "branch_name": branch_name,
-                "commit_hash": commit_hash,
-                "summary": f"Deployed fix from {branch_name}",
+                "commit_hash": "not_applicable",
+                "summary": f"Published approved skill {published.skill_name}",
                 "deployed_by": approved_by,
-                "deployment_timestamp": datetime.utcnow().isoformat()
+                "skill_name": published.skill_name,
+                "version": published.version,
+                "skill_path": str(published.target_dir),
+                "deployment_timestamp": datetime.now(UTC).isoformat()
             }
             
             self.event_bus.publish(
@@ -465,7 +468,7 @@ class QAAgent:
                 "qa_agent"
             )
             
-            logger.info(f"Successfully deployed fix from {branch_name}")
+            logger.info(f"Successfully published approved skill from {branch_name}")
             
         except subprocess.CalledProcessError as e:
             logger.error(f"Git operation failed during deployment: {e}")

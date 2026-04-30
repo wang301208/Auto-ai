@@ -10,9 +10,9 @@ import logging
 from datetime import datetime
 from pathlib import Path
 
-from core.event_bus import EventBus, EventTypes
-from genesis.strategist import StrategistAgent, DEFAULT_STRATEGIST_CONFIG
-from dashboard.strategist_monitor import StrategistMonitor
+from dual_ring_ai.core.event_bus import EventBus, EventTypes
+from dual_ring_ai.genesis.strategist import StrategistAgent, DEFAULT_STRATEGIST_CONFIG
+from dual_ring_ai.dashboard.strategist_monitor import StrategistMonitor
 
 # 设置日志
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
