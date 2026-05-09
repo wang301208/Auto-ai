@@ -1,0 +1,203 @@
+import { spawn, type ChildProcess } from 'child_process';
+import { EventEmitter } from 'events';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as readline from 'readline';
+import { fileURLToPath } from 'url';
+
+export interface GatewayEvent<T = any> {
+  type: string;
+  session_id?: string;
+  payload?: T;
+}
+
+interface PendingRequest {
+  method: string;
+  resolve: (value: any) => void;
+  reject: (reason: Error) => void;
+  timeout: ReturnType<typeof setTimeout>;
+}
+
+const REQUEST_TIMEOUT_MS = Math.max(
+  30000,
+  Number.parseInt(process.env.TUI_RPC_TIMEOUT_MS || '120000', 10) || 120000
+);
+
+function findProjectRoot(start: string): string | null {
+  let current = start;
+  for (let index = 0; index < 8; index += 1) {
+    if (fs.existsSync(path.join(current, 'tui_gateway', 'entry.py'))) {
+      return current;
+    }
+    const parent = path.dirname(current);
+    if (parent === current) break;
+    current = parent;
+  }
+  return null;
+}
+
+function resolveProjectRoot(): string {
+  const moduleDir = path.dirname(fileURLToPath(import.meta.url));
+  return (
+    process.env.TUI_PYTHON_SRC_ROOT ||
+    findProjectRoot(process.cwd()) ||
+    findProjectRoot(moduleDir) ||
+    path.resolve(moduleDir, '..', '..')
+  );
+}
+
+export class GatewayClient extends EventEmitter {
+  private process: ChildProcess | null = null;
+  private requestId = 0;
+  private pendingRequests = new Map<string, PendingRequest>();
+  private logs: string[] = [];
+
+  constructor() {
+    super();
+    this.setMaxListeners(0);
+  }
+
+  async start(): Promise<void> {
+    if (this.process && !this.process.killed && this.process.exitCode === null) {
+      return;
+    }
+
+    const python = process.env.TUI_PYTHON || process.env.PYTHON || 'python';
+    const root = resolveProjectRoot();
+    const cwd = process.env.TUI_CWD || root;
+    const env = {
+      ...process.env,
+      PYTHONPATH: process.env.PYTHONPATH ? `${root}${path.delimiter}${process.env.PYTHONPATH}` : root
+    };
+
+    this.process = spawn(python, ['-m', 'tui_gateway.entry'], {
+      cwd,
+      env,
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    if (!this.process.stdout || !this.process.stdin || !this.process.stderr) {
+      throw new Error('Failed to spawn gateway process');
+    }
+
+    const stdout = readline.createInterface({ input: this.process.stdout, crlfDelay: Infinity });
+    stdout.on('line', line => {
+      try {
+        this.handleMessage(JSON.parse(line));
+      } catch {
+        const preview = line.trim().slice(0, 240) || '(empty line)';
+        this.pushLog(`[protocol] malformed stdout: ${preview}`);
+        this.emitGatewayEvent({ type: 'gateway.protocol_error', payload: { preview } });
+      }
+    });
+
+    const stderr = readline.createInterface({ input: this.process.stderr, crlfDelay: Infinity });
+    stderr.on('line', line => {
+      const trimmed = line.trim();
+      if (!trimmed) return;
+      this.pushLog(trimmed);
+      this.emitGatewayEvent({ type: 'gateway.stderr', payload: { line: trimmed } });
+    });
+
+    this.process.on('exit', code => {
+      this.rejectPending(new Error(`gateway exited${code === null ? '' : ` (${code})`}`));
+      this.emit('exit', code);
+      this.emitGatewayEvent({ type: 'gateway.exit', payload: { code } });
+    });
+
+    this.process.on('error', error => {
+      this.rejectPending(error);
+      this.emitGatewayEvent({ type: 'gateway.stderr', payload: { line: `[spawn] ${error.message}` } });
+    });
+  }
+
+  async request<T = any>(method: string, params: Record<string, any> = {}): Promise<T> {
+    if (!this.process?.stdin || this.process.killed || this.process.exitCode !== null) {
+      await this.start();
+    }
+
+    if (!this.process?.stdin) {
+      return Promise.reject(new Error('gateway not running'));
+    }
+
+    const id = `r${++this.requestId}`;
+    return new Promise<T>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error(`timeout: ${method}`));
+      }, REQUEST_TIMEOUT_MS);
+
+      this.pendingRequests.set(id, {
+        method,
+        resolve,
+        reject,
+        timeout
+      });
+
+      this.process!.stdin!.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+    });
+  }
+
+  async notify(method: string, params: Record<string, any> = {}): Promise<void> {
+    if (!this.process?.stdin || this.process.killed || this.process.exitCode !== null) {
+      await this.start();
+    }
+    this.process?.stdin?.write(JSON.stringify({ jsonrpc: '2.0', method, params }) + '\n');
+  }
+
+  getLogTail(limit = 20): string {
+    return this.logs.slice(-Math.max(1, limit)).join('\n');
+  }
+
+  stop(): void {
+    this.rejectPending(new Error('gateway stopped'));
+    this.process?.kill();
+    this.process = null;
+  }
+
+  private handleMessage(data: any): void {
+    if ('id' in data) {
+      const pending = this.pendingRequests.get(data.id);
+      if (!pending) return;
+      clearTimeout(pending.timeout);
+      this.pendingRequests.delete(data.id);
+      if (data.error) {
+        pending.reject(new Error(data.error.message || `${pending.method} failed`));
+      } else {
+        pending.resolve(data.result);
+      }
+      return;
+    }
+
+    if (data.method === 'event' && data.params?.type) {
+      this.emitGatewayEvent(data.params);
+      return;
+    }
+
+    if (typeof data.method === 'string') {
+      this.emit(data.method, data.params);
+    }
+  }
+
+  private emitGatewayEvent(event: GatewayEvent): void {
+    this.emit('event', event);
+    this.emit(event.type, event.payload);
+  }
+
+  private pushLog(line: string): void {
+    this.logs.push(line.length > 4096 ? `${line.slice(0, 4096)}...` : line);
+    if (this.logs.length > 200) {
+      this.logs.splice(0, this.logs.length - 200);
+    }
+  }
+
+  private rejectPending(error: Error): void {
+    for (const pending of this.pendingRequests.values()) {
+      clearTimeout(pending.timeout);
+      pending.reject(error);
+    }
+    this.pendingRequests.clear();
+  }
+}
+
+

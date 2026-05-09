@@ -8,7 +8,7 @@ import json
 import logging
 import time
 import threading
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, List, Optional, Any
 from pathlib import Path
 import requests
@@ -85,7 +85,7 @@ class LogFileHandler(FileSystemEventHandler):
             "error_log": error_line.strip(),
             "metadata": {
                 "file": str(file_path),
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         }
         
@@ -144,7 +144,7 @@ class SentryAgent:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "sentry", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "sentry", "timestamp": datetime.now(UTC).isoformat()},
             "sentry_agent"
         )
     
@@ -165,7 +165,7 @@ class SentryAgent:
         # 发布停止事件
         self.event_bus.publish(
             EventTypes.AGENT_STOPPED,
-            {"agent": "sentry", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "sentry", "timestamp": datetime.now(UTC).isoformat()},
             "sentry_agent"
         )
     
@@ -243,7 +243,7 @@ class SentryAgent:
                 "url": endpoint.get("url"),
                 "expected_status": endpoint.get("expected_status", 200),
                 "actual_status": response.status_code if response else None,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         }
         
@@ -287,7 +287,7 @@ class SentryAgent:
                 "owner": repo.get("owner"),
                 "current_version": current_version,
                 "latest_version": latest_version,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         }
         

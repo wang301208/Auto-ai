@@ -10,7 +10,7 @@ import signal
 import sys
 import threading
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
@@ -151,7 +151,7 @@ class MainController:
         self.event_bus.publish(
             EventTypes.SYSTEM_STARTED,
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "agents": list(self.agents.keys()),
                 "config": {
                     "redis_host": self.config.redis_host,
@@ -187,7 +187,7 @@ class MainController:
         self.event_bus.publish(
             EventTypes.SYSTEM_STOPPED,
             {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(UTC).isoformat(),
                 "agents": list(self.agents.keys())
             },
             "main_controller"
@@ -245,7 +245,7 @@ class MainController:
                 return None
             
             task_plan = task_planner.plan(goal, context)
-            plan_id = f"plan_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+            plan_id = f"plan_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
             
             logger.info(f"Task planned: {plan_id} with {len(task_plan.subtasks)} subtasks")
             

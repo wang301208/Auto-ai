@@ -9,7 +9,7 @@ import logging
 import subprocess
 import sys
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
@@ -90,7 +90,7 @@ class ExecutionEngine:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "execution_engine", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "execution_engine", "timestamp": datetime.now(UTC).isoformat()},
             "execution_engine_agent"
         )
     
@@ -105,7 +105,7 @@ class ExecutionEngine:
         # 发布停止事件
         self.event_bus.publish(
             EventTypes.AGENT_STOPPED,
-            {"agent": "execution_engine", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "execution_engine", "timestamp": datetime.now(UTC).isoformat()},
             "execution_engine_agent"
         )
     
@@ -151,7 +151,7 @@ class ExecutionEngine:
         # 缓存等待的执行步骤
         self.pending_executions[subtask_id] = {
             "composition_data": composition_data,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         logger.info(f"Waiting for skill creation for subtask: {subtask_id}")
@@ -183,14 +183,14 @@ class ExecutionEngine:
         logger.info(f"Executing skill: {skill_name} for subtask: {subtask_id}")
         
         # 创建执行步骤
-        step_id = f"step_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        step_id = f"step_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
         execution_step = ExecutionStep(
             step_id=step_id,
             subtask_id=subtask_id,
             skill_name=skill_name,
             parameters=parameters,
             status="running",
-            start_time=datetime.utcnow().isoformat()
+            start_time=datetime.now(UTC).isoformat()
         )
         
         # 获取或创建执行计划
@@ -200,8 +200,8 @@ class ExecutionEngine:
                 goal="Auto-generated plan",
                 steps=[],
                 status="executing",
-                created_at=datetime.utcnow().isoformat(),
-                started_at=datetime.utcnow().isoformat()
+                created_at=datetime.now(UTC).isoformat(),
+                started_at=datetime.now(UTC).isoformat()
             )
         
         execution_plan = self.execution_plans[plan_id]
@@ -217,7 +217,7 @@ class ExecutionEngine:
             
             # 更新执行步骤
             execution_step.status = "completed"
-            execution_step.end_time = datetime.utcnow().isoformat()
+            execution_step.end_time = datetime.now(UTC).isoformat()
             execution_step.result = result
             
             execution_plan.completed_steps += 1
@@ -230,7 +230,7 @@ class ExecutionEngine:
         except Exception as e:
             # 处理执行失败
             execution_step.status = "failed"
-            execution_step.end_time = datetime.utcnow().isoformat()
+            execution_step.end_time = datetime.now(UTC).isoformat()
             execution_step.error = str(e)
             
             execution_plan.failed_steps += 1
@@ -308,7 +308,7 @@ class ExecutionEngine:
             "subtask_id": subtask_id,
             "skill_name": skill_name,
             "parameters": parameters,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         self.event_bus.publish(
@@ -326,7 +326,7 @@ class ExecutionEngine:
             "subtask_id": subtask_id,
             "skill_name": skill_name,
             "result": result,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         self.event_bus.publish(
@@ -344,7 +344,7 @@ class ExecutionEngine:
             "subtask_id": subtask_id,
             "skill_name": skill_name,
             "error": error,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         self.event_bus.publish(
@@ -374,8 +374,8 @@ class ExecutionEngine:
             goal=goal,
             steps=execution_steps,
             status="executing",
-            created_at=datetime.utcnow().isoformat(),
-            started_at=datetime.utcnow().isoformat(),
+            created_at=datetime.now(UTC).isoformat(),
+            started_at=datetime.now(UTC).isoformat(),
             total_steps=len(execution_steps)
         )
         
@@ -395,7 +395,7 @@ class ExecutionEngine:
         
         # 更新步骤状态
         step.status = "running"
-        step.start_time = datetime.utcnow().isoformat()
+        step.start_time = datetime.now(UTC).isoformat()
         
         try:
             # 执行技能
@@ -403,7 +403,7 @@ class ExecutionEngine:
             
             # 更新步骤状态
             step.status = "completed"
-            step.end_time = datetime.utcnow().isoformat()
+            step.end_time = datetime.now(UTC).isoformat()
             step.result = result
             
             # 更新计划状态
@@ -413,14 +413,14 @@ class ExecutionEngine:
             # 检查是否所有步骤都完成了
             if execution_plan.completed_steps == execution_plan.total_steps:
                 execution_plan.status = "completed"
-                execution_plan.completed_at = datetime.utcnow().isoformat()
+                execution_plan.completed_at = datetime.now(UTC).isoformat()
             
             logger.info(f"Successfully executed step: {step.step_id}")
             
         except Exception as e:
             # 处理执行失败
             step.status = "failed"
-            step.end_time = datetime.utcnow().isoformat()
+            step.end_time = datetime.now(UTC).isoformat()
             step.error = str(e)
             
             # 更新计划状态

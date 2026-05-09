@@ -9,7 +9,7 @@ import logging
 import subprocess
 import tempfile
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
@@ -74,7 +74,7 @@ class TDDDeveloperAgent:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "tdd_developer", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "tdd_developer", "timestamp": datetime.now(UTC).isoformat()},
             "tdd_developer_agent"
         )
     
@@ -89,7 +89,7 @@ class TDDDeveloperAgent:
         # 发布停止事件
         self.event_bus.publish(
             EventTypes.AGENT_STOPPED,
-            {"agent": "tdd_developer", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "tdd_developer", "timestamp": datetime.now(UTC).isoformat()},
             "tdd_developer_agent"
         )
     
@@ -162,7 +162,7 @@ class TDDDeveloperAgent:
             "parameters": parameters,
             "dependencies": [],
             "created_by": "tdd_developer_agent",
-            "created_at": datetime.utcnow().isoformat()
+            "created_at": datetime.now(UTC).isoformat()
         }
         
         with open(skill_json_file, 'w', encoding='utf-8') as f:

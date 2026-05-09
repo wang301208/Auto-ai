@@ -90,6 +90,9 @@ class Librarian:
     
     def _init_vector_db(self):
         """初始化向量数据库"""
+        self.vector_db = None
+        self.skills_collection = None
+        self.plugins_collection = None
         if not CHROMADB_AVAILABLE:
             logger.warning("ChromaDB not available, using file-based storage")
             return

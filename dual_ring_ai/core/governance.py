@@ -114,19 +114,32 @@ class PermissionGate:
             return PermissionDecision(False, operation, "shell access denied")
         if operation == "filesystem.write":
             path = str(context.get("path", ""))
-            if not self._write_allowed(policy, path):
+            if not self._path_allowed(policy.filesystem.get("write", []), path):
                 return PermissionDecision(False, operation, "filesystem write denied")
+        if operation == "filesystem.read":
+            path = str(context.get("path", ""))
+            if not self._path_allowed(policy.filesystem.get("read", []), path):
+                return PermissionDecision(False, operation, "filesystem read denied")
+        if operation == "environment.read":
+            name = str(context.get("name", ""))
+            allowed_env = policy.environment.get("allow", [])
+            if "*" not in allowed_env and name not in allowed_env:
+                return PermissionDecision(False, operation, "environment access denied")
         return PermissionDecision(True, operation, "allowed")
 
-    def _write_allowed(self, policy: SandboxPolicy, path: str) -> bool:
+    def _path_allowed(self, allowed_roots: list[str], path: str) -> bool:
         normalized = path.replace("\\", "/").strip()
         if normalized in {"", ".", "./"}:
             return False
-        for allowed_root in policy.filesystem.get("write", []):
+        for allowed_root in allowed_roots:
             allowed = allowed_root.replace("\\", "/").strip().rstrip("/")
+            if allowed == "*":
+                return True
             if allowed in {"workspace", "./workspace"} and (
                 normalized == "workspace" or normalized.startswith("workspace/")
             ):
+                return True
+            if allowed in {".", "./"}:
                 return True
             if normalized == allowed or normalized.startswith(f"{allowed}/"):
                 return True

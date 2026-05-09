@@ -64,6 +64,7 @@ dependencies = [
 
 [project.scripts]
 agpt = "autogpt.app.cli:main"
+local-agent = "tui_gateway.cli:main"
 
 [project.optional-dependencies]
 dev = [

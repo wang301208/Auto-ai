@@ -1,0 +1,76 @@
+{
+  "root_path": ".dual_ring_runtime",
+  "enable_agents": false,
+  "cockpit": {
+    "host": "127.0.0.1",
+    "port": 8765
+  },
+  "managed_paths": {
+    "skill_library": "skill_library",
+    "algorithm_library": "algorithm_library",
+    "algorithm_experiments": "algorithm_experiments",
+    "workspace": "workspace",
+    "governance": "governance",
+    "logs": "logs",
+    "organizational_charter": "organizational_charter"
+  },
+  "adapters": {
+    "academic_search": {
+      "provider": null,
+      "fixture_path": null
+    },
+    "remote_llm": {
+      "enabled": true,
+      "dry_run": false,
+      "api_key_env": "OPENAI_API_KEY",
+      "base_url": "https://api.openai.com/v1",
+      "model": "gpt-4o-mini",
+      "timeout": 30.0,
+      "temperature": 0.2,
+      "max_tokens": null,
+      "system_prompt": "You are the remote reasoning engine for the local autonomous runtime. Answer concisely and preserve safety boundaries."
+    },
+    "docker_sandbox": {
+      "enabled": true,
+      "dry_run": false,
+      "image": "python:3.12-slim",
+      "memory_limit": "512m",
+      "cpus": "1.0",
+      "pids_limit": 256,
+      "network_mode": null,
+      "read_only": false
+    },
+    "ollama": {
+      "enabled": true,
+      "dry_run": false,
+      "base_url": "http://127.0.0.1:11434",
+      "model": "llama3.1"
+    },
+    "whisper": {
+      "enabled": true,
+      "dry_run": false,
+      "executable": "whisper",
+      "model": "base",
+      "language": null
+    },
+    "xtts": {
+      "enabled": true,
+      "dry_run": false,
+      "executable": "xtts",
+      "speaker_wav": null,
+      "language": "zh-cn"
+    }
+  },
+  "security_defaults": {
+    "network": true,
+    "shell": true,
+    "filesystem": {
+      "read": ["*"],
+      "write": ["*"]
+    },
+    "environment": {
+      "allow": ["*"],
+      "request": ["OPENAI_API_KEY"]
+    }
+  }
+}

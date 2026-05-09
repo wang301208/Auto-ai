@@ -44,21 +44,9 @@ def test_docker_sandbox_adapter_reports_unavailable_without_docker():
     assert "disabled" in result["reason"]
 
 
-def test_desktop_scaffold_writes_tauri_contract(tmp_path):
-    from dual_ring_ai.desktop.scaffold import DesktopScaffold
+def test_terminal_ui_entrypoints_are_retained():
+    root = Path(__file__).resolve().parents[1]
 
-    scaffold = DesktopScaffold(tmp_path / "desktop")
-    manifest = scaffold.write_contract(api_base_url="http://127.0.0.1:8000")
-
-    contract_path = tmp_path / "desktop" / "src-tauri" / "dual-ring-contract.json"
-    package_path = tmp_path / "desktop" / "package.json"
-
-    assert manifest["api_base_url"] == "http://127.0.0.1:8000"
-    assert contract_path.exists()
-    assert json.loads(contract_path.read_text())["commands"] == [
-        "get_status",
-        "list_approvals",
-        "decide_approval",
-        "list_algorithm_proposals",
-    ]
-    assert package_path.exists()
+    assert (root / "ui-tui" / "package.json").exists()
+    assert (root / "ui-tui" / "src" / "entry.tsx").exists()
+    assert (root / "tui_gateway" / "entry.py").exists()

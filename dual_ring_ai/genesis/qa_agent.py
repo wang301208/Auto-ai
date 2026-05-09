@@ -95,7 +95,7 @@ class QAAgent:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "qa", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "qa", "timestamp": datetime.now(UTC).isoformat()},
             "qa_agent"
         )
     
@@ -110,7 +110,7 @@ class QAAgent:
         # 发布停止事件
         self.event_bus.publish(
             EventTypes.AGENT_STOPPED,
-            {"agent": "qa", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "qa", "timestamp": datetime.now(UTC).isoformat()},
             "qa_agent"
         )
     
@@ -379,7 +379,7 @@ class QAAgent:
                                summary: str, test_results: Dict[str, Any], diff: str, 
                                quality_report: QualityReport):
         """请求人类审批"""
-        request_id = f"approval_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        request_id = f"approval_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
         
         approval_request = ApprovalRequest(
             request_id=request_id,
@@ -390,7 +390,7 @@ class QAAgent:
             test_results=test_results,
             diff=diff,
             requester="qa_agent",
-            timestamp=datetime.utcnow().isoformat()
+            timestamp=datetime.now(UTC).isoformat()
         )
         
         # 存储审批请求
@@ -433,7 +433,7 @@ class QAAgent:
             "commit_hash": commit_hash,
             "summary": f"Auto-approved {skill_name}",
             "approved_by": "qa_agent",
-            "approval_timestamp": datetime.utcnow().isoformat()
+            "approval_timestamp": datetime.now(UTC).isoformat()
         }
         
         # 直接处理审批授予
@@ -510,7 +510,7 @@ class QAAgent:
             "commit_hash": approval_request.commit_hash,
             "summary": approval_request.summary,
             "approved_by": approver,
-            "approval_timestamp": datetime.utcnow().isoformat(),
+            "approval_timestamp": datetime.now(UTC).isoformat(),
             "comments": comments
         }
         

@@ -36,6 +36,7 @@ class EventBus:
         self.redis_port = redis_port
         self.redis_db = redis_db
         self._subscribers: Dict[str, list[Callable]] = {}
+        self._published_events: list[DualRingEvent] = []
         self._connected = False
         
     def connect(self) -> bool:
@@ -53,10 +54,6 @@ class EventBus:
     def publish(self, event_type: str, payload: Dict[str, Any], source_agent: str, 
                 correlation_id: Optional[str] = None) -> None:
         """发布事件"""
-        if not self._connected:
-            logger.warning("Event bus not connected, skipping publish")
-            return
-            
         event = DualRingEvent(
             event_type=event_type,
             payload=payload,
@@ -64,15 +61,19 @@ class EventBus:
             timestamp=datetime.now(UTC).isoformat(),
             correlation_id=correlation_id
         )
+        self._published_events.append(event)
         
         # 使用现有的publish函数
-        redis_publish(event_type, {
-            "event_type": event.event_type,
-            "payload": event.payload,
-            "source_agent": event.source_agent,
-            "timestamp": event.timestamp,
-            "correlation_id": event.correlation_id
-        })
+        if self._connected:
+            redis_publish(event_type, {
+                "event_type": event.event_type,
+                "payload": event.payload,
+                "source_agent": event.source_agent,
+                "timestamp": event.timestamp,
+                "correlation_id": event.correlation_id
+            })
+        else:
+            logger.warning("Event bus not connected, dispatching local subscribers only")
 
         for handler in self._subscribers.get(event_type, []):
             handler(event)
@@ -81,8 +82,12 @@ class EventBus:
     
     def subscribe(self, event_type: str, handler: Callable[[DualRingEvent], None]) -> None:
         """订阅事件"""
+        if event_type not in self._subscribers:
+            self._subscribers[event_type] = []
+        self._subscribers[event_type].append(handler)
+
         if not self._connected:
-            logger.warning("Event bus not connected, skipping subscribe")
+            logger.warning("Event bus not connected, registering local subscriber only")
             return
             
         def wrapped_handler(event_message: EventMessage):
@@ -91,10 +96,6 @@ class EventBus:
         
         # 使用现有的subscribe函数
         redis_subscribe(event_type, wrapped_handler)
-        
-        if event_type not in self._subscribers:
-            self._subscribers[event_type] = []
-        self._subscribers[event_type].append(handler)
         
         logger.info(f"Subscribed to event {event_type}")
     
@@ -110,6 +111,12 @@ class EventBus:
         """
         self._connected = False
         self._subscribers.clear()
+
+    def list_events(self, event_type: str | None = None) -> list[DualRingEvent]:
+        """Return locally recorded events, optionally filtered by type."""
+        if event_type is None:
+            return list(self._published_events)
+        return [event for event in self._published_events if event.event_type == event_type]
 
     @staticmethod
     def _coerce_event_message(event_message: EventMessage) -> DualRingEvent:
@@ -174,6 +181,13 @@ class EventTypes:
     ALGORITHM_RESEARCH_PROPOSED = "ALGORITHM_RESEARCH_PROPOSED"
     ALGORITHM_EXPERIMENT_COMPLETED = "ALGORITHM_EXPERIMENT_COMPLETED"
     ALGORITHM_APPROVAL_REQUIRED = "ALGORITHM_APPROVAL_REQUIRED"
+    ALGORITHM_PROMOTED = "ALGORITHM_PROMOTED"
+
+    # 组织进化事件
+    ORGANIZATION_CHANGE_PROPOSED = "ORGANIZATION_CHANGE_PROPOSED"
+    ORGANIZATION_APPROVAL_REQUIRED = "ORGANIZATION_APPROVAL_REQUIRED"
+    ORGANIZATION_CHANGE_APPLIED = "ORGANIZATION_CHANGE_APPLIED"
+    ORGANIZATION_CHANGE_ROLLED_BACK = "ORGANIZATION_CHANGE_ROLLED_BACK"
 
     # 元级别（Meta）事件
     META_REFLECTION_TRIGGERED = "META_REFLECTION_TRIGGERED"

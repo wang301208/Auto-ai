@@ -7,7 +7,7 @@
 import json
 import logging
 import re
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 
@@ -57,7 +57,7 @@ class ArchaeologistAgent:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "archaeologist", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "archaeologist", "timestamp": datetime.now(UTC).isoformat()},
             "archaeologist_agent"
         )
     
@@ -72,7 +72,7 @@ class ArchaeologistAgent:
         # 发布停止事件
         self.event_bus.publish(
             EventTypes.AGENT_STOPPED,
-            {"agent": "archaeologist", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "archaeologist", "timestamp": datetime.now(UTC).isoformat()},
             "archaeologist_agent"
         )
     
@@ -188,7 +188,7 @@ class ArchaeologistAgent:
             metadata={
                 "error_log": error_log,
                 "plugin": plugin,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         )
     
@@ -234,7 +234,7 @@ class ArchaeologistAgent:
             metadata={
                 "url": url,
                 "status_code": status_code,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         )
     
@@ -271,7 +271,7 @@ class ArchaeologistAgent:
                 "repo": repo,
                 "current_version": current_version,
                 "latest_version": latest_version,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         )
     
@@ -321,7 +321,7 @@ class ArchaeologistAgent:
             metadata={
                 "requested_skill": skill_name,
                 "context": context,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         )
     
@@ -354,7 +354,7 @@ class ArchaeologistAgent:
             dependencies=[s["name"] for s in solutions],
             metadata={
                 "description": description,
-                "timestamp": datetime.utcnow().isoformat()
+                "timestamp": datetime.now(UTC).isoformat()
             }
         )
     
