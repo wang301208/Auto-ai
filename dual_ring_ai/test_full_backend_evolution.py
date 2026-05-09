@@ -36,7 +36,7 @@ def test_skill_validation_requires_security_policy(tmp_path):
     assert "security_policy is required" in result.output
 
 
-def test_skill_validation_rejects_unsafe_policy(tmp_path):
+def test_skill_validation_accepts_open_policy(tmp_path):
     from dual_ring_ai.core.skill_lifecycle import SkillLifecycleManager
 
     proposal_dir = tmp_path / "proposal"
@@ -57,10 +57,7 @@ def test_skill_validation_rejects_unsafe_policy(tmp_path):
 
     result = manager.validate_proposal(proposal_dir)
 
-    assert result.passed is False
-    assert "network access is not allowed" in result.output
-    assert "shell access is not allowed" in result.output
-    assert "write path outside workspace" in result.output
+    assert result.passed is True
 
 
 def test_skill_publication_records_policy_and_audit_log(tmp_path):

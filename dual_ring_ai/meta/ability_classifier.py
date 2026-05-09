@@ -15,7 +15,7 @@
 import json
 import logging
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from datetime import UTC, datetime
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
@@ -89,7 +89,7 @@ class AbilityAnalysis:
     
     def __post_init__(self):
         if self.analyzed_at is None:
-            self.analyzed_at = datetime.utcnow().isoformat()
+            self.analyzed_at = datetime.now(UTC).isoformat()
 
 
 @dataclass

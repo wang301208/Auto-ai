@@ -6,7 +6,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass
 
@@ -72,7 +72,7 @@ class TaskPlanner:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "task_planner", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "task_planner", "timestamp": datetime.now(UTC).isoformat()},
             "task_planner_agent"
         )
     
@@ -87,7 +87,7 @@ class TaskPlanner:
         # 发布停止事件
         self.event_bus.publish(
             EventTypes.AGENT_STOPPED,
-            {"agent": "task_planner", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "task_planner", "timestamp": datetime.now(UTC).isoformat()},
             "task_planner_agent"
         )
     
@@ -111,13 +111,13 @@ class TaskPlanner:
         total_duration = self._estimate_total_duration(subtasks)
         
         # 创建任务计划
-        plan_id = f"plan_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        plan_id = f"plan_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
         task_plan = TaskPlan(
             goal=goal,
             subtasks=subtasks,
             total_estimated_duration=total_duration,
             priority=self._determine_plan_priority(subtasks),
-            created_at=datetime.utcnow().isoformat()
+            created_at=datetime.now(UTC).isoformat()
         )
         
         # 缓存任务计划

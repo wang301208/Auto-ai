@@ -26,6 +26,7 @@ class AgentBlueprint:
     version: str
     agent_class: str
     thinking_engine: ThinkingEngineRef
+    core_prompt: str = ""
     authorized_plugins: list[str] = field(default_factory=list)
     subscribed_events: list[str] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)

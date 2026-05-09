@@ -6,7 +6,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import asdict
 
@@ -14,6 +14,10 @@ from ..core.event_bus import EventBus, EventTypes
 from ..genesis.strategist import StrategistAgent
 
 logger = logging.getLogger(__name__)
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 class StrategistMonitor:
@@ -70,7 +74,7 @@ class StrategistMonitor:
         try:
             payload = event.payload
             self.monitor_data["analysis_status"] = "completed"
-            self.monitor_data["last_update"] = datetime.utcnow().isoformat()
+            self.monitor_data["last_update"] = _utc_now_iso()
             
             # 更新分析结果
             if "new_principles_count" in payload:
@@ -78,7 +82,7 @@ class StrategistMonitor:
             
             if "insights" in payload:
                 self.monitor_data["recent_insights"].append({
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": _utc_now_iso(),
                     "insights": payload["insights"]
                 })
                 # 保持最近10个洞察
@@ -99,7 +103,7 @@ class StrategistMonitor:
                 "title": principle.get("title", ""),
                 "confidence": principle.get("confidence", 0.0),
                 "category": principle.get("category", ""),
-                "extracted_at": datetime.utcnow().isoformat()
+                "extracted_at": _utc_now_iso()
             })
             
             # 保持最近20个原则
@@ -116,7 +120,7 @@ class StrategistMonitor:
             payload = event.payload
             self.monitor_data["cases_count"] = payload.get("total_cases", 0)
             self.monitor_data["principles_count"] = payload.get("total_principles", 0)
-            self.monitor_data["last_update"] = datetime.utcnow().isoformat()
+            self.monitor_data["last_update"] = _utc_now_iso()
             
             logger.info("Knowledge base updated")
             
@@ -131,7 +135,7 @@ class StrategistMonitor:
             
             # 记录优化信息
             optimization_info = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": _utc_now_iso(),
                 "principles_count": payload.get("principles_count", 0),
                 "confidence_threshold": payload.get("confidence_threshold", 0.0)
             }
@@ -158,7 +162,7 @@ class StrategistMonitor:
             
             # 更新监控数据
             self.monitor_data.update({
-                "last_update": datetime.utcnow().isoformat(),
+                "last_update": _utc_now_iso(),
                 "principles_count": knowledge_summary.get("principles_count", 0),
                 "cases_count": knowledge_summary.get("cases_count", 0),
                 "success_rate": strategic_insights.get("success_rate", 0.0),
@@ -303,7 +307,7 @@ class StrategistMonitor:
         """导出知识库"""
         try:
             export_data = {
-                "export_timestamp": datetime.utcnow().isoformat(),
+                "export_timestamp": _utc_now_iso(),
                 "strategist_config": asdict(self.strategist.config),
                 "knowledge_summary": self.strategist.get_knowledge_summary(),
                 "strategic_insights": self.strategist.get_strategic_insights(),

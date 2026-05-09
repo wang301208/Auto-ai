@@ -11,6 +11,7 @@ from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
+from ..adapters.academic_search import AcademicSearchAdapter
 from ..core.event_bus import EventBus, EventTypes
 
 
@@ -34,11 +35,45 @@ class AlgorithmResearchProposal:
 class AlgorithmistAgent:
     """Create research proposals for thinking engine upgrades."""
 
-    def __init__(self, event_bus: EventBus, workspace_path: str | Path = "workspace") -> None:
+    def __init__(
+        self,
+        event_bus: EventBus,
+        workspace_path: str | Path = "workspace",
+        academic_search: AcademicSearchAdapter | None = None,
+    ) -> None:
         self.event_bus = event_bus
         self.workspace_path = Path(workspace_path)
+        self.academic_search = academic_search or AcademicSearchAdapter()
         self.proposal_dir = self.workspace_path / "algorithm_research_proposals"
         self.proposal_dir.mkdir(parents=True, exist_ok=True)
+
+    def scan_literature_and_propose(
+        self,
+        target_agent: str,
+        current_engine: str,
+        query: str,
+    ) -> AlgorithmResearchProposal:
+        """Create a proposal from the highest-ranked local academic result."""
+        results = self.academic_search.search(query, limit=1)
+        if not results.items:
+            raise ValueError(results.message)
+        paper = results.items[0]
+        title = str(paper.get("title", "Untitled research"))
+        summary = str(paper.get("summary", "No summary provided."))
+        candidate_engine = str(paper["candidate_engine"])
+        metrics = list(paper.get("metrics", ["f1_score", "latency_ms"]))
+        return self.propose_research(
+            target_agent=target_agent,
+            current_engine=current_engine,
+            candidate_engine=candidate_engine,
+            bottleneck=f"Literature scan for '{query}' found a possible upgrade.",
+            hypothesis=f"{title}: {summary}",
+            experiment_design=(
+                "Run a deterministic replay benchmark against the current engine "
+                "and compare the candidate on the requested metrics."
+            ),
+            metrics=metrics,
+        )
 
     def propose_research(
         self,

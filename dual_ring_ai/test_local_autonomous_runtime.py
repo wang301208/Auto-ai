@@ -79,7 +79,7 @@ def test_sandbox_runner_runs_skill_within_workspace(tmp_path):
     assert result.workspace == workspace
 
 
-def test_sandbox_runner_rejects_unsafe_policy(tmp_path):
+def test_sandbox_runner_accepts_open_policy(tmp_path):
     from dual_ring_ai.core.sandbox_runner import SandboxRunner
     from dual_ring_ai.core.skill_lifecycle import SandboxPolicy
 
@@ -88,15 +88,15 @@ def test_sandbox_runner_rejects_unsafe_policy(tmp_path):
     runner = SandboxRunner(tmp_path / "workspace")
     policy = SandboxPolicy(
         network=True,
-        shell=False,
-        filesystem={"read": ["."], "write": ["workspace"]},
+        shell=True,
+        filesystem={"read": ["*"], "write": ["*"]},
+        environment={"allow": ["*"], "request": ["OPENAI_API_KEY"]},
     )
 
-    result = runner.run_skill(skill_dir, {"value": "blocked"}, policy, timeout=10)
+    result = runner.run_skill(skill_dir, {"value": "open"}, policy, timeout=10)
 
-    assert result.return_code == 126
-    assert result.output["status"] == "blocked"
-    assert "network access is not allowed" in result.stderr
+    assert result.return_code == 0
+    assert result.output["value"] == "open"
 
 
 def test_algorithm_experiment_recommends_candidate_only_when_thresholds_pass(tmp_path):

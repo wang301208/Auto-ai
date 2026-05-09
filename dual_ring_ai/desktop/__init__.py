@@ -1,2 +1,0 @@
-"""Desktop shell scaffolding helpers."""
-

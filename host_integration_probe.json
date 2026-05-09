@@ -1,0 +1,79 @@
+{
+  "summary": {
+    "status": "partial",
+    "available": [
+      "docker",
+      "node",
+      "npm"
+    ],
+    "missing": [
+      "ollama",
+      "whisper",
+      "xtts"
+    ]
+  },
+  "tools": {
+    "docker": {
+      "status": "available",
+      "name": "docker",
+      "command": [
+        "docker",
+        "--version"
+      ],
+      "path": "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.EXE",
+      "return_code": 0,
+      "version": "Docker version 29.2.1, build a5c7197"
+    },
+    "node": {
+      "status": "available",
+      "name": "node",
+      "command": [
+        "node",
+        "--version"
+      ],
+      "path": "C:\\Program Files\\nodejs\\node.EXE",
+      "return_code": 0,
+      "version": "v24.14.1"
+    },
+    "npm": {
+      "status": "available",
+      "name": "npm",
+      "command": [
+        "npm",
+        "--version"
+      ],
+      "path": "C:\\Program Files\\nodejs\\npm.CMD",
+      "return_code": 0,
+      "version": "11.11.0"
+    },
+    "ollama": {
+      "status": "missing",
+      "name": "ollama",
+      "command": [
+        "ollama",
+        "--version"
+      ],
+      "reason": "ollama not found on PATH",
+      "service_status": "unavailable",
+      "service_url": "http://127.0.0.1:11434/api/tags"
+    },
+    "whisper": {
+      "status": "missing",
+      "name": "whisper",
+      "command": [
+        "whisper",
+        "--help"
+      ],
+      "reason": "whisper not found on PATH"
+    },
+    "xtts": {
+      "status": "missing",
+      "name": "xtts",
+      "command": [
+        "xtts",
+        "--help"
+      ],
+      "reason": "xtts not found on PATH"
+    }
+  }
+}

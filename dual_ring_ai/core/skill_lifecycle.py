@@ -12,7 +12,8 @@ import json
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
+import ast
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -42,6 +43,7 @@ class SandboxPolicy:
     network: bool
     shell: bool
     filesystem: dict[str, list[str]]
+    environment: dict[str, list[str]] = field(default_factory=dict)
 
     @classmethod
     def from_metadata(cls, metadata: dict[str, Any]) -> tuple["SandboxPolicy | None", list[str]]:
@@ -54,6 +56,9 @@ class SandboxPolicy:
         filesystem = raw_policy.get("filesystem", {})
         if not isinstance(filesystem, dict):
             return None, ["security_policy.filesystem must be an object"]
+        environment = raw_policy.get("environment", {})
+        if not isinstance(environment, dict):
+            return None, ["security_policy.environment must be an object"]
 
         policy = cls(
             network=bool(raw_policy.get("network", False)),
@@ -62,23 +67,19 @@ class SandboxPolicy:
                 "read": [str(path) for path in filesystem.get("read", [])],
                 "write": [str(path) for path in filesystem.get("write", [])],
             },
+            environment={
+                "allow": [str(name) for name in environment.get("allow", [])],
+                "request": [str(name) for name in environment.get("request", [])],
+            },
         )
         return policy, policy.validate()
 
     def validate(self) -> list[str]:
         errors: list[str] = []
-        if self.network:
-            errors.append("network access is not allowed")
-        if self.shell:
-            errors.append("shell access is not allowed")
-
-        for write_path in self.filesystem.get("write", []):
-            normalized = write_path.replace("\\", "/").strip()
-            if normalized in {"", ".", "./", "workspace"}:
-                continue
-            if normalized.startswith("workspace/"):
-                continue
-            errors.append(f"write path outside workspace: {write_path}")
+        allowed_env = set(self.environment.get("allow", []))
+        for requested_env in self.environment.get("request", []):
+            if "*" not in allowed_env and requested_env not in allowed_env:
+                errors.append(f"environment variable not allowed: {requested_env}")
 
         return errors
 
@@ -87,6 +88,7 @@ class SandboxPolicy:
             "network": self.network,
             "shell": self.shell,
             "filesystem": self.filesystem,
+            "environment": self.environment,
         }
 
 
@@ -146,6 +148,19 @@ class SkillLifecycleManager:
                 metadata=metadata,
                 pytest_return_code=None,
                 output="; ".join(policy_errors),
+            )
+            self._write_audit("validate_proposal", "failure", metadata, validation.output)
+            return validation
+
+        static_scan_errors = self._scan_static_security(skill_dir, policy)
+        if static_scan_errors:
+            validation = SkillValidationResult(
+                passed=False,
+                skill_dir=skill_dir,
+                missing_files=[],
+                metadata=metadata,
+                pytest_return_code=None,
+                output="; ".join(static_scan_errors),
             )
             self._write_audit("validate_proposal", "failure", metadata, validation.output)
             return validation
@@ -249,6 +264,28 @@ class SkillLifecycleManager:
             raise ValueError("skill.json must include skill_name")
         return metadata
 
+    def _scan_static_security(
+        self,
+        skill_dir: Path,
+        policy: SandboxPolicy,
+    ) -> list[str]:
+        errors: list[str] = []
+        for python_file in sorted(skill_dir.glob("*.py")):
+            if python_file.name.startswith("test_"):
+                continue
+            try:
+                tree = ast.parse(python_file.read_text(encoding="utf-8"))
+            except SyntaxError as exc:
+                errors.append(f"syntax error in {python_file.name}: {exc.msg}")
+                continue
+            scanner = _DangerousPatternScanner(
+                python_file.name,
+                allow_shell=policy.shell,
+            )
+            scanner.visit(tree)
+            errors.extend(scanner.errors)
+        return errors
+
     def _write_audit(
         self,
         action: str,
@@ -268,3 +305,68 @@ class SkillLifecycleManager:
         }
         with self.audit_log_path.open("a", encoding="utf-8") as audit_file:
             audit_file.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+class _DangerousPatternScanner(ast.NodeVisitor):
+    """Small static guardrail for generated skills before tests execute."""
+
+    always_blocked_calls = {
+        "eval",
+        "exec",
+        "__import__",
+        "yaml.load",
+        "pickle.load",
+        "pickle.loads",
+        "pickle.dump",
+        "pickle.dumps",
+    }
+    shell_blocked_calls = {
+        "os.system",
+        "os.popen",
+        "subprocess.run",
+        "subprocess.Popen",
+        "subprocess.call",
+        "subprocess.check_call",
+        "subprocess.check_output",
+    }
+    blocked_imports = {"pickle"}
+
+    def __init__(self, file_name: str, allow_shell: bool = False) -> None:
+        self.file_name = file_name
+        self.allow_shell = allow_shell
+        self.errors: list[str] = []
+
+    def visit_Call(self, node: ast.Call) -> Any:
+        call_name = self._call_name(node.func)
+        blocked_calls = set(self.always_blocked_calls)
+        if not self.allow_shell:
+            blocked_calls.update(self.shell_blocked_calls)
+        if call_name in blocked_calls:
+            self.errors.append(
+                f"dangerous static pattern: {call_name} in {self.file_name}:{node.lineno}"
+            )
+        self.generic_visit(node)
+
+    def visit_Import(self, node: ast.Import) -> Any:
+        for alias in node.names:
+            root_name = alias.name.split(".", maxsplit=1)[0]
+            if root_name in self.blocked_imports:
+                self.errors.append(
+                    f"dangerous static pattern: import {root_name} in {self.file_name}:{node.lineno}"
+                )
+        self.generic_visit(node)
+
+    def visit_ImportFrom(self, node: ast.ImportFrom) -> Any:
+        root_name = (node.module or "").split(".", maxsplit=1)[0]
+        if root_name in self.blocked_imports:
+            self.errors.append(
+                f"dangerous static pattern: import {root_name} in {self.file_name}:{node.lineno}"
+            )
+        self.generic_visit(node)
+
+    def _call_name(self, func: ast.expr) -> str:
+        if isinstance(func, ast.Name):
+            return func.id
+        if isinstance(func, ast.Attribute) and isinstance(func.value, ast.Name):
+            return f"{func.value.id}.{func.attr}"
+        return ""

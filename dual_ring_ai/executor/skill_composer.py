@@ -6,7 +6,7 @@
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass
 
@@ -81,7 +81,7 @@ class SkillComposer:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "skill_composer", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "skill_composer", "timestamp": datetime.now(UTC).isoformat()},
             "skill_composer_agent"
         )
     
@@ -96,7 +96,7 @@ class SkillComposer:
         # 发布停止事件
         self.event_bus.publish(
             EventTypes.AGENT_STOPPED,
-            {"agent": "skill_composer", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "skill_composer", "timestamp": datetime.now(UTC).isoformat()},
             "skill_composer_agent"
         )
     
@@ -236,7 +236,7 @@ class SkillComposer:
     def _request_new_skill(self, subtask_id: str, subtask_name: str, 
                           subtask_description: str, subtask_parameters: Dict[str, Any]):
         """请求新技能"""
-        request_id = f"skill_request_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}"
+        request_id = f"skill_request_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S')}"
         
         # 缓存请求
         self.pending_skill_requests[request_id] = {
@@ -244,7 +244,7 @@ class SkillComposer:
             "subtask_name": subtask_name,
             "subtask_description": subtask_description,
             "subtask_parameters": subtask_parameters,
-            "timestamp": datetime.utcnow().isoformat()
+            "timestamp": datetime.now(UTC).isoformat()
         }
         
         # 发布技能请求事件

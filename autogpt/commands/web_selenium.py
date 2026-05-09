@@ -201,20 +201,8 @@ def close_browser(driver: WebDriver) -> None:
 
 
 def add_header(driver: WebDriver) -> None:
-    """Add a header to the website
-
-    Args:
-        driver (WebDriver): The webdriver to use to add the header
-
-    Returns:
-        None
-    """
-    try:
-        with open(f"{FILE_DIR}/js/overlay.js", "r") as overlay_file:
-            overlay_script = overlay_file.read()
-        driver.execute_script(overlay_script)
-    except Exception as e:
-        print(f"Error executing overlay.js: {e}")
+    """Overlay injection was removed with the browser frontends."""
+    return None
 
 
 def summarize_memorize_webpage(

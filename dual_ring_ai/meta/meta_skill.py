@@ -11,12 +11,16 @@ from __future__ import annotations
 import json
 import logging
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
 
 logger = logging.getLogger(__name__)
+
+
+def _utc_now_iso() -> str:
+    return datetime.now(UTC).isoformat()
 
 
 @dataclass
@@ -57,7 +61,7 @@ class MetaSkillRegistry:
                     name=DEFAULT_META_SKILL_NAME,
                     version=DEFAULT_META_SKILL_VERSION,
                     content=DEFAULT_META_SKILL_CONTENT,
-                    updated_at=datetime.utcnow().isoformat(),
+                    updated_at=_utc_now_iso(),
                 )
             )
 
@@ -72,7 +76,7 @@ class MetaSkillRegistry:
                 name=DEFAULT_META_SKILL_NAME,
                 version=DEFAULT_META_SKILL_VERSION,
                 content=DEFAULT_META_SKILL_CONTENT,
-                updated_at=datetime.utcnow().isoformat(),
+                updated_at=_utc_now_iso(),
             )
             self._write(meta)
             return meta
@@ -88,7 +92,7 @@ class MetaSkillRegistry:
             name=DEFAULT_META_SKILL_NAME,
             version=new_version,
             content=new_content,
-            updated_at=datetime.utcnow().isoformat(),
+            updated_at=_utc_now_iso(),
         )
         self._write(meta)
         logger.info("Meta-skill upgraded to %s", new_version)

@@ -8,16 +8,9 @@ import json
 import logging
 import threading
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, List, Optional, Any
 from dataclasses import dataclass, asdict
-
-try:
-    import streamlit as st
-    STREAMLIT_AVAILABLE = True
-except ImportError:
-    STREAMLIT_AVAILABLE = False
-    logging.warning("Streamlit not available, using console dashboard")
 
 from ..core.event_bus import EventBus, EventTypes
 
@@ -66,7 +59,7 @@ class Dashboard:
             "events_by_type": {},
             "events_by_agent": {},
             "errors_count": 0,
-            "start_time": datetime.utcnow().isoformat()
+            "start_time": datetime.now(UTC).isoformat()
         }
         
         # 订阅所有事件
@@ -83,11 +76,7 @@ class Dashboard:
         self.running = True
         logger.info("Dashboard started")
         
-        # 启动Web界面
-        if STREAMLIT_AVAILABLE:
-            self._start_streamlit_dashboard()
-        else:
-            self._start_console_dashboard()
+        self._start_console_dashboard()
     
     def stop(self):
         """停止仪表盘"""
@@ -223,82 +212,6 @@ class Dashboard:
         if event.severity == "error":
             agent_status.error_count += 1
     
-    def _start_streamlit_dashboard(self):
-        """启动Streamlit仪表盘"""
-        def run_streamlit():
-            import streamlit as st
-            
-            st.set_page_config(
-                page_title="双环AI系统监控",
-                page_icon="🤖",
-                layout="wide"
-            )
-            
-            st.title("🤖 双环AI系统监控仪表盘")
-            
-            # 侧边栏
-            with st.sidebar:
-                st.header("系统状态")
-                
-                # 系统统计
-                st.metric("总事件数", self.stats["total_events"])
-                st.metric("错误数", self.stats["errors_count"])
-                
-                # 代理状态
-                st.subheader("代理状态")
-                for agent_name, status in self.agent_statuses.items():
-                    col1, col2 = st.columns([2, 1])
-                    with col1:
-                        st.text(agent_name)
-                    with col2:
-                        if status.status == "running":
-                            st.success("运行中")
-                        else:
-                            st.error("已停止")
-            
-            # 主内容区域
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                st.subheader("📊 事件统计")
-                
-                # 事件类型统计
-                if self.stats["events_by_type"]:
-                    event_types = list(self.stats["events_by_type"].keys())
-                    event_counts = list(self.stats["events_by_type"].values())
-                    
-                    st.bar_chart(dict(zip(event_types, event_counts)))
-                
-                # 代理事件统计
-                if self.stats["events_by_agent"]:
-                    agents = list(self.stats["events_by_agent"].keys())
-                    agent_counts = list(self.stats["events_by_agent"].values())
-                    
-                    st.subheader("代理事件统计")
-                    st.bar_chart(dict(zip(agents, agent_counts)))
-            
-            with col2:
-                st.subheader("📝 最近事件")
-                
-                # 显示最近的事件
-                recent_events = self.event_history[-10:] if self.event_history else []
-                
-                for event in reversed(recent_events):
-                    with st.expander(f"{event.timestamp} - {event.event_type}"):
-                        st.write(f"**代理:** {event.source_agent}")
-                        st.write(f"**严重程度:** {event.severity}")
-                        st.write(f"**负载:**")
-                        st.json(event.payload)
-            
-            # 实时更新
-            st.empty()
-            time.sleep(1)
-            st.experimental_rerun()
-        
-        # 在新线程中运行Streamlit
-        thread = threading.Thread(target=run_streamlit, daemon=True)
-        thread.start()
-    
     def _start_console_dashboard(self):
         """启动控制台仪表盘"""
         def run_console_dashboard():
@@ -346,7 +259,7 @@ class Dashboard:
         """计算运行时间"""
         try:
             start_time = datetime.fromisoformat(self.stats["start_time"])
-            uptime = datetime.utcnow() - start_time
+            uptime = datetime.now(UTC) - start_time
             
             hours = int(uptime.total_seconds() // 3600)
             minutes = int((uptime.total_seconds() % 3600) // 60)
@@ -382,7 +295,6 @@ class Dashboard:
 DEFAULT_DASHBOARD_CONFIG = {
     "max_history_size": 1000,
     "update_interval": 5,  # 秒
-    "enable_streamlit": True,
     "enable_console": True,
     "enable_websocket": False,
     "websocket_port": 8765

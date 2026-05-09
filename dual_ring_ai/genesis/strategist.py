@@ -9,7 +9,7 @@ import json
 import logging
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, asdict
 from collections import defaultdict, Counter
@@ -28,6 +28,14 @@ from ..meta import (
 logger = logging.getLogger(__name__)
 
 
+def _utc_now() -> datetime:
+    return datetime.now(UTC)
+
+
+def _utc_now_iso() -> str:
+    return _utc_now().isoformat()
+
+
 @dataclass
 class StrategicCase:
     """战略案例 - 记录一个完整的任务执行周期"""
@@ -44,7 +52,7 @@ class StrategicCase:
     
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = _utc_now_iso()
         if self.skill_sequence is None:
             self.skill_sequence = []
 
@@ -63,7 +71,7 @@ class StrategicPrinciple:
     
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = _utc_now_iso()
 
 
 @dataclass
@@ -245,7 +253,7 @@ class StrategistAgent:
                     logger.info("Starting strategic analysis...")
                     self._perform_strategic_analysis()
                     self._update_executor_prompts()
-                    self.stats["last_analysis"] = datetime.utcnow().isoformat()
+                    self.stats["last_analysis"] = _utc_now_iso()
 
                 # 周期性触发元反思
                 self._maybe_trigger_meta_reflection()
@@ -263,7 +271,7 @@ class StrategistAgent:
 
         self.event_bus.publish(
             EventTypes.META_REFLECTION_TRIGGERED,
-            {"timestamp": datetime.utcnow().isoformat()},
+            {"timestamp": _utc_now_iso()},
             "strategist",
         )
 
@@ -276,7 +284,7 @@ class StrategistAgent:
 
     def _compute_kpis(self) -> Dict[str, Any]:
         """Compute KPIs for strategist performance."""
-        now = datetime.utcnow()
+        now = _utc_now()
         one_month_ago = now - timedelta(days=30)
 
         recent = [
@@ -326,7 +334,7 @@ class StrategistAgent:
 
         ticket = MetaTicket(
             ticket_id=ticket_id,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=_utc_now_iso(),
             title=title,
             description=description,
             current_version=current.version,
@@ -350,7 +358,7 @@ class StrategistAgent:
             ticket_id=ticket.ticket_id,
             meta_current_version=current.version,
             meta_proposed_version=proposed_version,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=_utc_now_iso(),
         )
         self.approval_gate.request(approval_req)
 

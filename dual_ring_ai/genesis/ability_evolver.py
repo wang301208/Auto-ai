@@ -13,7 +13,7 @@ import json
 import logging
 import threading
 import time
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from dataclasses import dataclass, asdict
@@ -67,7 +67,7 @@ class EvolutionRecord:
     
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = datetime.now(UTC).isoformat()
 
 
 class AbilityEvolver:
@@ -132,7 +132,7 @@ class AbilityEvolver:
         # 发布启动事件
         self.event_bus.publish(
             EventTypes.AGENT_STARTED,
-            {"agent": "ability_evolver", "timestamp": datetime.utcnow().isoformat()},
+            {"agent": "ability_evolver", "timestamp": datetime.now(UTC).isoformat()},
             "ability_evolver"
         )
     
@@ -301,7 +301,7 @@ class AbilityEvolver:
             
             if success:
                 record.evolution_status = "completed"
-                record.completed_at = datetime.utcnow().isoformat()
+                record.completed_at = datetime.now(UTC).isoformat()
                 
                 # 发布进化完成事件
                 self.event_bus.publish(
@@ -382,7 +382,7 @@ class AbilityEvolver:
         """安排影响评估"""
         try:
             # 在指定时间后评估影响
-            evaluation_time = datetime.utcnow() + timedelta(days=self.config.impact_evaluation_period)
+            evaluation_time = datetime.now(UTC) + timedelta(days=self.config.impact_evaluation_period)
             
             # 这里可以设置定时任务来执行影响评估
             logger.info(f"Impact evaluation scheduled for {ability_name} at {evaluation_time}")
