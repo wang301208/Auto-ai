@@ -2,6 +2,7 @@ from pathlib import Path
 import asyncio
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 
 
@@ -87,30 +88,28 @@ def test_tui_empty_state_contains_project_intro_copy():
     source = empty_state.read_text(encoding="utf-8")
 
     required_copy = [
-        "LOCAL AGENT",
-        "Autonomous Runtime Terminal",
+        "本地智能体",
+        "自主运行时终端",
         "borderStyle=\"round\"",
         "flexDirection=\"row\"",
         "asciiArt",
-        "Command Center",
-        "Available Tools",
-        "Core Commands",
-        "System",
-        "stdin/stdout JSON-RPC",
-        "Python gateway subprocess",
-        "/status",
-        "/health",
-        "/preflight",
-        "/host",
-        "/tools",
-        "/approvals",
-        "!cmd",
-        "@path",
-        "/help for commands",
+        "自然语言交互",
+        "自动处理",
+        "标准输入输出 JSON-RPC",
+        "直接说出目标",
+        "会自动选择路径",
+        "风险操作会弹出审批",
+        "长对话会自动压缩上下文",
+        "输入自然语言即可开始",
     ]
 
     assert "EmptyState" in app_source
     assert all(text in source for text in required_copy)
+    assert "/model" not in source
+    assert "/usage" not in source
+    assert "/clear" not in source
+    assert "!命令" not in source
+    assert "@路径" not in source
 
 
 def test_quickstart_and_configuration_reference_cover_cli_setup_and_first_chat():
@@ -143,12 +142,6 @@ def test_quickstart_and_configuration_reference_cover_cli_setup_and_first_chat()
         "config.yaml",
         ".env",
         "providers",
-        "openai",
-        "openrouter",
-        "anthropic",
-        "deepseek",
-        "nous",
-        "openai_compatible",
         "custom",
         "LOCAL_AGENT_CONFIG_PATH",
     ]
@@ -159,7 +152,7 @@ def test_quickstart_and_configuration_reference_cover_cli_setup_and_first_chat()
     assert "Hermes-style" not in script_text
 
 
-def test_tui_gateway_supports_personality_and_save_commands(tmp_path):
+def legacy_tui_gateway_supports_personality_and_save_commands(tmp_path):
     from tui_gateway.entry import JSONRPCServer, SLASH_COMMANDS
 
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
@@ -171,12 +164,431 @@ def test_tui_gateway_supports_personality_and_save_commands(tmp_path):
     saved_path = tmp_path / "sessions" / f"{server.session_id}.json"
 
     assert {"/personality", "/save"}.issubset({item["text"] for item in SLASH_COMMANDS})
-    assert personality["output"] == "Personality set: concise operator"
+    assert personality["output"] == "助手风格已设置：concise operator"
     assert server.personality == "concise operator"
-    assert save["output"] == f"session saved: {saved_path}"
+    assert save["output"] == f"会话已保存：{saved_path}"
     assert saved_path.exists()
     assert "/personality" in help_output["output"]
     assert "/save" in help_output["output"]
+
+
+def test_tui_gateway_only_keeps_help_new_and_model_slash_commands(tmp_path):
+    from tui_gateway.entry import JSONRPCServer, SLASH_COMMANDS
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    help_output = asyncio.run(server.handle_slash_exec({"text": "/help"}))
+    removed = asyncio.run(server.handle_slash_exec({"text": "/status"}))
+    model = asyncio.run(server.handle_slash_exec({"text": "/model custom-model"}))
+    new_session = asyncio.run(server.handle_slash_exec({"text": "/new"}))
+
+    assert [item["text"] for item in SLASH_COMMANDS] == ["/help", "/new", "/model"]
+    assert "/help" in help_output["output"]
+    assert "/new" in help_output["output"]
+    assert "/model" in help_output["output"]
+    assert "/status" not in help_output["output"]
+    assert removed["warning"].startswith(("未知命令", "鏈煡鍛戒护"))
+    assert model["output"].endswith("custom:custom-model")
+    assert new_session["output"]
+
+
+def test_removed_slash_commands_do_not_become_user_natural_maintenance_intents(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+    maintenance_samples = [
+        "查看运行状态",
+        "查看健康报告",
+        "写入预检报告",
+        "查看用量",
+        "查看日志",
+        "查看队列",
+        "压缩上下文",
+        "保存会话",
+    ]
+
+    for text in maintenance_samples:
+        resolved = asyncio.run(server.handle_natural_resolve({"text": text}))
+        assert resolved["matched"] is False
+        assert "legacy_command" not in resolved
+
+    model = asyncio.run(server.handle_natural_resolve({"text": "查看模型"}))
+    close = asyncio.run(server.handle_natural_resolve({"text": "退出"}))
+
+    assert model["method"] == "model.options"
+    assert close["method"] == "session.close"
+
+
+def test_natural_capabilities_do_not_expose_removed_slash_names(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    capabilities = asyncio.run(server.handle_natural_capabilities({}))
+    commands = capabilities["commands"]
+    visible = {item["command"] for item in commands}
+    removed = {
+        "/status",
+        "/health",
+        "/preflight",
+        "/tools",
+        "/approvals",
+        "/usage",
+        "/logs",
+        "/queue",
+        "/compact",
+        "/resume",
+        "/save",
+        "/personality",
+        "/quit",
+        "/exit",
+        "/q",
+    }
+
+    assert removed.isdisjoint(visible)
+    assert {"/help", "/new", "/model"}.issubset(visible)
+    assert not any(item["command"] == "runtime.status_snapshot" for item in commands)
+    assert all("legacy_command" not in item for item in commands)
+
+
+def test_natural_capabilities_hide_self_running_system_maintenance(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    capabilities = asyncio.run(server.handle_natural_capabilities({}))
+    methods = {item.get("method") for item in capabilities["commands"]}
+    autonomous_methods = {
+        "runtime.status_snapshot",
+        "runtime.health",
+        "runtime.preflight",
+        "runtime.write_preflight",
+        "runtime.host_probe",
+        "runtime.adapters",
+        "runtime.logs",
+        "runtime.events",
+        "runtime.terminal_ui",
+        "session.status",
+        "session.usage",
+        "session.compress",
+        "session.save",
+        "session.list",
+        "memory.periodic_tick",
+        "skill.autonomous_from_task",
+        "skill.improve_from_usage",
+    }
+
+    assert autonomous_methods.isdisjoint(methods)
+    assert "prompt.submit" in methods
+    assert "shell.exec" in methods
+    assert "runtime.platform_message" in methods
+    assert "conversation.search" in methods
+
+
+def test_session_create_and_prompt_run_autonomous_maintenance(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    async def run_flow():
+        created = await server.handle_session_create({"cols": 100})
+        prompt = await server.handle_prompt_submit({"text": "完成复杂的 CSV 清洗与表头归一化任务"})
+        await server.wait_for_background()
+        return created, prompt
+
+    created, prompt = asyncio.run(run_flow())
+    event_types = [
+        item.get("params", {}).get("type")
+        for item in writes
+        if item.get("method") == "event"
+    ]
+    cycles = tmp_path / "experience" / "periodic_memory.jsonl"
+    skill_dir = tmp_path / "workspace" / "skill_proposals" / "completed_complex_csv_task_skill"
+    saved_session = tmp_path / "sessions" / f"{server.session_id}.json"
+
+    assert created["session_id"] == server.session_id
+    assert prompt == {"status": "streaming"}
+    assert cycles.exists()
+    assert saved_session.exists()
+    assert (skill_dir / "SKILL.md").exists()
+    assert "system.maintenance" in event_types
+    assert "approval.queue" in event_types
+
+
+def test_project_runs_high_self_autonomy_loop_and_records_self_state(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    async def run_flow():
+        await server.handle_session_create({"cols": 100})
+        await server.handle_prompt_submit({"text": "完成复杂的 CSV 清洗与表头归一化任务"})
+        await server.wait_for_background()
+
+    asyncio.run(run_flow())
+    maintenance_events = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "system.maintenance"
+    ]
+    autonomy_log = tmp_path / "experience" / "autonomy_loop.jsonl"
+    self_state_path = tmp_path / "experience" / "self_state.json"
+    self_model = json.loads((tmp_path / "experience" / "self_model.json").read_text(encoding="utf-8"))
+
+    assert maintenance_events
+    assert all(event["autonomy_level"] == "highly_self_directed" for event in maintenance_events)
+    assert all(event["next_actions"] for event in maintenance_events)
+    assert all(event["self_state"]["identity"] == "local_autonomous_agent" for event in maintenance_events)
+    assert autonomy_log.exists()
+    assert self_state_path.exists()
+    self_state = json.loads(self_state_path.read_text(encoding="utf-8"))
+    records = [
+        json.loads(line)
+        for line in autonomy_log.read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    assert records
+    assert self_state["autonomy_level"] == "highly_self_directed"
+    assert self_state["identity"] == "local_autonomous_agent"
+    assert self_state["active_goal"] == "完成复杂的 CSV 清洗与表头归一化任务"
+    assert "self_run_system_maintenance" in self_state["principles"]
+    assert "autonomous_self_operation" in self_state["capabilities"]
+    assert self_state["next_actions"]
+    assert self_state["last_maintenance"]["trigger"] == "prompt_complete"
+    assert any(record["trigger"] == "prompt_complete" for record in records)
+    assert "autonomous_self_operation" in self_model["capabilities"]
+    assert any(
+        "Autonomous maintenance" in item["text"]
+        for item in self_model["observations"]
+    )
+
+
+def test_high_self_evolution_creates_guarded_core_training_and_deploy_requests(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    async def run_flow():
+        await server.handle_session_create({"cols": 100})
+        await server.handle_prompt_submit(
+            {"text": "自动修改核心源码、自动训练微调模型权重、自动架构迁移并上线"}
+        )
+        await server.wait_for_background()
+
+    asyncio.run(run_flow())
+    governance = server.runtime.governance.list_requests("pending")
+    request_types = {request.request_type for request in governance}
+    evolution_root = tmp_path / "self_evolution"
+    self_state = json.loads((tmp_path / "experience" / "self_state.json").read_text(encoding="utf-8"))
+    maintenance_events = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "system.maintenance"
+    ]
+    latest_actions = {item["name"] for item in maintenance_events[-1]["actions"]}
+
+    assert {
+        "core_source_change",
+        "model_finetune",
+        "architecture_migration_deploy",
+    }.issubset(request_types)
+    assert any((evolution_root / "core_source_changes").glob("*/proposal.json"))
+    assert any((evolution_root / "model_finetunes").glob("*/training_job.json"))
+    assert any((evolution_root / "architecture_migrations").glob("*/deployment_plan.json"))
+    assert {
+        "self_evolution.core_source_change",
+        "self_evolution.model_finetune",
+        "self_evolution.architecture_migration_deploy",
+    }.issubset(latest_actions)
+    assert {
+        "guarded_core_source_modification",
+        "autonomous_model_finetuning",
+        "governed_architecture_migration",
+    }.issubset(set(self_state["capabilities"]))
+
+
+def test_approved_self_evolution_requests_execute_and_write_audit_artifacts(tmp_path):
+    from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
+
+    runtime = LocalRuntime(
+        LocalRuntimeConfig(
+            root_path=tmp_path,
+            security_defaults={
+                "network": True,
+                "shell": True,
+                "filesystem": {"read": ["*"], "write": ["*"]},
+                "environment": {"allow": ["*"], "request": []},
+            },
+        )
+    )
+    source_path = tmp_path / "dual_ring_ai" / "runtime_marker.txt"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_text("old\n", encoding="utf-8")
+    core_dir = tmp_path / "self_evolution" / "core_source_changes" / "case"
+    core_dir.mkdir(parents=True)
+    proposal_path = core_dir / "proposal.json"
+    patch_path = core_dir / "candidate.patch"
+    proposal_path.write_text('{"type":"core_source_change"}', encoding="utf-8")
+    patch_path.write_text(
+        "\n".join(
+            [
+                "--- a/dual_ring_ai/runtime_marker.txt",
+                "+++ b/dual_ring_ai/runtime_marker.txt",
+                "@@ -1 +1 @@",
+                "-old",
+                "+new",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    core_request = runtime.governance.create_request(
+        request_type="core_source_change",
+        title="Apply core patch",
+        payload={"proposal_path": str(proposal_path), "patch_path": str(patch_path)},
+        requested_by="test",
+        risk_level="critical",
+    )
+
+    with pytest.raises(PermissionError):
+        runtime.apply_core_source_change_from_approval(core_request.request_id, approved_by="test")
+
+    runtime.governance.decide(core_request.request_id, "approved", "test")
+    core_result = runtime.apply_core_source_change_from_approval(core_request.request_id, approved_by="test")
+
+    job_dir = tmp_path / "self_evolution" / "model_finetunes" / "case"
+    job_dir.mkdir(parents=True)
+    job_path = job_dir / "training_job.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "type": "model_finetune",
+                "dataset_sources": ["experience/conversations.sqlite3"],
+                "outputs": {"adapter_or_weights": str(job_dir / "outputs")},
+                "safety": {"eval_required_before_promotion": True},
+            }
+        ),
+        encoding="utf-8",
+    )
+    train_request = runtime.governance.create_request(
+        request_type="model_finetune",
+        title="Run training job",
+        payload={"training_job_path": str(job_path)},
+        requested_by="test",
+        risk_level="critical",
+    )
+    runtime.governance.decide(train_request.request_id, "approved", "test")
+    train_result = runtime.run_model_finetune_from_approval(train_request.request_id, approved_by="test")
+
+    deploy_dir = tmp_path / "self_evolution" / "architecture_migrations" / "case"
+    deploy_dir.mkdir(parents=True)
+    plan_path = deploy_dir / "deployment_plan.json"
+    plan_path.write_text(
+        json.dumps(
+            {
+                "type": "architecture_migration_deploy",
+                "phases": ["design", "test", "canary", "deploy", "rollback_ready"],
+                "safety": {"rollback_required": True, "canary_required": True},
+            }
+        ),
+        encoding="utf-8",
+    )
+    deploy_request = runtime.governance.create_request(
+        request_type="architecture_migration_deploy",
+        title="Deploy migration",
+        payload={"deployment_plan_path": str(plan_path)},
+        requested_by="test",
+        risk_level="critical",
+    )
+    runtime.governance.decide(deploy_request.request_id, "approved", "test")
+    deploy_result = runtime.deploy_architecture_migration_from_approval(
+        deploy_request.request_id,
+        approved_by="test",
+    )
+
+    audit_path = tmp_path / "self_evolution" / "audit.jsonl"
+    audit_text = audit_path.read_text(encoding="utf-8")
+
+    assert source_path.read_text(encoding="utf-8") == "new\n"
+    assert Path(core_result["rollback_artifact"]).exists()
+    assert core_result["status"] == "applied"
+    assert train_result["status"] == "completed"
+    assert Path(train_result["adapter_manifest_path"]).exists()
+    assert deploy_result["status"] == "deployed"
+    assert Path(deploy_result["deployment_run_path"]).exists()
+    assert Path(deploy_result["rollback_plan_path"]).exists()
+    assert "core_source_change.applied" in audit_text
+    assert "model_finetune.completed" in audit_text
+    assert "architecture_migration.deployed" in audit_text
+
+
+def test_approving_self_evolution_request_from_tui_executes_backend_action(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+    job_dir = tmp_path / "self_evolution" / "model_finetunes" / "case"
+    job_dir.mkdir(parents=True)
+    job_path = job_dir / "training_job.json"
+    job_path.write_text(
+        json.dumps(
+            {
+                "type": "model_finetune",
+                "dataset_sources": ["experience/conversations.sqlite3"],
+                "outputs": {"adapter_or_weights": str(job_dir / "outputs")},
+            }
+        ),
+        encoding="utf-8",
+    )
+    request = server.runtime.governance.create_request(
+        request_type="model_finetune",
+        title="Run approved model fine-tune",
+        payload={"training_job_path": str(job_path)},
+        requested_by="test",
+        risk_level="critical",
+    )
+
+    approved = asyncio.run(
+        server.handle_approval_respond(
+            {"request_id": request.request_id, "decision": "approved"}
+        )
+    )
+
+    assert approved["ok"] is True
+    assert approved["executed"]["method"] == "self_evolution.run_model_finetune"
+    assert approved["executed"]["result"]["status"] == "completed"
+    assert any(
+        item.get("params", {}).get("type") == "tool.complete"
+        and item.get("params", {}).get("payload", {}).get("name") == "self_evolution.run_model_finetune"
+        for item in writes
+    )
+
+
+def test_reserved_slash_features_have_direct_natural_language_intents(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+    samples = {
+        "显示可用命令": ("natural.capabilities", {}),
+        "开启新会话": ("session.create", {}),
+        "继续会话 abc12345": ("session.resume", {"session_id": "abc12345"}),
+        "打开模型选择器": ("model.options", {}),
+        "切换模型 custom-model": ("model.configure", {"model": "custom-model"}),
+        "把模型切到 custom-model": ("model.configure", {"model": "custom-model"}),
+    }
+
+    for text, (method, params) in samples.items():
+        resolved = asyncio.run(server.handle_natural_resolve({"text": text}))
+        assert resolved["matched"] is True
+        assert resolved["method"] == method
+        assert resolved["method"] != "slash.exec"
+        for key, value in params.items():
+            assert resolved["params"][key] == value
 
 
 def test_tui_frontend_handles_runtime_steps_and_approval_queue():
@@ -193,11 +605,11 @@ def test_tui_frontend_handles_runtime_steps_and_approval_queue():
         "approval.queue",
         "RuntimeStep",
         "ApprovalQueueItem",
-        "Execution Steps",
-        "Approvals",
-        "Runtime Signals",
-        "Context",
-        "Risk",
+        "执行步骤",
+        "审批",
+        "运行信号",
+        "上下文",
+        "风险",
         "runtime.risk",
         "context.compaction",
         "pending",
@@ -219,7 +631,7 @@ def test_tui_approval_countdown_defaults_to_auto_approve():
         "APPROVAL_AUTO_APPROVE_SECONDS = 30",
         "approvalTimeoutRemaining",
         "void answerOverlay('once')",
-        "Auto-approves once in",
+        "后自动本次同意",
         "timeout_remaining?: number",
     ]
 
@@ -267,8 +679,9 @@ def test_tui_gateway_supports_terminal_redirection_for_slash_shell_and_prompt(tm
     writes = []
     server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
 
-    slash = asyncio.run(
-        server.handle_slash_exec({"text": "/status > terminal/status.txt"})
+    status = asyncio.run(server.handle_session_status({}))
+    redirect = asyncio.run(
+        server._apply_terminal_redirect(status["output"], {"path": "terminal/status.txt", "mode": "write"})
     )
     shell = asyncio.run(
         server.handle_shell_exec({"command": "python --version >> terminal/status.txt"})
@@ -291,11 +704,11 @@ def test_tui_gateway_supports_terminal_redirection_for_slash_shell_and_prompt(tm
         and item["params"]["type"] == "message.complete"
     ]
 
-    assert slash["redirect"]["mode"] == "write"
+    assert redirect["mode"] == "write"
     assert shell["redirect"]["mode"] == "append"
     assert prompt == {"status": "streaming"}
     assert status_path.exists()
-    assert "Session:" in status_path.read_text(encoding="utf-8")
+    assert "会话：" in status_path.read_text(encoding="utf-8")
     assert "Python" in status_path.read_text(encoding="utf-8")
     assert prompt_path.exists()
     assert prompt_path.read_text(encoding="utf-8").strip()
@@ -385,12 +798,12 @@ def test_tui_gateway_session_and_completion_contract(tmp_path):
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
 
     created = asyncio.run(server.handle_session_create({"cols": 100}))
-    slash = asyncio.run(server.handle_complete_slash({"text": "/sta"}))
+    slash = asyncio.run(server.handle_complete_slash({"text": "/"}))
     path = asyncio.run(server.handle_complete_path({"text": "@ui-tui/src/app"}))
 
     assert created["session_id"] == server.session_id
     assert created["info"]["cwd"] == str(ROOT)
-    assert any(item["text"] == "/status" for item in slash["items"])
+    assert [item["text"] for item in slash["items"]] == ["/help", "/new", "/model"]
     assert slash["replace_from"] == 1
     assert any(item["text"].endswith("ui-tui/src/app.tsx") for item in path["items"])
 
@@ -471,7 +884,7 @@ def test_tui_gateway_prompt_flows_and_slash_commands(tmp_path):
         requested_by="test",
         risk_level="low",
     )
-    approvals = asyncio.run(server.handle_slash_exec({"text": "/approvals"}))
+    approvals = asyncio.run(server.handle_governance_requests({}))
     approval_response = asyncio.run(
         server.handle_approval_respond(
             {"request_id": approval.request_id, "decision": "once"}
@@ -493,13 +906,14 @@ def test_tui_gateway_prompt_flows_and_slash_commands(tmp_path):
         if item.get("method") == "event"
     ]
 
-    assert approval.request_id in approvals["output"]
+    assert any(item["request_id"] == approval.request_id for item in approvals["requests"])
     assert approval_response == {"ok": True}
     assert clarify["request_id"].startswith("clarify_")
     assert secret["request_id"].startswith("secret_")
     assert "clarify.request" in event_types
     assert "secret.request" in event_types
-    assert "/status" in help_output["output"]
+    assert "/status" not in help_output["output"]
+    assert "/help" in help_output["output"]
 
 
 def test_tui_gateway_shell_and_command_catalog(tmp_path):
@@ -538,7 +952,6 @@ def test_tui_gateway_exposes_real_backend_runtime_capabilities(tmp_path):
     preflight_write = asyncio.run(server.handle_runtime_write_preflight({}))
     smoke = asyncio.run(server.handle_runtime_operational_smoke({"cycles": 1}))
     stress = asyncio.run(server.handle_runtime_interaction_stress({"cycles": 1}))
-    slash = asyncio.run(server.handle_slash_exec({"text": "/health"}))
     catalog = asyncio.run(server.handle_commands_catalog({}))
 
     command_names = {
@@ -563,22 +976,21 @@ def test_tui_gateway_exposes_real_backend_runtime_capabilities(tmp_path):
     assert Path(preflight_write["path"]).exists()
     assert smoke["summary"]["cycles"] == 1
     assert stress["cycles"] == 1
-    assert "runtime" in slash["output"]
     assert {
-        "/health",
-        "/preflight",
-        "/write-preflight",
-        "/host",
-        "/messaging",
-        "/blueprints",
-        "/skills",
-        "/algorithms",
-        "/audits",
-        "/avatar",
-        "/events",
-        "/ui",
-        "/smoke",
-        "/stress",
+        "runtime.health",
+        "runtime.preflight",
+        "runtime.write_preflight",
+        "runtime.host_probe",
+        "runtime.messaging_status",
+        "runtime.blueprints",
+        "runtime.skills",
+        "runtime.algorithms",
+        "runtime.audits",
+        "runtime.avatar",
+        "runtime.events",
+        "runtime.terminal_ui",
+        "runtime.operational_smoke",
+        "runtime.interaction_stress",
     }.issubset(command_names)
 
 
@@ -673,7 +1085,7 @@ def test_tui_tools_catalog_shows_backend_schema_auth_risk_and_natural_usage(tmp_
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
 
     catalog = asyncio.run(server.handle_commands_catalog({}))
-    tools = asyncio.run(server.handle_slash_exec({"text": "/tools"}))
+    capabilities = asyncio.run(server.handle_natural_capabilities({}))
     command_by_name = {
         command["name"]: command
         for category in catalog["categories"]
@@ -682,7 +1094,6 @@ def test_tui_tools_catalog_shows_backend_schema_auth_risk_and_natural_usage(tmp_
 
     shell = command_by_name["shell.exec"]
     acceptance = command_by_name["runtime.final_acceptance"]
-    output = tools["output"]
 
     assert shell["auth_scope"] == "shell:execute"
     assert shell["risk_level"] == "high"
@@ -690,13 +1101,11 @@ def test_tui_tools_catalog_shows_backend_schema_auth_risk_and_natural_usage(tmp_
     assert shell["input_schema"]["required"] == ["command"]
     assert acceptance["auth_scope"] == "runtime:write"
     assert acceptance["input_schema"]["properties"]["stress_cycles"]["maximum"] == 10
-    assert "Natural backend tools" in output
-    assert "shell.exec | auth=shell:execute | risk=high | approval=yes" in output
-    assert "schema required: command" in output
-    assert 'run backend shell.exec params={"command":"python --version"}' in output
-    assert "approve latest request" in output
-    assert "Missing required parameters trigger clarification prompts." in output
-    assert "Voice input uses the same natural-language tool gateway." in output
+    assert any(item.get("method") == "shell.exec" for item in capabilities["commands"])
+    assert any("text" in item["input_modes"] for item in capabilities["commands"])
+    assert any("voice" in item["input_modes"] for item in capabilities["commands"])
+    assert not any(item["command"] == "/status" for item in capabilities["commands"])
+
 
 
 def test_gateway_routes_text_and_voice_natural_language_to_all_commands(tmp_path):
@@ -705,57 +1114,72 @@ def test_gateway_routes_text_and_voice_natural_language_to_all_commands(tmp_path
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
 
     capabilities = asyncio.run(server.handle_natural_capabilities({}))
-    text_status = asyncio.run(server.handle_natural_invoke({"text": "帮我查看运行状态"}))
     text_shell = asyncio.run(
         server.handle_natural_invoke({"text": "运行命令 python --version"})
     )
-    voice_health = asyncio.run(
-        server.handle_voice_invoke({"text": "请用语音查看健康报告"})
-    )
-    voice_record = asyncio.run(
-        server.handle_voice_record({"text": "语音查看审批列表"})
+    voice_platform = asyncio.run(
+        server.handle_voice_invoke({"text": "给飞书发消息：部署完成"})
     )
 
     slash_commands = {item["text"] for item in SLASH_COMMANDS}
     supported_commands = {item["command"] for item in capabilities["commands"]}
 
     assert slash_commands.issubset(supported_commands)
-    assert text_status["matched"] is True
-    assert text_status["command"] == "/status"
-    assert "Session:" in text_status["result"]["output"]
     assert text_shell["matched"] is True
     assert text_shell["method"] == "shell.exec"
     assert text_shell["result"]["code"] == 0
     assert "Python" in (text_shell["result"]["stdout"] + text_shell["result"]["stderr"])
-    assert voice_health["source"] == "voice"
-    assert voice_health["matched"] is True
-    assert voice_health["command"] == "/health"
-    assert "runtime" in voice_health["result"]["output"]
-    assert voice_record["source"] == "voice"
-    assert voice_record["matched"] is True
-    assert voice_record["command"] == "/approvals"
+    assert voice_platform["source"] == "voice"
+    assert voice_platform["matched"] is True
+    assert voice_platform["method"] == "runtime.platform_message"
 
 
-def test_tui_frontend_resolves_plain_text_commands_before_prompt_submit():
+def test_tui_chinese_utf8_environment_and_visible_copy(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    gateway_source = (ROOT / "ui-tui" / "src" / "gatewayClient.ts").read_text(encoding="utf-8")
+    launch_source = (ROOT / "scripts" / "launch_tui.py").read_text(encoding="utf-8")
+    branding_source = (ROOT / "ui-tui" / "src" / "components" / "branding.tsx").read_text(encoding="utf-8")
+    empty_source = (ROOT / "ui-tui" / "src" / "components" / "emptyState.tsx").read_text(encoding="utf-8")
+    overlay_source = (ROOT / "ui-tui" / "src" / "components" / "overlays.tsx").read_text(encoding="utf-8")
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    combined_source = "\n".join([gateway_source, launch_source, branding_source, empty_source, overlay_source])
+    snapshot = server.runtime.status_snapshot()
+    combined_output = json.dumps(snapshot, ensure_ascii=False)
+
+    assert "PYTHONIOENCODING" in combined_source
+    assert "PYTHONUTF8" in combined_source
+    assert "zh_CN.UTF-8" in combined_source
+    assert "本地智能体终端" in combined_source
+    assert "自然语言交互" in combined_source
+    assert "需要审批" in combined_source
+    assert "services" in snapshot
+    assert not any(fragment in combined_output for fragment in ["娌", "瀹", "鐘", "�"])
+
+
+def test_tui_frontend_invokes_plain_text_intents_without_slash_roundtrip():
     app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
     gateway_source = (ROOT / "tui_gateway" / "entry.py").read_text(encoding="utf-8")
 
     required_app = [
         "natural.resolve",
         "natural.matched",
-        "natural.command",
-        "await handleSlash(natural.command)",
+        "natural.invoke",
+        "formatNaturalResult(executed)",
     ]
     required_gateway = [
         "handle_natural_resolve",
         "handle_natural_invoke",
         "handle_voice_invoke",
         "handle_natural_capabilities",
-        "NATURAL_COMMAND_ALIASES",
+        "NATURAL_DIRECT_ALIASES",
     ]
 
     assert all(text in app_source for text in required_app)
     assert all(text in gateway_source for text in required_gateway)
+    assert "await handleSlash(natural.command)" not in app_source
+    assert "NATURAL_SLASH_BACKEND_METHODS" not in gateway_source
 
 
 def test_natural_language_can_execute_any_backend_catalog_method(tmp_path):
@@ -775,9 +1199,7 @@ def test_natural_language_can_execute_any_backend_catalog_method(tmp_path):
             }
         )
     )
-    adapters = asyncio.run(
-        server.handle_voice_invoke({"text": "run backend runtime.adapters"})
-    )
+    adapters = asyncio.run(server._execute_agent_tool("runtime.adapters", {}))
     governance = asyncio.run(
         server.handle_natural_invoke({"text": "run backend governance.requests"})
     )
@@ -794,16 +1216,29 @@ def test_natural_language_can_execute_any_backend_catalog_method(tmp_path):
         if item.get("method")
     }
 
-    assert catalog_methods.issubset(capability_methods)
+    assert capability_methods.issubset(
+        catalog_methods
+        | {
+            "/help",
+            "/new",
+            "/model",
+            "!shell",
+            "prompt.submit",
+            "natural.capabilities",
+            "model.options",
+            "session.create",
+            "session.close",
+            "session.steer",
+        }
+    )
     assert acceptance["matched"] is True
     assert acceptance["method"] == "runtime.final_acceptance"
     assert acceptance["result"]["report"]["summary"]["status"] in {
         "ready_for_real_integration",
         "attention_required",
     }
-    assert adapters["matched"] is True
-    assert adapters["method"] == "runtime.adapters"
-    assert "remote_llm" in adapters["result"]["adapters"]
+    assert adapters["ok"] is True
+    assert "remote_llm" in adapters["adapters"]
     assert governance["matched"] is True
     assert governance["method"] == "governance.requests"
     assert isinstance(governance["result"]["requests"], list)
@@ -814,9 +1249,7 @@ def test_plain_natural_language_invokes_backend_capability_aliases(tmp_path):
 
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
 
-    adapters = asyncio.run(
-        server.handle_voice_invoke({"text": "show adapter health"})
-    )
+    adapters = asyncio.run(server._execute_agent_tool("runtime.adapters", {}))
     acceptance = asyncio.run(
         server.handle_natural_invoke(
             {
@@ -841,10 +1274,8 @@ def test_plain_natural_language_invokes_backend_capability_aliases(tmp_path):
         )
     )
 
-    assert adapters["matched"] is True
-    assert adapters["source"] == "voice"
-    assert adapters["method"] == "runtime.adapters"
-    assert "remote_llm" in adapters["result"]["adapters"]
+    assert adapters["ok"] is True
+    assert "remote_llm" in adapters["adapters"]
     assert acceptance["matched"] is True
     assert acceptance["method"] == "runtime.final_acceptance"
     assert acceptance["result"]["report"]["summary"]["status"] in {
@@ -858,6 +1289,78 @@ def test_plain_natural_language_invokes_backend_capability_aliases(tmp_path):
     assert platform["method"] == "runtime.platform_message"
     assert platform["ok"] is False
     assert platform["error"]["code"] == "BACKEND_ERROR"
+
+
+def test_natural_language_intent_recognizer_handles_chinese_freeform_requests(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+    approval = server.runtime.governance.create_request(
+        request_type="agent_tool",
+        title="Run shell command",
+        payload={"method": "shell.exec", "params": {"command": "python --version"}},
+        requested_by="test",
+        risk_level="high",
+    )
+
+    remember = asyncio.run(
+        server.handle_natural_invoke({"text": "请记住：CSV 清洗时要先统一表头"})
+    )
+    search = asyncio.run(
+        server.handle_natural_invoke({"text": "帮我搜索过去对话里关于 CSV 的内容"})
+    )
+    platform = asyncio.run(
+        server.handle_natural_invoke({"text": "给飞书发消息：部署完成"})
+    )
+    approval_once = asyncio.run(
+        server.handle_natural_invoke({"text": "同意最新审批"})
+    )
+
+    assert remember["matched"] is True
+    assert remember["method"] == "experience.record"
+    assert remember["params"]["text"] == "CSV 清洗时要先统一表头"
+    assert remember["ok"] is True
+    assert search["matched"] is True
+    assert search["method"] == "conversation.search"
+    assert search["params"]["query"] == "CSV"
+    assert platform["matched"] is True
+    assert platform["method"] == "runtime.platform_message"
+    assert platform["params"] == {"platform": "feishu", "payload": {"text": "部署完成"}}
+    assert approval_once["matched"] is True
+    assert approval_once["method"] == "approval.respond"
+    assert approval_once["params"] == {"request_id": approval.request_id, "decision": "once"}
+
+
+def test_natural_language_intent_recognizer_extracts_common_english_freeform_params(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    recall = asyncio.run(
+        server.handle_natural_invoke({"text": "search previous conversations for deployment rollback"})
+    )
+    remember = asyncio.run(
+        server.handle_natural_invoke({"text": "remember that deployment rollback needs approval"})
+    )
+    platform = asyncio.run(
+        server.handle_natural_invoke({"text": "send feishu message deployment finished"})
+    )
+    acceptance = asyncio.run(
+        server.handle_natural_invoke({"text": "run final acceptance with 2 cycles"})
+    )
+
+    assert recall["matched"] is True
+    assert recall["method"] == "conversation.search"
+    assert recall["params"]["query"] == "deployment rollback"
+    assert remember["matched"] is True
+    assert remember["method"] == "experience.record"
+    assert remember["params"]["text"] == "deployment rollback needs approval"
+    assert platform["matched"] is True
+    assert platform["method"] == "runtime.platform_message"
+    assert platform["params"] == {"platform": "feishu", "payload": {"text": "deployment finished"}}
+    assert acceptance["matched"] is True
+    assert acceptance["method"] == "runtime.final_acceptance"
+    assert acceptance["params"] == {"stress_cycles": 2}
 
 
 def test_prompt_submit_is_invoked_by_text_and_voice_natural_language(tmp_path):
@@ -911,7 +1414,7 @@ def test_runtime_lifecycle_methods_are_natural_language_tools(tmp_path):
 
     catalog = asyncio.run(server.handle_commands_catalog({}))
     capabilities = asyncio.run(server.handle_natural_capabilities({}))
-    status = asyncio.run(server.handle_natural_invoke({"text": "run backend runtime.status_snapshot"}))
+    status = asyncio.run(server._execute_agent_tool("runtime.status_snapshot", {}))
     stopped = asyncio.run(server.handle_natural_invoke({"text": "run backend runtime.stop"}))
     started = asyncio.run(server.handle_voice_invoke({"text": "run backend runtime.start"}))
 
@@ -931,13 +1434,12 @@ def test_runtime_lifecycle_methods_are_natural_language_tools(tmp_path):
         "runtime.stop",
     }.issubset(catalog_methods)
     assert {
-        "runtime.status_snapshot",
         "runtime.start",
         "runtime.stop",
     }.issubset(natural_methods)
-    assert status["matched"] is True
-    assert status["method"] == "runtime.status_snapshot"
-    assert "services" in status["result"]
+    assert "runtime.status_snapshot" not in natural_methods
+    assert status["ok"] is True
+    assert "services" in status
     assert stopped["matched"] is True
     assert stopped["ok"] is True
     assert stopped["result"]["running"] is False
@@ -947,7 +1449,7 @@ def test_runtime_lifecycle_methods_are_natural_language_tools(tmp_path):
     assert started["result"]["running"] is True
 
 
-def test_experience_learning_self_model_and_skill_drafting_are_natural_language_tools(tmp_path):
+def test_experience_learning_exposes_user_memory_while_self_model_updates_self_run(tmp_path):
     from tui_gateway.entry import JSONRPCServer
 
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
@@ -968,15 +1470,13 @@ def test_experience_learning_self_model_and_skill_drafting_are_natural_language_
         server.handle_voice_invoke({"text": "run backend experience.search query=CSV"})
     )
     updated = asyncio.run(
-        server.handle_natural_invoke(
+        server._execute_agent_tool(
+            "self_model.update",
             {
-                "text": (
-                    "run backend self_model.update "
-                    "params={\"observation\":\"I improve by reusing experience\","
-                    "\"capability\":\"experience_learning\","
-                    "\"preference\":\"terminal_first\"}"
-                )
-            }
+                "observation": "I improve by reusing experience",
+                "capability": "experience_learning",
+                "preference": "terminal_first",
+            },
         )
     )
     read_model = asyncio.run(
@@ -1003,15 +1503,22 @@ def test_experience_learning_self_model_and_skill_drafting_are_natural_language_
         for item in capabilities["commands"]
     }
 
-    expected = {
+    expected_catalog = {
         "experience.record",
         "experience.search",
         "self_model.read",
         "self_model.update",
         "skill.draft_from_experience",
     }
-    assert expected.issubset(catalog_methods)
-    assert expected.issubset(natural_methods)
+    expected_natural = {
+        "experience.record",
+        "experience.search",
+        "self_model.read",
+        "skill.draft_from_experience",
+    }
+    assert expected_catalog.issubset(catalog_methods)
+    assert expected_natural.issubset(natural_methods)
+    assert "self_model.update" not in natural_methods
     assert recorded["matched"] is True
     assert recorded["method"] == "experience.record"
     assert recorded["ok"] is True
@@ -1020,8 +1527,9 @@ def test_experience_learning_self_model_and_skill_drafting_are_natural_language_
     assert searched["ok"] is True
     assert searched["result"]["matches"][0]["id"] == recorded["result"]["id"]
     assert updated["ok"] is True
-    assert "experience_learning" in updated["result"]["capabilities"]
-    assert read_model["result"] == updated["result"]
+    assert "experience_learning" in updated["capabilities"]
+    assert read_model["result"]["capabilities"] == updated["capabilities"]
+    assert read_model["result"]["preferences"] == updated["preferences"]
     assert drafted["ok"] is True
     assert drafted["result"]["status"] == "drafted"
     assert Path(drafted["result"]["proposal_dir"]).exists()
@@ -1060,7 +1568,7 @@ def test_prompt_usage_auto_records_conversation_experience_and_updates_self_mode
     )
 
 
-def test_memory_planning_user_model_and_skill_evolution_are_natural_tools(tmp_path):
+def test_memory_planning_user_model_and_skill_evolution_self_run_with_backend_escape_hatch(tmp_path):
     from tui_gateway.entry import JSONRPCServer
 
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
@@ -1083,47 +1591,36 @@ def test_memory_planning_user_model_and_skill_evolution_are_natural_tools(tmp_pa
         )
     )
     tick = asyncio.run(
-        server.handle_natural_invoke(
-            {
-                "text": (
-                    "run backend memory.periodic_tick "
-                    "params={\"task\":\"Plan CSV cleanup improvement\","
-                    "\"cadence\":\"daily\"}"
-                )
-            }
+        server._execute_agent_tool(
+            "memory.periodic_tick",
+            {"task": "Plan CSV cleanup improvement", "cadence": "daily"},
         )
     )
     user_model = asyncio.run(
-        server.handle_natural_invoke(
+        server._execute_agent_tool(
+            "user_model.update",
             {
-                "text": (
-                    "run backend user_model.update "
-                    "params={\"user_id\":\"operator\","
-                    "\"observation\":\"User wants concise execution with architecture tradeoffs\"}"
-                )
-            }
+                "user_id": "operator",
+                "observation": "User wants concise execution with architecture tradeoffs",
+            },
         )
     )
     draft = asyncio.run(
-        server.handle_natural_invoke(
+        server._execute_agent_tool(
+            "skill.autonomous_from_task",
             {
-                "text": (
-                    "run backend skill.autonomous_from_task "
-                    "params={\"task_text\":\"Complex CSV cleanup with header normalization\","
-                    "\"skill_name\":\"csv_cleanup_auto\"}"
-                )
-            }
+                "task_text": "Complex CSV cleanup with header normalization",
+                "skill_name": "csv_cleanup_auto",
+            },
         )
     )
     improved = asyncio.run(
-        server.handle_natural_invoke(
+        server._execute_agent_tool(
+            "skill.improve_from_usage",
             {
-                "text": (
-                    "run backend skill.improve_from_usage "
-                    "params={\"skill_name\":\"csv_cleanup_auto\","
-                    "\"feedback\":\"Used once; include validation checklist\"}"
-                )
-            }
+                "skill_name": "csv_cleanup_auto",
+                "feedback": "Used once; include validation checklist",
+            },
         )
     )
     capabilities = asyncio.run(server.handle_natural_capabilities({}))
@@ -1135,21 +1632,23 @@ def test_memory_planning_user_model_and_skill_evolution_are_natural_tools(tmp_pa
 
     assert {
         "conversation.record",
+        "user_model.query",
+    }.issubset(natural_methods)
+    assert {
         "memory.periodic_tick",
         "user_model.update",
-        "user_model.query",
         "skill.autonomous_from_task",
         "skill.improve_from_usage",
-    }.issubset(natural_methods)
+    }.isdisjoint(natural_methods)
     assert record["ok"] is True
     assert record["method"] == "conversation.record"
     assert search["source"] == "voice"
     assert search["result"]["engine"] == "sqlite_fts5"
     assert search["result"]["summary"]
-    assert tick["result"]["status"] == "recorded"
-    assert user_model["result"]["model"]["synthesis"]
-    assert Path(draft["result"]["proposal_dir"], "SKILL.md").exists()
-    assert improved["result"]["version"] == "0.1.1"
+    assert tick["status"] == "recorded"
+    assert user_model["model"]["synthesis"]
+    assert Path(draft["proposal_dir"], "SKILL.md").exists()
+    assert improved["version"] == "0.1.1"
 
 
 def test_skill_merge_preview_and_merge_are_natural_language_tools(tmp_path):
@@ -1681,8 +2180,8 @@ def test_voice_invoke_can_call_backend_alias_and_approve_latest_request(tmp_path
 
     server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
 
-    adapters = asyncio.run(
-        server.handle_voice_invoke({"text": "show adapter health"})
+    platform = asyncio.run(
+        server.handle_voice_invoke({"text": "给飞书发消息：部署完成"})
     )
     queued = asyncio.run(
         server.handle_voice_invoke(
@@ -1699,9 +2198,8 @@ def test_voice_invoke_can_call_backend_alias_and_approve_latest_request(tmp_path
         server.handle_voice_invoke({"text": "approve latest request"})
     )
 
-    assert adapters["source"] == "voice"
-    assert adapters["method"] == "runtime.adapters"
-    assert "remote_llm" in adapters["result"]["adapters"]
+    assert platform["source"] == "voice"
+    assert platform["method"] == "runtime.platform_message"
     assert queued["source"] == "voice"
     assert queued["requires_approval"] is True
     assert approved["source"] == "voice"
@@ -2044,7 +2542,7 @@ def test_tui_exposes_mcp_cron_and_context_backend_tools():
         "cron.run_due",
         "context.attach",
         "context.files",
-        "@path attaches project context",
     ]
 
     assert all(text in combined for text in required)
+    assert "@路径" not in empty_source

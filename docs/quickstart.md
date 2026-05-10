@@ -10,7 +10,7 @@ cd ui-tui
 npm install
 npm run build
 cd ..
-local-agent setup --provider openai --model gpt-4o-mini --api-key $env:OPENAI_API_KEY
+local-agent setup --provider custom --model custom-model --base-url https://llm.example/v1 --api-key-env CUSTOM_API_KEY
 local-agent
 ```
 
@@ -35,8 +35,8 @@ Summarize this file @docs/configuration-reference.md
 ## CLI Commands
 
 ```powershell
-local-agent setup --provider openai --model gpt-4o-mini --api-key sk-...
-local-agent model openrouter:openai/gpt-4o-mini
+local-agent setup --provider custom --model custom-model --base-url https://llm.example/v1 --api-key-env CUSTOM_API_KEY
+local-agent model custom:custom-model
 local-agent providers
 local-agent doctor
 local-agent

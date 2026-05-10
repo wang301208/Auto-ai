@@ -67,6 +67,10 @@ export class GatewayClient extends EventEmitter {
     const cwd = process.env.TUI_CWD || root;
     const env = {
       ...process.env,
+      LANG: process.env.LANG || 'zh_CN.UTF-8',
+      LC_ALL: process.env.LC_ALL || 'zh_CN.UTF-8',
+      PYTHONIOENCODING: 'utf-8',
+      PYTHONUTF8: '1',
       PYTHONPATH: process.env.PYTHONPATH ? `${root}${path.delimiter}${process.env.PYTHONPATH}` : root
     };
 

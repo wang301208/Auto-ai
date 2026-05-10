@@ -1,4 +1,4 @@
-"""Command line entrypoint for the local agent terminal runtime."""
+"""本地智能体终端运行时命令入口。"""
 
 from __future__ import annotations
 
@@ -35,17 +35,17 @@ def main(argv: list[str] | None = None) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="local-agent",
-        description="Local Agent terminal runtime",
+        description="本地智能体终端运行时",
     )
-    parser.add_argument("--config", help="Path to config.yaml or agent_config.json")
-    parser.add_argument("--tui", action="store_true", help="Launch the terminal UI")
-    parser.add_argument("--continue", dest="resume", action="store_true", help="Open the session picker after launch")
+    parser.add_argument("--config", help="config.yaml 或 agent_config.json 路径")
+    parser.add_argument("--tui", action="store_true", help="启动终端界面")
+    parser.add_argument("--continue", dest="resume", action="store_true", help="启动后打开会话选择器")
 
     subparsers = parser.add_subparsers(dest="command")
-    subparsers.add_parser("tui", help="Launch the terminal UI")
+    subparsers.add_parser("tui", help="启动终端界面")
 
-    setup = subparsers.add_parser("setup", help="Create config.yaml and optional .env")
-    setup.add_argument("--config", help="Path to write config.yaml")
+    setup = subparsers.add_parser("setup", help="创建 config.yaml 和可选 .env")
+    setup.add_argument("--config", help="要写入的 config.yaml 路径")
     setup.add_argument("--provider", default="openai")
     setup.add_argument("--model", default="")
     setup.add_argument("--api-key", default="")
@@ -54,20 +54,24 @@ def build_parser() -> argparse.ArgumentParser:
     setup.add_argument("--auth-type", default="api_key")
     setup.add_argument("--dry-run", action="store_true")
 
-    model = subparsers.add_parser("model", help="Show or change the active model")
-    model.add_argument("spec", nargs="?", help="provider:model, for example openai:gpt-4o-mini")
-    model.add_argument("--config", help="Path to config.yaml or agent_config.json")
+    model = subparsers.add_parser("model", help="显示或切换当前模型")
+    model.add_argument("spec", nargs="?", help="provider:model，例如 openai:gpt-4o-mini")
+    model.add_argument("--config", help="config.yaml 或 agent_config.json 路径")
 
-    doctor = subparsers.add_parser("doctor", help="Check local runtime readiness")
-    doctor.add_argument("--config", help="Path to config.yaml or agent_config.json")
+    doctor = subparsers.add_parser("doctor", help="检查本地运行时就绪状态")
+    doctor.add_argument("--config", help="config.yaml 或 agent_config.json 路径")
 
-    providers = subparsers.add_parser("providers", help="List model providers")
-    providers.add_argument("--config", help="Path to config.yaml or agent_config.json")
+    providers = subparsers.add_parser("providers", help="列出模型提供商")
+    providers.add_argument("--config", help="config.yaml 或 agent_config.json 路径")
     return parser
 
 
 def run_tui(args: argparse.Namespace) -> int:
     env = os.environ.copy()
+    env.setdefault("LANG", "zh_CN.UTF-8")
+    env.setdefault("LC_ALL", "zh_CN.UTF-8")
+    env["PYTHONIOENCODING"] = "utf-8"
+    env["PYTHONUTF8"] = "1"
     if getattr(args, "config", None):
         env["LOCAL_AGENT_CONFIG_PATH"] = str(Path(args.config).resolve())
     ui_dir = PROJECT_ROOT / "ui-tui"
@@ -94,10 +98,10 @@ async def run_setup(args: argparse.Namespace) -> int:
     if args.base_url:
         payload["base_url"] = args.base_url
     result = await server.handle_model_setup(payload)
-    print(f"Setup complete: {result['provider']}:{result['model']}")
-    print(f"Config: {result['config_path']}")
+    print(f"设置完成：{result['provider']}:{result['model']}")
+    print(f"配置文件：{result['config_path']}")
     if result.get("env_path"):
-        print(f"Env: {result['env_path']}")
+        print(f"环境文件：{result['env_path']}")
     return 0
 
 
@@ -105,7 +109,7 @@ async def run_model(args: argparse.Namespace) -> int:
     server = JSONRPCServer(config_path=getattr(args, "config", None), writer=lambda _: None)
     if args.spec:
         result = await server.handle_model_configure(server._parse_model_spec(args.spec))
-        print(f"Model configured: {result['provider']}:{result['model']}")
+        print(f"模型已配置：{result['provider']}:{result['model']}")
         return 0
     print(server._format_model_status())
     return 0
@@ -116,11 +120,11 @@ async def run_doctor(args: argparse.Namespace) -> int:
     health = await server.handle_runtime_health({})
     preflight = await server.handle_runtime_preflight({})
     providers = await server.handle_model_options({})
-    print("Doctor checks")
-    print(f"Runtime: {health.get('runtime', {}).get('status', 'ready') if isinstance(health, dict) else 'ready'}")
-    print(f"Model: {providers.get('provider')}:{providers.get('model')}")
+    print("运行时检查")
+    print(f"运行时：{health.get('runtime', {}).get('status', 'ready') if isinstance(health, dict) else 'ready'}")
+    print(f"模型：{providers.get('provider')}:{providers.get('model')}")
     gates = preflight.get("gates", {}) if isinstance(preflight, dict) else {}
-    print(f"Gates: {len(gates)}")
+    print(f"检查门：{len(gates)}")
     return 0
 
 

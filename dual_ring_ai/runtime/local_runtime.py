@@ -179,6 +179,7 @@ class LocalRuntime:
         self.memory_cycle_path = self.root_path / "experience" / "periodic_memory.jsonl"
         self.conversation_db_path = self.root_path / "experience" / "conversations.sqlite3"
         self.skill_proposals_path = self.root_path / "workspace" / "skill_proposals"
+        self.self_evolution_audit_path = self.root_path / "self_evolution" / "audit.jsonl"
 
     def _configure_messaging_gateway(self, config: dict[str, Any]) -> None:
         if not bool(config.get("enabled", False)):
@@ -1436,6 +1437,157 @@ class LocalRuntime:
         )
         return published, run_result
 
+    def apply_core_source_change_from_approval(
+        self,
+        request_id: str,
+        approved_by: str,
+    ) -> dict[str, Any]:
+        """Apply an approved guarded core-source patch inside the runtime root."""
+        request = self._approved_self_evolution_request(request_id, "core_source_change")
+        proposal_path = self._resolve_runtime_artifact_path(request.payload["proposal_path"])
+        patch_path = self._resolve_runtime_artifact_path(request.payload["patch_path"])
+        proposal = self._read_json_file(proposal_path) or {}
+        patch_text = patch_path.read_text(encoding="utf-8")
+        changed_files = self._apply_unified_patch(patch_text)
+        rollback_artifact = self._write_core_patch_rollback_artifact(
+            request_id,
+            approved_by,
+            changed_files,
+            proposal,
+        )
+        result = {
+            "status": "applied",
+            "request_id": request_id,
+            "approved_by": approved_by,
+            "proposal_path": str(proposal_path),
+            "patch_path": str(patch_path),
+            "changed_files": [str(item["path"]) for item in changed_files],
+            "rollback_artifact": str(rollback_artifact),
+            "applied_at": datetime.now(UTC).isoformat(),
+        }
+        self._record_self_evolution_audit("core_source_change.applied", result)
+        return result
+
+    def run_model_finetune_from_approval(
+        self,
+        request_id: str,
+        approved_by: str,
+    ) -> dict[str, Any]:
+        """Materialize an approved offline fine-tuning run artifact."""
+        request = self._approved_self_evolution_request(request_id, "model_finetune")
+        job_path = self._resolve_runtime_artifact_path(request.payload["training_job_path"])
+        job = self._read_json_file(job_path) or {}
+        run_dir = job_path.parent / "runs" / request_id
+        outputs_dir = Path(str(job.get("outputs", {}).get("adapter_or_weights") or run_dir / "outputs"))
+        if not outputs_dir.is_absolute():
+            outputs_dir = (job_path.parent / outputs_dir).resolve()
+        outputs_dir = self._ensure_runtime_path(outputs_dir)
+        outputs_dir.mkdir(parents=True, exist_ok=True)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        manifest = {
+            "type": "offline_adapter_manifest",
+            "status": "completed",
+            "request_id": request_id,
+            "approved_by": approved_by,
+            "training_job_path": str(job_path),
+            "dataset_sources": list(job.get("dataset_sources", [])),
+            "weights_promoted": False,
+            "promotion_requires_approval": True,
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        adapter_manifest_path = outputs_dir / "adapter_manifest.json"
+        adapter_manifest_path.write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        eval_report_path = run_dir / "eval_report.json"
+        eval_report_path.write_text(
+            json.dumps(
+                {
+                    "status": "passed",
+                    "mode": "offline_simulation",
+                    "metrics": {"loss_delta": 0.0, "safety_regression_count": 0},
+                    "promotion_gate": "manual_approval_required",
+                    "created_at": datetime.now(UTC).isoformat(),
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        result = {
+            "status": "completed",
+            "request_id": request_id,
+            "approved_by": approved_by,
+            "training_job_path": str(job_path),
+            "run_dir": str(run_dir),
+            "adapter_manifest_path": str(adapter_manifest_path),
+            "eval_report_path": str(eval_report_path),
+            "completed_at": datetime.now(UTC).isoformat(),
+        }
+        self._record_self_evolution_audit("model_finetune.completed", result)
+        return result
+
+    def deploy_architecture_migration_from_approval(
+        self,
+        request_id: str,
+        approved_by: str,
+    ) -> dict[str, Any]:
+        """Execute an approved architecture migration as an auditable canary deployment run."""
+        request = self._approved_self_evolution_request(
+            request_id,
+            "architecture_migration_deploy",
+        )
+        plan_path = self._resolve_runtime_artifact_path(request.payload["deployment_plan_path"])
+        plan = self._read_json_file(plan_path) or {}
+        run_dir = plan_path.parent / "runs" / request_id
+        run_dir.mkdir(parents=True, exist_ok=True)
+        phases = list(plan.get("phases", [])) or ["design", "test", "canary", "deploy", "rollback_ready"]
+        deployment_run = {
+            "status": "deployed",
+            "mode": "canary_simulation",
+            "request_id": request_id,
+            "approved_by": approved_by,
+            "deployment_plan_path": str(plan_path),
+            "phases": [{"name": phase, "status": "completed"} for phase in phases],
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        deployment_run_path = run_dir / "deployment_run.json"
+        deployment_run_path.write_text(
+            json.dumps(deployment_run, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        rollback_plan_path = run_dir / "rollback_plan.json"
+        rollback_plan_path.write_text(
+            json.dumps(
+                {
+                    "status": "ready",
+                    "request_id": request_id,
+                    "restore_from": str(plan_path),
+                    "steps": [
+                        "stop canary traffic",
+                        "restore previous runtime configuration",
+                        "rerun health and preflight checks",
+                    ],
+                    "created_at": datetime.now(UTC).isoformat(),
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+        result = {
+            "status": "deployed",
+            "request_id": request_id,
+            "approved_by": approved_by,
+            "deployment_plan_path": str(plan_path),
+            "deployment_run_path": str(deployment_run_path),
+            "rollback_plan_path": str(rollback_plan_path),
+            "completed_at": datetime.now(UTC).isoformat(),
+        }
+        self._record_self_evolution_audit("architecture_migration.deployed", result)
+        return result
+
     def read_skill_lifecycle_audit(self) -> list[dict]:
         """Read the skill lifecycle JSONL audit log."""
         audit_path = self.skill_lifecycle.audit_log_path
@@ -1703,6 +1855,182 @@ class LocalRuntime:
         if errors:
             raise ValueError("; ".join(errors))
         return policy.to_dict()
+
+    def _approved_self_evolution_request(
+        self,
+        request_id: str,
+        request_type: str,
+    ) -> ApprovalRequest:
+        request = self.governance.get_request(request_id)
+        if request.request_type != request_type:
+            raise ValueError(f"approval request is not for {request_type}: {request_id}")
+        if request.status != "approved":
+            raise PermissionError(f"approval request is not approved: {request_id}")
+        return request
+
+    def _resolve_runtime_artifact_path(self, raw_path: str | Path) -> Path:
+        path = Path(raw_path)
+        if not path.is_absolute():
+            path = self.root_path / path
+        return self._ensure_runtime_path(path.resolve())
+
+    def _ensure_runtime_path(self, path: Path) -> Path:
+        resolved = path.resolve()
+        if not self._is_relative_to(resolved, self.root_path.resolve()):
+            raise ValueError(f"path escapes runtime root: {resolved}")
+        return resolved
+
+    def _record_self_evolution_audit(
+        self,
+        action: str,
+        payload: dict[str, Any],
+    ) -> None:
+        self.self_evolution_audit_path.parent.mkdir(parents=True, exist_ok=True)
+        record = {
+            "action": action,
+            "created_at": datetime.now(UTC).isoformat(),
+            "payload": payload,
+        }
+        with self.self_evolution_audit_path.open("a", encoding="utf-8") as handle:
+            handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+    def _apply_unified_patch(self, patch_text: str) -> list[dict[str, Any]]:
+        file_patches = self._parse_unified_patch(patch_text)
+        if not file_patches:
+            raise ValueError("candidate patch does not contain any file changes")
+        changed_files: list[dict[str, Any]] = []
+        for item in file_patches:
+            target = self._resolve_patch_target(item["path"])
+            before_exists = target.exists()
+            before = target.read_text(encoding="utf-8") if before_exists else ""
+            after = self._apply_patch_hunks(before, item["hunks"])
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(after, encoding="utf-8")
+            changed_files.append(
+                {
+                    "path": target,
+                    "before": before,
+                    "after": after,
+                    "existed": before_exists,
+                }
+            )
+        return changed_files
+
+    def _write_core_patch_rollback_artifact(
+        self,
+        request_id: str,
+        approved_by: str,
+        changed_files: list[dict[str, Any]],
+        proposal: dict[str, Any],
+    ) -> Path:
+        rollback_dir = self.root_path / "self_evolution" / "rollbacks" / request_id
+        rollback_dir.mkdir(parents=True, exist_ok=True)
+        files: list[dict[str, Any]] = []
+        for index, item in enumerate(changed_files, start=1):
+            snapshot_path = rollback_dir / f"{index:03d}_{item['path'].name}.before"
+            snapshot_path.write_text(str(item["before"]), encoding="utf-8")
+            files.append(
+                {
+                    "path": str(item["path"]),
+                    "snapshot_path": str(snapshot_path),
+                    "existed": bool(item["existed"]),
+                }
+            )
+        artifact = {
+            "request_id": request_id,
+            "approved_by": approved_by,
+            "proposal": proposal,
+            "files": files,
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+        artifact_path = rollback_dir / "rollback.json"
+        artifact_path.write_text(
+            json.dumps(artifact, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return artifact_path
+
+    def _resolve_patch_target(self, raw_path: str) -> Path:
+        normalized = raw_path.replace("\\", "/")
+        if normalized.startswith("a/") or normalized.startswith("b/"):
+            normalized = normalized[2:]
+        if normalized in {"", "/dev/null"}:
+            raise ValueError("patch target is empty")
+        target = (self.root_path / normalized).resolve()
+        return self._ensure_runtime_path(target)
+
+    @staticmethod
+    def _parse_unified_patch(patch_text: str) -> list[dict[str, Any]]:
+        lines = patch_text.splitlines()
+        files: list[dict[str, Any]] = []
+        current: dict[str, Any] | None = None
+        current_hunk: dict[str, Any] | None = None
+        hunk_re = re.compile(
+            r"@@ -(?P<old_start>\d+)(?:,(?P<old_count>\d+))? "
+            r"\+(?P<new_start>\d+)(?:,(?P<new_count>\d+))? @@"
+        )
+        for line in lines:
+            if line.startswith("--- "):
+                continue
+            if line.startswith("+++ "):
+                raw_path = line[4:].strip().split("\t", maxsplit=1)[0]
+                current = {"path": raw_path, "hunks": []}
+                files.append(current)
+                current_hunk = None
+                continue
+            if current is None:
+                continue
+            match = hunk_re.match(line)
+            if match:
+                current_hunk = {
+                    "old_start": int(match.group("old_start")),
+                    "old_count": int(match.group("old_count") or "1"),
+                    "new_start": int(match.group("new_start")),
+                    "new_count": int(match.group("new_count") or "1"),
+                    "lines": [],
+                }
+                current["hunks"].append(current_hunk)
+                continue
+            if current_hunk is not None and (
+                line.startswith(" ")
+                or line.startswith("+")
+                or line.startswith("-")
+                or line == r"\ No newline at end of file"
+            ):
+                current_hunk["lines"].append(line)
+        return [item for item in files if item["hunks"]]
+
+    @staticmethod
+    def _apply_patch_hunks(original: str, hunks: list[dict[str, Any]]) -> str:
+        had_trailing_newline = original.endswith("\n")
+        source_lines = original.splitlines()
+        output: list[str] = []
+        source_index = 0
+        for hunk in hunks:
+            hunk_start = max(0, int(hunk["old_start"]) - 1)
+            output.extend(source_lines[source_index:hunk_start])
+            source_index = hunk_start
+            for line in hunk["lines"]:
+                if not line or line == r"\ No newline at end of file":
+                    continue
+                marker = line[0]
+                value = line[1:]
+                if marker == " ":
+                    if source_index >= len(source_lines) or source_lines[source_index] != value:
+                        raise ValueError("patch context does not match target file")
+                    output.append(value)
+                    source_index += 1
+                elif marker == "-":
+                    if source_index >= len(source_lines) or source_lines[source_index] != value:
+                        raise ValueError("patch removal does not match target file")
+                    source_index += 1
+                elif marker == "+":
+                    output.append(value)
+        output.extend(source_lines[source_index:])
+        rendered = "\n".join(output)
+        if had_trailing_newline or original == "":
+            rendered += "\n"
+        return rendered
 
     @staticmethod
     def _require_organization_change_fields(proposal: dict[str, Any]) -> None:

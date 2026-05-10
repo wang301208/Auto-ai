@@ -9,7 +9,7 @@ export default function QueuedMessages({ items }: { items: string[] }) {
     <Box flexDirection="column" marginBottom={1}>
       {items.map((item, index) => (
         <Text color={theme.dim} key={`${index}:${item}`}>
-          {glyph.queued} queued {index + 1}: {item}
+          {glyph.queued} 排队 {index + 1}: {item}
         </Text>
       ))}
     </Box>

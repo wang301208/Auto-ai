@@ -44,9 +44,9 @@ const isPathCompletion = (text: string) => /(^|\s)(@|\.\/|\.\.\/|~\/|\/)[^\s]*$/
 const APPROVAL_AUTO_APPROVE_SECONDS = 30;
 
 function formatNaturalResult(natural: { method?: string; command?: string; result?: unknown }) {
-  const label = natural.method || natural.command || 'natural command';
+  const label = natural.method || natural.command || '自然语言命令';
   const result = natural.result;
-  if (result === undefined || result === null) return `${label}: completed`;
+  if (result === undefined || result === null) return `${label}: 已完成`;
   if (typeof result === 'string') return `${label}: ${result}`;
   if (typeof result === 'object') return `${label}\n${JSON.stringify(result, null, 2)}`;
   return `${label}: ${String(result)}`;
@@ -110,7 +110,7 @@ export default function App({ gateway }: Props) {
             command: trimmed.slice(1)
           });
           if (result.redirect?.path) {
-            appendSystem(`redirected ${result.redirect.mode || 'write'}: ${result.redirect.path}`);
+            appendSystem(`已重定向 ${result.redirect.mode || 'write'}: ${result.redirect.path}`);
           } else {
             appendSystem((result.stdout || result.stderr || `exit ${result.code}`).trim());
           }
@@ -126,11 +126,6 @@ export default function App({ gateway }: Props) {
           command?: string;
           method?: string;
         }>('natural.resolve', { session_id: info?.id, text: trimmed, source: 'text' });
-        if (natural.matched && natural.command && natural.method === 'slash.exec') {
-          appendSystem(`natural command: ${natural.command}`);
-          await handleSlash(natural.command);
-          return;
-        }
         if (natural.matched && natural.method) {
           const executed = await gateway.request<{
             matched?: boolean;
@@ -196,12 +191,21 @@ export default function App({ gateway }: Props) {
     setInput('');
     setCompletionItems([]);
 
-    if (command === '/quit' || command === '/exit' || command === '/q') {
-      gateway.stop();
-      app.exit();
+    if (command === '/help') {
+      try {
+        const result = await gateway.request<{ output?: string; warning?: string }>('slash.exec', {
+          session_id: info?.id,
+          text
+        });
+        if (result.output) appendSystem(result.output);
+        if (result.warning) appendSystem(result.warning);
+      } catch (error) {
+        appendSystem(error instanceof Error ? error.message : String(error));
+      }
       return;
     }
-    if (command === '/clear' || command === '/new') {
+
+    if (command === '/new') {
       setTranscript([]);
       setQueue([]);
       setStreaming('');
@@ -213,59 +217,52 @@ export default function App({ gateway }: Props) {
       setParallelRun(null);
       setContextCompaction(null);
       setApprovals([]);
-    }
-    if (command === '/compact') {
-      try {
-        const result = await gateway.request<{
-          before_messages?: number;
-          after_messages?: number;
-          removed?: number;
-          summary?: { token_line?: string };
-          usage?: Usage;
-          info?: SessionInfo;
-        }>('session.compress', { session_id: info?.id, trigger: 'slash' });
-        if (result.usage) setUsage(result.usage);
-        if (result.info) setInfo(result.info);
-        appendSystem(
-          `context compacted: ${result.before_messages ?? 0} -> ${result.after_messages ?? 0} messages, removed ${result.removed ?? 0}\n${result.summary?.token_line || ''}`.trim()
-        );
-      } catch (error) {
-        appendSystem(error instanceof Error ? error.message : String(error));
+      const parts = text.split(/\s+/);
+      if (parts[1]) {
+        try {
+          const result = await gateway.request<{ messages?: Array<{ role: TranscriptMessage['role']; text?: string }> }>(
+            'session.resume',
+            { session_id: parts[1] }
+          );
+          setTranscript((result.messages || []).map(item => makeMessage(item.role || 'system', item.text || '')));
+        } catch (error) {
+          appendSystem(error instanceof Error ? error.message : String(error));
+        }
+      } else {
+        try {
+          const result = await gateway.request<{ output?: string; warning?: string }>('slash.exec', {
+            session_id: info?.id,
+            text
+          });
+          if (result.output) appendSystem(result.output);
+          if (result.warning) appendSystem(result.warning);
+        } catch (error) {
+          appendSystem(error instanceof Error ? error.message : String(error));
+        }
       }
       return;
     }
-    if (command === '/details') {
-      setShowDetails(value => !value);
-    }
-    if (command === '/logs') {
-      appendSystem(gateway.getLogTail(20) || 'No gateway logs.');
-      return;
-    }
-    if (command === '/resume') {
-      const result = await gateway.request<{ sessions?: SessionListItem[] }>('session.list', { limit: 30 });
-      setOverlay({ type: 'sessionPicker', selected: 0, sessions: result.sessions || [] });
-      return;
-    }
     if (command === '/model') {
+      const spec = text.split(/\s+/, 2)[1];
+      if (spec) {
+        try {
+          const result = await gateway.request<{ output?: string; warning?: string }>('slash.exec', {
+            session_id: info?.id,
+            text
+          });
+          if (result.output) appendSystem(result.output);
+          if (result.warning) appendSystem(result.warning);
+        } catch (error) {
+          appendSystem(error instanceof Error ? error.message : String(error));
+        }
+        return;
+      }
       const result = await gateway.request<{ providers?: ModelProvider[] }>('model.options', {});
       setOverlay({ type: 'modelPicker', selected: 0, providers: result.providers || [] });
       return;
     }
 
-    try {
-      const result = await gateway.request<{ output?: string; warning?: string }>('slash.exec', {
-        session_id: info?.id,
-        text
-      });
-      if (result.output && result.output !== 'exit') {
-        appendSystem(result.output);
-      }
-      if (result.warning) {
-        appendSystem(result.warning);
-      }
-    } catch (error) {
-      appendSystem(error instanceof Error ? error.message : String(error));
-    }
+    appendSystem(`未知命令：${command}。请直接输入自然语言，或使用 /help、/new、/model。`);
   }
 
   const requestCompletion = useCallback(
@@ -379,11 +376,11 @@ export default function App({ gateway }: Props) {
           });
           appendSystem(
             configured.ok
-              ? `Model configured: ${configured.model} (${configured.health?.status || configured.provider})`
-              : `Model provider: ${selected.name}`
+              ? `模型已配置：${configured.model} (${configured.health?.status || configured.provider})`
+              : `模型提供方：${selected.name}`
           );
         } else {
-          appendSystem('No model selected.');
+          appendSystem('未选择模型。');
         }
         setOverlay({ type: 'none' });
       }
@@ -462,7 +459,7 @@ export default function App({ gateway }: Props) {
           setStatus('context compacted');
           break;
         case 'terminal.redirect':
-          appendSystem(`redirected ${payload.mode || 'write'}: ${payload.path}`);
+          appendSystem(`已重定向 ${payload.mode || 'write'}: ${payload.path}`);
           break;
         case 'thinking.delta':
         case 'reasoning.delta':
@@ -547,14 +544,14 @@ export default function App({ gateway }: Props) {
           setStatus(payload.text || payload.kind || status);
           break;
         case 'background.complete':
-          appendSystem(payload.text || 'Background task completed.');
+          appendSystem(payload.text || '后台任务已完成。');
           break;
         case 'gateway.stderr':
           setStatus('gateway log');
           break;
         case 'gateway.protocol_error':
         case 'error':
-          appendSystem(payload.message || payload.preview || 'Gateway error');
+          appendSystem(payload.message || payload.preview || '网关错误');
           setBusy(false);
           setStatus('error');
           break;
@@ -706,7 +703,17 @@ export default function App({ gateway }: Props) {
     }
 
     if (key.ctrl && value === 'l') {
-      void handleSlash('/clear');
+      setTranscript([]);
+      setQueue([]);
+      setStreaming('');
+      setThinking('');
+      setTools([]);
+      setRuntimePlan(null);
+      setRuntimeSteps([]);
+      setRuntimeRisk(null);
+      setParallelRun(null);
+      setContextCompaction(null);
+      setApprovals([]);
       return;
     }
 
@@ -783,7 +790,7 @@ export default function App({ gateway }: Props) {
           </Text>
           <TextInput
             disabled={overlayOpen}
-            placeholder={busy ? 'Ctrl+C to interrupt...' : 'Message or /help'}
+            placeholder={busy ? 'Ctrl+C 中断当前操作...' : '输入消息或 /help'}
             value={input}
             onChange={setInput}
             onSubmit={() => {

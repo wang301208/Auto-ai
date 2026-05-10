@@ -1,0 +1,203 @@
+{
+  "summary": {
+    "status": "ready_for_real_integration",
+    "failed_gates": [],
+    "real_service_note": "External services are reported as disabled, dry_run, available, or unavailable; enable them explicitly for live integration."
+  },
+  "gates": {
+    "local_control_plane": {
+      "status": "passed",
+      "preflight": {
+        "status": "attention_required",
+        "attention": [
+          "docker_sandbox",
+          "ollama",
+          "remote_llm",
+          "whisper",
+          "xtts"
+        ],
+        "blueprint_count": 0
+      },
+      "operational_smoke": {
+        "status": "passed",
+        "cycles": 2,
+        "failures": []
+      }
+    },
+    "interaction_stress": {
+      "status": "passed",
+      "cycles": 1,
+      "failures": [],
+      "results": [
+        {
+          "cycle": 1,
+          "transcript": "stress interaction 1",
+          "response_text": "治理服务状态为 ready；共有 10 个后端服务可用。；审批队列状态：empty",
+          "avatar_event": {
+            "text": "治理服务状态为 ready；共有 10 个后端服务可用。；审批队列状态：empty",
+            "emotion": "focused",
+            "animation": "explain",
+            "timestamp": "2026-05-09T08:13:43.993443+00:00"
+          }
+        }
+      ]
+    },
+    "terminal_ui": {
+      "status": "ready",
+      "missing": [],
+      "required": [
+        "G:\\项目\\AutoGPT-0.4.7\\ui-tui\\package.json",
+        "G:\\项目\\AutoGPT-0.4.7\\ui-tui\\src\\entry.tsx",
+        "G:\\项目\\AutoGPT-0.4.7\\tui_gateway\\entry.py"
+      ]
+    },
+    "external_services": {
+      "academic_search": {
+        "status": "disabled",
+        "message": "Academic search provider not configured."
+      },
+      "docker_sandbox": {
+        "status": "failed",
+        "reason": null,
+        "command": [
+          "docker",
+          "run",
+          "--rm",
+          "--memory",
+          "512m",
+          "--cpus",
+          "1.0",
+          "--pids-limit",
+          "256",
+          "-v",
+          "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace:/workspace:rw",
+          "-w",
+          "/workspace",
+          "python:3.12-slim",
+          "python",
+          "--version"
+        ],
+        "workspace_mount": "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace:/workspace"
+      },
+      "ollama": {
+        "status": "unavailable",
+        "url": "http://127.0.0.1:11434/api/tags",
+        "reason": "<urlopen error [WinError 10061] 由于目标计算机积极拒绝，无法连接。>"
+      },
+      "remote_llm": {
+        "status": "unconfigured",
+        "provider": "remote_openai_compatible",
+        "url": "https://api.openai.com/v1/models",
+        "model": "gpt-4o-mini",
+        "reason": "OPENAI_API_KEY is not configured."
+      },
+      "whisper": {
+        "status": "failed",
+        "command": [
+          "whisper",
+          "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace\\__health__.wav",
+          "--model",
+          "base",
+          "--output_format",
+          "json"
+        ]
+      },
+      "xtts": {
+        "status": "unavailable",
+        "command": [
+          "xtts",
+          "--text",
+          "health check",
+          "--out_path",
+          "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace\\__health__.wav",
+          "--language",
+          "zh-cn"
+        ]
+      },
+      "messaging_gateway": {
+        "status": "disabled",
+        "platforms": [],
+        "details": {}
+      }
+    },
+    "host_integration": {
+      "summary": {
+        "status": "partial",
+        "available": [
+          "docker",
+          "node",
+          "npm"
+        ],
+        "missing": [
+          "ollama",
+          "whisper",
+          "xtts"
+        ]
+      },
+      "tools": {
+        "docker": {
+          "status": "available",
+          "name": "docker",
+          "command": [
+            "docker",
+            "--version"
+          ],
+          "path": "C:\\Program Files\\Docker\\Docker\\resources\\bin\\docker.EXE",
+          "return_code": 0,
+          "version": "Docker version 29.2.1, build a5c7197"
+        },
+        "node": {
+          "status": "available",
+          "name": "node",
+          "command": [
+            "node",
+            "--version"
+          ],
+          "path": "C:\\Program Files\\nodejs\\node.EXE",
+          "return_code": 0,
+          "version": "v24.14.1"
+        },
+        "npm": {
+          "status": "available",
+          "name": "npm",
+          "command": [
+            "npm",
+            "--version"
+          ],
+          "path": "C:\\Program Files\\nodejs\\npm.CMD",
+          "return_code": 0,
+          "version": "11.11.0"
+        },
+        "ollama": {
+          "status": "missing",
+          "name": "ollama",
+          "command": [
+            "ollama",
+            "--version"
+          ],
+          "reason": "ollama not found on PATH",
+          "service_status": "unavailable",
+          "service_url": "http://127.0.0.1:11434/api/tags"
+        },
+        "whisper": {
+          "status": "missing",
+          "name": "whisper",
+          "command": [
+            "whisper",
+            "--help"
+          ],
+          "reason": "whisper not found on PATH"
+        },
+        "xtts": {
+          "status": "missing",
+          "name": "xtts",
+          "command": [
+            "xtts",
+            "--help"
+          ],
+          "reason": "xtts not found on PATH"
+        }
+      }
+    }
+  }
+}

@@ -10,10 +10,10 @@ interface Props {
 }
 
 const roleStyle = {
-  user: { color: theme.user, label: 'you', mark: glyph.user },
-  assistant: { color: theme.assistant, label: 'assistant', mark: glyph.assistant },
-  system: { color: theme.warn, label: 'system', mark: '!' },
-  tool: { color: theme.tool, label: 'tool', mark: glyph.tool }
+  user: { color: theme.user, label: '你', mark: glyph.user },
+  assistant: { color: theme.assistant, label: '助手', mark: glyph.assistant },
+  system: { color: theme.warn, label: '系统', mark: '!' },
+  tool: { color: theme.tool, label: '工具', mark: glyph.tool }
 } as const;
 
 export default function MessageLine({ compact = false, isStreaming = false, message }: Props) {
@@ -25,7 +25,7 @@ export default function MessageLine({ compact = false, isStreaming = false, mess
         <Text color={style.color} bold>
           {style.mark} {style.label}
         </Text>
-        {isStreaming ? <Text color={theme.dim}> streaming</Text> : null}
+        {isStreaming ? <Text color={theme.dim}> 正在输出</Text> : null}
       </Box>
       <Box paddingLeft={2}>
         <Text wrap="wrap">

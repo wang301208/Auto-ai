@@ -151,7 +151,7 @@ def test_tui_gateway_loads_and_persists_remote_model_config(tmp_path, monkeypatc
     saved = json.loads(config_path.read_text(encoding="utf-8"))
     updated_options = __import__("asyncio").run(server.handle_model_options({}))
 
-    assert options["provider"] == "openai_compatible"
+    assert options["provider"] == "custom"
     assert options["model"] == "model-a"
     assert options["providers"][0]["status"] == "dry_run"
     assert configured["ok"] is True
@@ -162,6 +162,44 @@ def test_tui_gateway_loads_and_persists_remote_model_config(tmp_path, monkeypatc
     assert saved["adapters"]["remote_llm"]["dry_run"] is True
     assert updated_options["model"] == "openrouter/test-model"
     assert updated_options["providers"][0]["base_url"] == "https://openrouter.ai/api/v1"
+
+
+def test_tui_gateway_model_options_only_expose_custom_model_route(tmp_path, monkeypatch):
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    from tui_gateway.entry import JSONRPCServer
+
+    config_path = tmp_path / "agent_config.json"
+    server = JSONRPCServer(config_path=config_path, runtime_root=tmp_path / "runtime", writer=lambda _: None)
+
+    providers = __import__("asyncio").run(server.handle_model_providers({}))
+    options = __import__("asyncio").run(server.handle_model_options({}))
+    configured = __import__("asyncio").run(
+        server.handle_model_configure(
+            {
+                "provider": "openrouter",
+                "base_url": "https://openrouter.ai/api/v1",
+                "model": "openai/gpt-4o-mini",
+                "api_key_env": "OPENROUTER_API_KEY",
+            }
+        )
+    )
+    saved = json.loads(config_path.read_text(encoding="utf-8"))
+    updated = __import__("asyncio").run(server.handle_model_options({}))
+
+    assert [item["slug"] for item in providers["providers"]] == ["custom"]
+    assert [item["slug"] for item in options["providers"]] == ["custom"]
+    assert options["provider"] == "custom"
+    assert configured["provider"] == "custom"
+    assert saved["model"] == {"provider": "custom", "name": "openai/gpt-4o-mini"}
+    assert saved["providers"] == {
+        "custom": {
+            "base_url": "https://openrouter.ai/api/v1",
+            "api_key_env": "OPENROUTER_API_KEY",
+        }
+    }
+    assert updated["provider"] == "custom"
+    assert updated["providers"][0]["base_url"] == "https://openrouter.ai/api/v1"
 
 
 def test_tui_gateway_matches_provider_model_yaml_and_env_config_flow(tmp_path, monkeypatch):
@@ -200,17 +238,17 @@ def test_tui_gateway_matches_provider_model_yaml_and_env_config_flow(tmp_path, m
     saved = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     updated = __import__("asyncio").run(server.handle_model_options({}))
 
-    assert options["provider"] == "openrouter"
+    assert options["provider"] == "custom"
     assert options["model"] == "openai/gpt-4o-mini"
     assert options["env_loaded"] is True
-    assert options["providers"][0]["slug"] == "openrouter"
-    assert any(provider["slug"] == "openai" for provider in options["providers"])
-    assert any(provider["slug"] == "anthropic" for provider in options["providers"])
-    assert switched["output"] == "Model configured: openai:gpt-4o-mini"
-    assert saved["model"] == {"provider": "openai", "name": "gpt-4o-mini"}
-    assert saved["providers"]["openai"]["base_url"] == "https://api.openai.com/v1"
-    assert saved["providers"]["openai"]["api_key_env"] == "OPENAI_API_KEY"
-    assert updated["provider"] == "openai"
+    assert options["providers"][0]["slug"] == "custom"
+    assert not any(provider["slug"] == "openai" for provider in options["providers"])
+    assert not any(provider["slug"] == "anthropic" for provider in options["providers"])
+    assert switched["output"] == "模型已配置：custom:gpt-4o-mini"
+    assert saved["model"] == {"provider": "custom", "name": "gpt-4o-mini"}
+    assert saved["providers"]["custom"]["base_url"] == "https://api.openai.com/v1"
+    assert saved["providers"]["custom"]["api_key_env"] == "OPENAI_API_KEY"
+    assert updated["provider"] == "custom"
     assert updated["model"] == "gpt-4o-mini"
 
 
@@ -247,19 +285,17 @@ def test_tui_gateway_model_setup_wizard_records_api_key_and_oauth_config(tmp_pat
     config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     env_text = (tmp_path / ".env").read_text(encoding="utf-8")
 
-    assert {"openai", "openrouter", "anthropic", "deepseek", "nous", "custom"}.issubset(
-        {item["slug"] for item in providers["providers"]}
-    )
+    assert [item["slug"] for item in providers["providers"]] == ["custom"]
     assert setup["ok"] is True
     assert setup["env_path"] == str(tmp_path / ".env")
     assert "OPENAI_API_KEY=sk-test-secret" in env_text
     assert "sk-test-secret" not in json.dumps(setup)
     assert oauth["ok"] is True
-    assert oauth["provider"] == "nous"
+    assert oauth["provider"] == "custom"
     assert oauth["auth_type"] == "oauth"
-    assert config["providers"]["nous"]["auth_type"] == "oauth"
-    assert config["providers"]["nous"]["oauth"]["client_id"] == "client-id"
-    assert config["model"] == {"provider": "nous", "name": "portal-chat"}
+    assert config["providers"]["custom"]["auth_type"] == "oauth"
+    assert config["providers"]["custom"]["oauth"]["client_id"] == "client-id"
+    assert config["model"] == {"provider": "custom", "name": "portal-chat"}
 
 
 def test_local_agent_cli_quickstart_model_and_doctor_noninteractive(tmp_path, monkeypatch):
@@ -322,10 +358,10 @@ def test_local_agent_cli_quickstart_model_and_doctor_noninteractive(tmp_path, mo
     env_text = (tmp_path / ".env").read_text(encoding="utf-8")
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
 
-    assert "Setup complete" in setup.stdout
+    assert "设置完成" in setup.stdout
     assert "sk-test-secret" not in setup.stdout
-    assert "Model configured: openrouter:openai/gpt-4o-mini" in model.stdout
-    assert "Doctor checks" in doctor.stdout
+    assert "模型已配置：custom:openai/gpt-4o-mini" in model.stdout
+    assert "运行时检查" in doctor.stdout
     assert "OPENAI_API_KEY=sk-test-secret" in env_text
-    assert saved["model"] == {"provider": "openrouter", "name": "openai/gpt-4o-mini"}
+    assert saved["model"] == {"provider": "custom", "name": "openai/gpt-4o-mini"}
     assert 'local-agent = "tui_gateway.cli:main"' in pyproject

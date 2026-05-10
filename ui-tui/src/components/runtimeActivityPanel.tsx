@@ -23,6 +23,21 @@ function riskColor(risk?: RuntimeRisk | null) {
   return theme.warn;
 }
 
+function statusText(status: string) {
+  return (
+    {
+      pending: '等待中',
+      running: '运行中',
+      complete: '完成',
+      error: '错误',
+      low: '低',
+      medium: '中',
+      high: '高',
+      critical: '严重'
+    } as Record<string, string>
+  )[status] || status;
+}
+
 export default function RuntimeActivityPanel({
   approvals,
   compaction,
@@ -45,9 +60,9 @@ export default function RuntimeActivityPanel({
     <Box borderColor={theme.border} borderStyle="round" flexDirection="column" marginTop={1} paddingX={1}>
       <Box>
         <Text bold color={theme.assistant}>
-          Execution Steps
+          执行步骤
         </Text>
-        {plan ? <Text color={theme.dim}> | {plan.title} | {plan.status}</Text> : null}
+        {plan ? <Text color={theme.dim}> | {plan.title} | {statusText(plan.status)}</Text> : null}
       </Box>
 
       {steps.slice(-6).map(step => (
@@ -61,17 +76,17 @@ export default function RuntimeActivityPanel({
       {parallel || risk || compaction ? (
         <Box flexDirection="column" marginTop={1}>
           <Text bold color={theme.label}>
-            Runtime Signals
+            运行信号
           </Text>
           {parallel ? (
             <Text color={parallel.status === 'error' ? theme.error : parallel.status === 'running' ? theme.warn : theme.ok} wrap="truncate">
-              Parallel Agents: {parallel.completed ?? 0}/{parallel.total} complete
-              <Text color={theme.dim}> | failed={parallel.failed ?? 0} | max_concurrency={parallel.max_concurrency ?? '-'}</Text>
+              并行智能体：{parallel.completed ?? 0}/{parallel.total} 完成
+              <Text color={theme.dim}> | 失败={parallel.failed ?? 0} | 最大并发={parallel.max_concurrency ?? '-'}</Text>
             </Text>
           ) : null}
           {risk ? (
             <Text color={riskColor(risk)} wrap="truncate">
-              Risk: {risk.level} <Text color={theme.dim}>| {risk.approval_policy}</Text>
+              风险：{statusText(risk.level)} <Text color={theme.dim}>| {risk.approval_policy}</Text>
             </Text>
           ) : null}
           {risk?.signals?.slice(0, 3).map(signal => (
@@ -81,7 +96,7 @@ export default function RuntimeActivityPanel({
           ))}
           {compaction ? (
             <Text color={theme.dim} wrap="truncate">
-              Context: {compaction.before_messages} -&gt; {compaction.after_messages} messages | {compaction.after_tokens} tokens | {compaction.trigger}
+              上下文：{compaction.before_messages} → {compaction.after_messages} 条消息 | {compaction.after_tokens} 令牌 | {compaction.trigger}
             </Text>
           ) : null}
         </Box>
@@ -90,11 +105,11 @@ export default function RuntimeActivityPanel({
       {pendingApprovals.length ? (
         <Box flexDirection="column" marginTop={1}>
           <Text bold color={theme.warn}>
-            Approvals
+            审批
           </Text>
           {pendingApprovals.slice(0, 5).map(item => (
             <Text color={theme.warn} key={item.request_id} wrap="truncate">
-              ! {item.title} <Text color={theme.dim}>({item.request_type}, risk={item.risk_level}, pending)</Text>
+              ! {item.title} <Text color={theme.dim}>({item.request_type}, 风险={statusText(item.risk_level)}, 待审批)</Text>
             </Text>
           ))}
         </Box>

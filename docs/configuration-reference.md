@@ -15,10 +15,10 @@ $env:LOCAL_AGENT_CONFIG_PATH="G:\path\config.yaml"
 ```yaml
 root_path: .dual_ring_runtime
 model:
-  provider: openai
-  name: gpt-4o-mini
+  provider: custom
+  name: custom-model
 providers:
-  openai:
+  custom:
     base_url: https://api.openai.com/v1
     api_key_env: OPENAI_API_KEY
 adapters:
@@ -27,7 +27,7 @@ adapters:
     dry_run: false
     api_key_env: OPENAI_API_KEY
     base_url: https://api.openai.com/v1
-    model: gpt-4o-mini
+    model: custom-model
 ```
 
 Secrets belong in `.env` beside the config file:
@@ -38,28 +38,20 @@ OPENAI_API_KEY=sk-...
 
 ## Providers
 
-Supported provider presets:
+Supported provider route:
 
-- `openai`
-- `openrouter`
-- `anthropic`
-- `deepseek`
-- `nous`
-- `openai_compatible`
 - `custom`
 
-Use:
+All remote models are configured through the custom OpenAI-compatible route:
 
 ```powershell
 local-agent providers
-local-agent model openrouter:openai/gpt-4o-mini
+local-agent model custom:custom-model
 ```
 
 ## Model Setup
 
 ```powershell
-local-agent setup --provider openai --model gpt-4o-mini --api-key sk-...
-local-agent setup --provider openrouter --model openai/gpt-4o-mini --api-key $env:OPENROUTER_API_KEY
 local-agent setup --provider custom --model my-model --base-url https://llm.example/v1 --api-key-env CUSTOM_API_KEY
 ```
 

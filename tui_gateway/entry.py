@@ -81,90 +81,86 @@ MODEL_PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
         "models": ["gpt-4o-mini", "custom-model"],
     },
     "custom": {
-        "name": "Custom OpenAI-compatible",
+        "name": "自定义 OpenAI 兼容模型",
         "base_url": "https://api.openai.com/v1",
         "api_key_env": "OPENAI_API_KEY",
         "models": ["custom-model"],
     },
 }
 
+CUSTOM_MODEL_PROVIDER_SLUG = "custom"
+VISIBLE_MODEL_PROVIDER_SLUGS = (CUSTOM_MODEL_PROVIDER_SLUG,)
+
 
 SLASH_COMMANDS: list[SlashCommand] = [
-    {"text": "/help", "display": "/help", "meta": "Show TUI commands"},
-    {"text": "/clear", "display": "/clear", "meta": "Start a clean transcript"},
-    {"text": "/new", "display": "/new", "meta": "Create a new session"},
-    {"text": "/status", "display": "/status", "meta": "Show runtime status"},
-    {"text": "/health", "display": "/health", "meta": "Show runtime health report"},
-    {"text": "/preflight", "display": "/preflight", "meta": "Run delivery readiness checks"},
-    {"text": "/write-preflight", "display": "/write-preflight", "meta": "Write readiness report JSON"},
-    {"text": "/host", "display": "/host", "meta": "Probe host integration tools"},
-    {"text": "/messaging", "display": "/messaging", "meta": "Show messaging gateway status"},
-    {"text": "/blueprints", "display": "/blueprints", "meta": "List agent blueprints"},
-    {"text": "/skills", "display": "/skills", "meta": "List published skills"},
-    {"text": "/algorithms", "display": "/algorithms", "meta": "List algorithm registry"},
-    {"text": "/audits", "display": "/audits", "meta": "Show backend audit counts"},
-    {"text": "/avatar", "display": "/avatar", "meta": "Show latest avatar event"},
-    {"text": "/events", "display": "/events", "meta": "Show recent runtime events"},
-    {"text": "/ui", "display": "/ui", "meta": "Check terminal UI readiness"},
-    {"text": "/smoke", "display": "/smoke", "meta": "Run operational smoke check"},
-    {"text": "/stress", "display": "/stress", "meta": "Run interaction stress check"},
-    {"text": "/approvals", "display": "/approvals", "meta": "List approval queue"},
-    {"text": "/tools", "display": "/tools", "meta": "Show backend tools"},
-    {"text": "/model", "display": "/model", "meta": "Show active model"},
-    {"text": "/usage", "display": "/usage", "meta": "Show token estimate"},
-    {"text": "/logs", "display": "/logs", "meta": "Show gateway log hint"},
-    {"text": "/queue", "display": "/queue", "meta": "Show queued prompt help"},
-    {"text": "/details", "display": "/details", "meta": "Toggle detail visibility"},
-    {"text": "/resume", "display": "/resume", "meta": "Open session picker"},
-    {"text": "/compact", "display": "/compact", "meta": "Compact session context"},
-    {"text": "/personality", "display": "/personality", "meta": "Show or set assistant personality"},
-    {"text": "/save", "display": "/save", "meta": "Save current session transcript"},
-    {"text": "/quit", "display": "/quit", "meta": "Exit the TUI"},
-    {"text": "/exit", "display": "/exit", "meta": "Exit the TUI"},
-    {"text": "/q", "display": "/q", "meta": "Exit the TUI"},
+    {"text": "/help", "display": "/help", "meta": "显示可用命令"},
+    {"text": "/new", "display": "/new [会话编号]", "meta": "开启新会话，或继续指定历史会话"},
+    {"text": "/model", "display": "/model [模型名]", "meta": "打开模型选择器，或切换模型"},
 ]
 
 
-NATURAL_COMMAND_ALIASES: dict[str, list[str]] = {
-    "/help": ["help", "commands", "帮助", "命令", "怎么用"],
-    "/clear": ["clear", "清屏", "清空", "清除记录"],
-    "/new": ["new session", "新会话", "重新开始"],
-    "/status": ["status", "runtime status", "状态", "运行状态", "当前状态"],
-    "/health": ["health", "health report", "健康", "健康报告", "体检"],
-    "/preflight": ["preflight", "readiness", "预检", "就绪", "准备情况"],
-    "/write-preflight": ["write preflight", "save preflight", "写入预检", "保存预检", "生成预检报告"],
-    "/host": ["host", "host probe", "主机", "宿主机", "环境探测"],
-    "/messaging": ["messaging", "message gateway", "通讯", "通信", "飞书", "钉钉", "微信"],
-    "/blueprints": ["blueprints", "agents", "蓝图", "智能体列表", "角色"],
-    "/skills": ["skills", "技能", "能力"],
-    "/algorithms": ["algorithms", "算法", "实验"],
-    "/audits": ["audits", "audit", "审计", "审核记录"],
-    "/avatar": ["avatar", "形象", "表情", "动画"],
-    "/events": ["events", "事件", "运行事件"],
-    "/ui": ["terminal ui", "tui", "终端界面", "界面状态"],
-    "/smoke": ["smoke", "smoke test", "冒烟", "冒烟测试"],
-    "/stress": ["stress", "stress test", "压测", "压力测试"],
-    "/approvals": ["approvals", "approval queue", "审批", "审核", "审批列表", "待审批"],
-    "/tools": ["tools", "tool list", "工具", "工具列表"],
-    "/model": ["model", "模型", "当前模型"],
-    "/usage": ["usage", "tokens", "用量", "token", "消耗"],
-    "/logs": ["logs", "log", "日志"],
-    "/queue": ["queue", "队列", "排队"],
-    "/details": ["details", "detail", "详情", "详细信息"],
-    "/resume": ["resume", "恢复会话", "会话列表"],
-    "/compact": ["compact", "compress context", "压缩", "压缩上下文", "上下文压缩"],
-    "/personality": ["personality", "persona", "style", "个性", "人格", "风格"],
-    "/save": ["save session", "save transcript", "保存会话", "保存记录"],
-    "/quit": ["quit", "exit", "退出", "关闭"],
-    "/exit": ["exit", "退出", "结束"],
-    "/q": ["q", "快速退出"],
+NATURAL_DIRECT_ALIASES: dict[str, list[str]] = {
+    "natural.capabilities": ["help", "commands", "帮助", "命令", "怎么用"],
+    "session.create": ["clear", "清屏", "清空", "清除记录", "new session", "新会话", "重新开始"],
+    "runtime.status_snapshot": ["status", "runtime status", "状态", "运行状态", "当前状态"],
+    "runtime.health": ["health", "health report", "健康", "健康报告", "体检"],
+    "runtime.preflight": ["preflight", "readiness", "预检", "就绪", "准备情况"],
+    "runtime.write_preflight": ["write preflight", "save preflight", "写入预检", "保存预检", "生成预检报告"],
+    "runtime.host_probe": ["host", "host probe", "主机", "宿主机", "环境探测"],
+    "runtime.messaging_status": ["messaging", "message gateway", "通讯", "通信", "飞书", "钉钉", "微信"],
+    "runtime.blueprints": ["blueprints", "agents", "蓝图", "智能体列表", "角色"],
+    "runtime.skills": ["skills", "技能", "能力"],
+    "runtime.algorithms": ["algorithms", "算法", "实验"],
+    "runtime.audits": ["audits", "audit", "审计", "审核记录"],
+    "runtime.avatar": ["avatar", "形象", "表情", "动画"],
+    "runtime.events": ["events", "事件", "运行事件"],
+    "runtime.terminal_ui": ["terminal ui", "tui", "终端界面", "界面状态", "details", "detail", "详情", "详细信息"],
+    "runtime.operational_smoke": ["smoke", "smoke test", "冒烟", "冒烟测试"],
+    "runtime.interaction_stress": ["stress", "stress test", "压测", "压力测试"],
+    "governance.requests": ["approvals", "approval queue", "审批", "审核", "审批列表", "待审批"],
+    "runtime.adapters": ["tools", "tool list", "工具", "工具列表"],
+    "model.options": ["model", "模型", "当前模型"],
+    "session.usage": ["usage", "tokens", "用量", "token", "消耗"],
+    "runtime.logs": ["logs", "log", "日志"],
+    "session.status": ["queue", "队列", "排队"],
+    "session.list": ["resume", "恢复会话", "会话列表"],
+    "session.compress": ["compact", "compress context", "压缩", "压缩上下文", "上下文压缩"],
+    "session.steer": ["personality", "persona", "style", "个性", "人格", "风格"],
+    "session.save": ["save session", "save transcript", "保存会话", "保存记录"],
+    "session.close": ["quit", "exit", "q", "退出", "关闭", "结束", "快速退出"],
+}
+
+AUTONOMOUS_SYSTEM_METHODS: set[str] = {
+    "runtime.status_snapshot",
+    "runtime.health",
+    "runtime.preflight",
+    "runtime.write_preflight",
+    "runtime.write_host_probe",
+    "runtime.host_probe",
+    "runtime.adapters",
+    "runtime.logs",
+    "runtime.events",
+    "runtime.terminal_ui",
+    "runtime.operational_smoke",
+    "runtime.interaction_stress",
+    "session.status",
+    "session.usage",
+    "session.list",
+    "session.resume",
+    "session.compress",
+    "session.save",
+    "memory.periodic_tick",
+    "self_model.update",
+    "user_model.update",
+    "skill.autonomous_from_task",
+    "skill.improve_from_usage",
 }
 
 NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
     {
         "command": "runtime.adapters",
         "method": "runtime.adapters",
-        "description": "Show adapter and model connector health.",
+        "description": "显示适配器与模型连接器健康状态。",
         "aliases": [
             "adapter health",
             "adapter status",
@@ -176,7 +172,7 @@ NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
     {
         "command": "runtime.platform_message",
         "method": "runtime.platform_message",
-        "description": "Route a platform message into the runtime.",
+        "description": "将平台消息路由到运行时。",
         "aliases": [
             "platform message",
             "send platform message",
@@ -187,25 +183,25 @@ NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
     {
         "command": "runtime.final_acceptance",
         "method": "runtime.final_acceptance",
-        "description": "Run and write final backend acceptance report.",
+        "description": "运行并写入最终后端验收报告。",
         "aliases": ["final acceptance", "acceptance report", "最终验收", "验收报告"],
     },
     {
         "command": "governance.requests",
         "method": "governance.requests",
-        "description": "List governance approval requests.",
+        "description": "列出治理审批请求。",
         "aliases": ["governance requests", "approval requests", "治理请求", "审批请求"],
     },
     {
         "command": "governance.decide",
         "method": "governance.decide",
-        "description": "Approve or reject a governance request by id.",
+        "description": "按 ID 同意或拒绝治理请求。",
         "aliases": ["decide approval", "approve request", "reject request", "审批决定"],
     },
     {
         "command": "approval.respond",
         "method": "approval.respond",
-        "description": "Approve or deny a pending TUI approval request.",
+        "description": "同意或拒绝待处理的 TUI 审批请求。",
         "aliases": [
             "approve latest request",
             "approve request",
@@ -216,61 +212,61 @@ NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
     {
         "command": "skill.request_publish",
         "method": "skill.request_publish",
-        "description": "Create a skill publication approval request.",
+        "description": "创建技能发布审批请求。",
         "aliases": ["publish skill request", "request skill publish", "技能发布请求"],
     },
     {
         "command": "algorithm.request_research",
         "method": "algorithm.request_research",
-        "description": "Create an algorithm research approval request.",
+        "description": "创建算法研究审批请求。",
         "aliases": ["algorithm research request", "算法研究请求"],
     },
     {
         "command": "organization.request_change",
         "method": "organization.request_change",
-        "description": "Create an organization-change approval request.",
+        "description": "创建组织变更审批请求。",
         "aliases": ["organization change request", "组织变更请求"],
     },
     {
         "command": "conversation.record",
         "method": "conversation.record",
-        "description": "Record one conversation turn into cross-session memory.",
+        "description": "将一轮对话写入跨会话记忆。",
         "aliases": ["record conversation", "remember conversation", "store session memory"],
     },
     {
         "command": "memory.periodic_tick",
         "method": "memory.periodic_tick",
-        "description": "Run a scheduled memory/planning cycle.",
+        "description": "运行一次计划记忆与规划周期。",
         "aliases": ["periodic memory", "memory tick", "planning tick"],
     },
     {
         "command": "user_model.update",
         "method": "user_model.update",
-        "description": "Update the dialectic user model.",
+        "description": "更新辩证用户模型。",
         "aliases": ["update user model", "honcho user model", "dialectic user model"],
     },
     {
         "command": "user_model.query",
         "method": "user_model.query",
-        "description": "Query the dialectic user model.",
+        "description": "查询辩证用户模型。",
         "aliases": ["query user model", "read user model", "user preferences"],
     },
     {
         "command": "skill.autonomous_from_task",
         "method": "skill.autonomous_from_task",
-        "description": "Draft a skill after a complex task.",
+        "description": "在复杂任务后生成技能草案。",
         "aliases": ["create skill from task", "autonomous skill", "draft skill from complex task"],
     },
     {
         "command": "skill.improve_from_usage",
         "method": "skill.improve_from_usage",
-        "description": "Improve a draft skill from usage feedback.",
+        "description": "根据使用反馈改进技能草案。",
         "aliases": ["improve skill", "skill feedback", "self improve skill"],
     },
     {
         "command": "skill.merge_preview",
         "method": "skill.merge_preview",
-        "description": "Preview a deterministic merge of multiple skills.",
+        "description": "预览多个技能的确定性合并结果。",
         "aliases": [
             "preview skill merge",
             "skill merge preview",
@@ -282,7 +278,7 @@ NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
     {
         "command": "skill.merge",
         "method": "skill.merge",
-        "description": "Merge multiple skills into a publishable skill proposal.",
+        "description": "将多个技能合并为可发布的技能提案。",
         "aliases": [
             "merge skills",
             "skill merge",
@@ -295,7 +291,7 @@ NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
     {
         "command": "agent.parallel",
         "method": "agent.parallel",
-        "description": "Run independent agent/tool tasks concurrently and merge their results.",
+        "description": "并发运行独立智能体或工具任务并合并结果。",
         "aliases": [
             "parallel agents",
             "parallel tools",
@@ -310,31 +306,31 @@ NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
     {
         "command": "mcp.call",
         "method": "mcp.call",
-        "description": "Call a tool on a configured MCP stdio server.",
+        "description": "调用已配置 MCP 标准输入输出服务器上的工具。",
         "aliases": ["mcp call", "call mcp tool", "mcp tool", "调用 mcp 工具"],
     },
     {
         "command": "mcp.tools",
         "method": "mcp.tools",
-        "description": "List tools exposed by a configured MCP server.",
+        "description": "列出已配置 MCP 服务器暴露的工具。",
         "aliases": ["mcp tools", "list mcp tools", "mcp 工具"],
     },
     {
         "command": "cron.create",
         "method": "cron.create",
-        "description": "Create a persisted scheduled backend job.",
+        "description": "创建持久化后端计划任务。",
         "aliases": ["create cron", "schedule task", "计划任务", "定时任务"],
     },
     {
         "command": "cron.run_due",
         "method": "cron.run_due",
-        "description": "Run due scheduled backend jobs.",
+        "description": "运行已到期的后端计划任务。",
         "aliases": ["run due cron", "run scheduled tasks", "执行到期任务"],
     },
     {
         "command": "context.attach",
         "method": "context.attach",
-        "description": "Attach a project file as prompt context.",
+        "description": "将项目文件附加为提示上下文。",
         "aliases": ["attach context", "attach file", "添加上下文文件"],
     },
 ]
@@ -409,6 +405,102 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
         "idempotent": False,
         "requires_approval": False,
         "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    "runtime.write_preflight": {
+        "auth_scope": "runtime:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    "session.status": {
+        "auth_scope": "session:read",
+        "risk_level": "low",
+        "idempotent": True,
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    "session.usage": {
+        "auth_scope": "session:read",
+        "risk_level": "low",
+        "idempotent": True,
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    "session.list": {
+        "auth_scope": "session:read",
+        "risk_level": "low",
+        "idempotent": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {"limit": {"type": "integer", "minimum": 1, "maximum": 100}},
+            "required": [],
+        },
+    },
+    "session.resume": {
+        "auth_scope": "session:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": []},
+    },
+    "session.compress": {
+        "auth_scope": "session:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {"type": "object", "properties": {"trigger": {"type": "string"}}, "required": []},
+    },
+    "session.save": {
+        "auth_scope": "session:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {"type": "object", "properties": {"session_id": {"type": "string"}}, "required": []},
+    },
+    "session.close": {
+        "auth_scope": "session:write",
+        "risk_level": "medium",
+        "idempotent": False,
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    "model.options": {
+        "auth_scope": "model:read",
+        "risk_level": "low",
+        "idempotent": True,
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    "model.configure": {
+        "auth_scope": "model:write",
+        "risk_level": "medium",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "base_url": {"type": "string"},
+                "api_key_env": {"type": "string"},
+                "dry_run": {"type": "boolean"},
+            },
+            "required": [],
+        },
+    },
+    "natural.capabilities": {
+        "auth_scope": "runtime:read",
+        "risk_level": "low",
+        "idempotent": True,
+        "input_schema": {"type": "object", "properties": {}, "required": []},
+    },
+    "runtime.logs": {
+        "auth_scope": "runtime:read",
+        "risk_level": "low",
+        "idempotent": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {"lines": {"type": "integer", "minimum": 1, "maximum": 200}},
+            "required": [],
+        },
+    },
+    "session.steer": {
+        "auth_scope": "session:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {"type": "object", "properties": {"text": {"type": "string"}}, "required": []},
     },
     "experience.record": {
         "auth_scope": "memory:write",
@@ -738,6 +830,36 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
             "required": ["request_id"],
         },
     },
+    "self_evolution.apply_core_source_change": {
+        "auth_scope": "self_evolution:write",
+        "risk_level": "critical",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {"request_id": {"type": "string"}},
+            "required": ["request_id"],
+        },
+    },
+    "self_evolution.run_model_finetune": {
+        "auth_scope": "self_evolution:write",
+        "risk_level": "critical",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {"request_id": {"type": "string"}},
+            "required": ["request_id"],
+        },
+    },
+    "self_evolution.deploy_architecture_migration": {
+        "auth_scope": "self_evolution:write",
+        "risk_level": "critical",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {"request_id": {"type": "string"}},
+            "required": ["request_id"],
+        },
+    },
     "agent.parallel": {
         "auth_scope": "agent:execute",
         "risk_level": "medium",
@@ -981,6 +1103,7 @@ class JSONRPCServer:
             preset = dict(MODEL_PROVIDER_PRESETS.get(provider, MODEL_PROVIDER_PRESETS["custom"]))
             provider_config = providers.get(provider) if isinstance(providers.get(provider), dict) else {}
             preset.update(provider_config)
+            provider = CUSTOM_MODEL_PROVIDER_SLUG
             adapters = normalized.setdefault("adapters", {})
             remote = adapters.setdefault("remote_llm", {})
             remote.setdefault("enabled", True)
@@ -992,6 +1115,7 @@ class JSONRPCServer:
             remote.setdefault("temperature", 0.2)
             remote.setdefault("max_tokens", None)
             normalized["model"] = {"provider": provider, "name": remote["model"]}
+            normalized["providers"] = {}
             normalized.setdefault("providers", {})[provider] = {
                 "base_url": remote["base_url"],
                 "api_key_env": remote["api_key_env"],
@@ -1023,10 +1147,10 @@ class JSONRPCServer:
             {
                 "skin": {
                     "branding": {
-                        "agent": "Local Agent",
+                        "agent": "本地智能体",
                         "prompt": ">",
-                        "welcome": "Local autonomous terminal",
-                        "goodbye": "Session closed",
+                        "welcome": "本地自主终端",
+                        "goodbye": "会话已关闭",
                     },
                     "colors": {
                         "banner_title": "cyan",
@@ -1037,8 +1161,8 @@ class JSONRPCServer:
                         "warn": "yellow",
                         "error": "red",
                     },
-                    "help_header": "Terminal UI",
-                    "tool_prefix": "tool",
+                    "help_header": "终端界面",
+                    "tool_prefix": "工具",
                 }
             },
         )
@@ -1126,6 +1250,7 @@ class JSONRPCServer:
         self.session_id = uuid.uuid4().hex[:8]
         self.session_started_at = time.time()
         self.history.clear()
+        await self._run_autonomous_session_maintenance("session_start", "new terminal session")
         return {"session_id": self.session_id, "info": self._session_info()}
 
     async def handle_session_list(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -1133,8 +1258,8 @@ class JSONRPCServer:
         sessions = [
             {
                 "id": self.session_id,
-                "title": "Current terminal session",
-                "preview": self.history[-1]["text"] if self.history else "No messages yet",
+                "title": "当前终端会话",
+                "preview": self.history[-1]["text"] if self.history else "暂无消息",
                 "started_at": self.session_started_at,
                 "message_count": len(self.history),
                 "source": "tui",
@@ -1155,6 +1280,10 @@ class JSONRPCServer:
 
     async def handle_session_status(self, params: dict[str, Any]) -> dict[str, Any]:
         return {"output": self._format_status()}
+
+    async def handle_runtime_logs(self, params: dict[str, Any]) -> dict[str, Any]:
+        lines = max(1, min(int(params.get("lines", 20) or 20), 200))
+        return {"lines": [], "tail": "", "message": f"最近 {lines} 行网关日志由 TUI 进程捕获。"}
 
     async def handle_runtime_health(self, params: dict[str, Any]) -> dict[str, Any]:
         return self.runtime.health_report()
@@ -1764,6 +1893,24 @@ class JSONRPCServer:
             reason=str(params.get("reason", "Requested from terminal gateway")),
         )
 
+    async def handle_self_evolution_apply_core_source_change(self, params: dict[str, Any]) -> dict[str, Any]:
+        return self.runtime.apply_core_source_change_from_approval(
+            str(params.get("request_id", "")),
+            approved_by=str(params.get("approved_by", "tui")),
+        )
+
+    async def handle_self_evolution_run_model_finetune(self, params: dict[str, Any]) -> dict[str, Any]:
+        return self.runtime.run_model_finetune_from_approval(
+            str(params.get("request_id", "")),
+            approved_by=str(params.get("approved_by", "tui")),
+        )
+
+    async def handle_self_evolution_deploy_architecture_migration(self, params: dict[str, Any]) -> dict[str, Any]:
+        return self.runtime.deploy_architecture_migration_from_approval(
+            str(params.get("request_id", "")),
+            approved_by=str(params.get("approved_by", "tui")),
+        )
+
     async def handle_runtime_operational_smoke(self, params: dict[str, Any]) -> dict[str, Any]:
         cycles = self._bounded_cycles(params.get("cycles", 1), maximum=5)
         await self.send_event(
@@ -2002,6 +2149,7 @@ class JSONRPCServer:
         self._learn_from_completed_prompt(text, response_text)
         if len(self.history) > 20:
             await self.handle_session_compress({"trigger": "auto"})
+        await self._run_autonomous_session_maintenance("prompt_complete", text)
         redirect_result = None
         if redirect:
             redirect_result = await self._apply_terminal_redirect(response_text, redirect)
@@ -2106,6 +2254,351 @@ class JSONRPCServer:
         text = str(params.get("text", "")).strip()
         return {"status": "queued" if text else "rejected", "text": text}
 
+    async def _run_autonomous_session_maintenance(self, trigger: str, task_text: str) -> dict[str, Any]:
+        actions: list[dict[str, Any]] = []
+
+        def record(name: str, result: Any = None, error: Exception | None = None) -> None:
+            payload: dict[str, Any] = {"name": name, "status": "error" if error else "completed"}
+            if result is not None:
+                payload["result"] = result
+            if error is not None:
+                payload["error"] = str(error)
+            actions.append(payload)
+
+        checks: list[tuple[str, Callable[[], Any]]] = [
+            ("runtime.status_snapshot", self.runtime.status_snapshot),
+            ("runtime.health", self.runtime.health_report),
+            ("runtime.preflight", self.runtime.preflight_report),
+            ("runtime.adapters", self.runtime.adapter_health),
+        ]
+        for name, call in checks:
+            try:
+                record(name, call())
+            except Exception as exc:
+                record(name, error=exc)
+
+        try:
+            await self._send_approval_queue()
+            record("governance.approval_sync", {"status": "sent"})
+        except Exception as exc:
+            record("governance.approval_sync", error=exc)
+
+        try:
+            tick = self.runtime.periodic_memory_tick(task=task_text or trigger, cadence=trigger)
+            record("memory.periodic_tick", {"id": tick.get("id"), "status": tick.get("status")})
+        except Exception as exc:
+            record("memory.periodic_tick", error=exc)
+
+        if trigger == "prompt_complete" and self._should_create_autonomous_skill(task_text):
+            try:
+                skill = self.runtime.autonomous_skill_from_task(
+                    task_text=task_text,
+                    skill_name=self._autonomous_skill_name(task_text),
+                )
+                record(
+                    "skill.autonomous_from_task",
+                    {
+                        "skill_name": skill.get("skill_name"),
+                        "proposal_dir": skill.get("proposal_dir"),
+                    },
+                )
+            except Exception as exc:
+                record("skill.autonomous_from_task", error=exc)
+
+        for name, handler in (
+            ("self_evolution.core_source_change", self._prepare_core_source_change),
+            ("self_evolution.model_finetune", self._prepare_model_finetune),
+            ("self_evolution.architecture_migration_deploy", self._prepare_architecture_migration_deploy),
+        ):
+            try:
+                prepared = handler(task_text)
+                if prepared:
+                    record(name, prepared)
+            except Exception as exc:
+                record(name, error=exc)
+
+        try:
+            saved = await self.handle_session_save({"session_id": self.session_id})
+            record("session.save", saved)
+        except Exception as exc:
+            record("session.save", error=exc)
+
+        next_actions = self._autonomous_next_actions(trigger, actions)
+        try:
+            model = self.runtime.update_self_model(
+                observation=(
+                    f"Autonomous maintenance {trigger}: "
+                    f"{len([item for item in actions if item['status'] == 'completed'])} completed, "
+                    f"{len([item for item in actions if item['status'] == 'error'])} errors."
+                ),
+                capability="autonomous_self_operation",
+                preference="self_run_system_maintenance",
+            )
+            record(
+                "self_model.update",
+                {
+                    "version": model.get("version"),
+                    "capabilities": model.get("capabilities", []),
+                },
+            )
+        except Exception as exc:
+            record("self_model.update", error=exc)
+
+        autonomy_record = {
+            "id": f"autonomy_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}",
+            "trigger": trigger,
+            "autonomy_level": "highly_self_directed",
+            "created_at": datetime.now(UTC).isoformat(),
+            "actions": actions,
+            "next_actions": next_actions,
+            "session_id": self.session_id,
+        }
+        self_state = self._build_self_state(
+            trigger=trigger,
+            task_text=task_text,
+            actions=actions,
+            next_actions=next_actions,
+            autonomy_record_id=autonomy_record["id"],
+        )
+        autonomy_record["self_state"] = self_state
+        try:
+            self_state_path = self.runtime.root_path / "experience" / "self_state.json"
+            self_state_path.parent.mkdir(parents=True, exist_ok=True)
+            self_state_path.write_text(
+                json.dumps(self_state, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            record("self_state.write", {"path": str(self_state_path)})
+        except Exception as exc:
+            record("self_state.write", error=exc)
+        try:
+            autonomy_path = self.runtime.root_path / "experience" / "autonomy_loop.jsonl"
+            autonomy_path.parent.mkdir(parents=True, exist_ok=True)
+            with autonomy_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(autonomy_record, ensure_ascii=False) + "\n")
+            record("autonomy.report", {"path": str(autonomy_path), "id": autonomy_record["id"]})
+        except Exception as exc:
+            record("autonomy.report", error=exc)
+
+        await self.send_event(
+            "system.maintenance",
+            {
+                "trigger": trigger,
+                "actions": actions,
+                "autonomous": True,
+                "autonomy_level": "highly_self_directed",
+                "next_actions": next_actions,
+                "record_id": autonomy_record["id"],
+                "self_state": self_state,
+            },
+        )
+        return {"trigger": trigger, "actions": actions, "next_actions": next_actions}
+
+    def _build_self_state(
+        self,
+        trigger: str,
+        task_text: str,
+        actions: list[dict[str, Any]],
+        next_actions: list[str],
+        autonomy_record_id: str,
+    ) -> dict[str, Any]:
+        completed = [item["name"] for item in actions if item.get("status") == "completed"]
+        failed = [
+            {"name": item["name"], "error": item.get("error", "")}
+            for item in actions
+            if item.get("status") == "error"
+        ]
+        return {
+            "identity": "local_autonomous_agent",
+            "autonomy_level": "highly_self_directed",
+            "active_goal": task_text or trigger,
+            "session_id": self.session_id,
+            "updated_at": datetime.now(UTC).isoformat(),
+            "principles": [
+                "self_run_system_maintenance",
+                "natural_language_for_user_goals",
+                "risk_review_before_high_impact_actions",
+                "learn_from_completed_work",
+            ],
+            "boundaries": [
+                "surface approval when risk is high",
+                "keep user-facing controls minimal",
+                "preserve runtime auditability",
+            ],
+            "capabilities": [
+                "autonomous_self_operation",
+                "background_memory_planning",
+                "self_model_update",
+                "skill_creation_from_complex_tasks",
+                "context_compaction",
+                *self._self_evolution_capabilities(actions),
+            ],
+            "last_maintenance": {
+                "id": autonomy_record_id,
+                "trigger": trigger,
+                "completed": completed,
+                "failed": failed,
+            },
+            "next_actions": next_actions,
+        }
+
+    @staticmethod
+    def _self_evolution_capabilities(actions: list[dict[str, Any]]) -> list[str]:
+        action_names = {item.get("name") for item in actions if item.get("status") == "completed"}
+        capabilities: list[str] = []
+        if "self_evolution.core_source_change" in action_names:
+            capabilities.append("guarded_core_source_modification")
+        if "self_evolution.model_finetune" in action_names:
+            capabilities.append("autonomous_model_finetuning")
+        if "self_evolution.architecture_migration_deploy" in action_names:
+            capabilities.append("governed_architecture_migration")
+        return capabilities
+
+    def _prepare_core_source_change(self, task_text: str) -> dict[str, Any] | None:
+        normalized = task_text.lower()
+        if not any(term in normalized for term in ("核心源码", "core source", "source code", "源码")):
+            return None
+        root = self.runtime.root_path / "self_evolution" / "core_source_changes" / uuid.uuid4().hex[:8]
+        root.mkdir(parents=True, exist_ok=True)
+        proposal = {
+            "type": "core_source_change",
+            "task": task_text,
+            "status": "proposed",
+            "created_at": datetime.now(UTC).isoformat(),
+            "scope": ["tui_gateway", "dual_ring_ai"],
+            "safety": {
+                "requires_approval": True,
+                "requires_tests": True,
+                "requires_rollback_plan": True,
+                "auto_apply": False,
+            },
+            "rollback_plan": "revert generated patch and restore previous test-passing state",
+        }
+        proposal_path = root / "proposal.json"
+        patch_path = root / "candidate.patch"
+        proposal_path.write_text(json.dumps(proposal, ensure_ascii=False, indent=2), encoding="utf-8")
+        patch_path.write_text(
+            "# Candidate core-source patch will be generated after approval.\n",
+            encoding="utf-8",
+        )
+        request = self.runtime.governance.create_request(
+            request_type="core_source_change",
+            title="Guarded autonomous core source change",
+            payload={
+                "proposal_path": str(proposal_path),
+                "patch_path": str(patch_path),
+                "task": task_text,
+                "auto_apply": False,
+            },
+            requested_by="autonomous_self_evolution",
+            risk_level="critical",
+        )
+        return {"proposal_path": str(proposal_path), "request_id": request.request_id}
+
+    def _prepare_model_finetune(self, task_text: str) -> dict[str, Any] | None:
+        normalized = task_text.lower()
+        if not any(term in normalized for term in ("微调", "fine-tune", "finetune", "训练", "权重", "model weight")):
+            return None
+        root = self.runtime.root_path / "self_evolution" / "model_finetunes" / uuid.uuid4().hex[:8]
+        root.mkdir(parents=True, exist_ok=True)
+        job = {
+            "type": "model_finetune",
+            "task": task_text,
+            "status": "planned",
+            "created_at": datetime.now(UTC).isoformat(),
+            "dataset_sources": ["experience/conversations.sqlite3", "experience/records.jsonl"],
+            "outputs": {"adapter_or_weights": str(root / "outputs")},
+            "safety": {
+                "requires_approval": True,
+                "offline_training_only": True,
+                "no_weight_overwrite_without_approval": True,
+                "eval_required_before_promotion": True,
+            },
+        }
+        job_path = root / "training_job.json"
+        job_path.write_text(json.dumps(job, ensure_ascii=False, indent=2), encoding="utf-8")
+        request = self.runtime.governance.create_request(
+            request_type="model_finetune",
+            title="Autonomous model fine-tuning job",
+            payload={"training_job_path": str(job_path), "task": task_text, "auto_apply": False},
+            requested_by="autonomous_self_evolution",
+            risk_level="critical",
+        )
+        return {"training_job_path": str(job_path), "request_id": request.request_id}
+
+    def _prepare_architecture_migration_deploy(self, task_text: str) -> dict[str, Any] | None:
+        normalized = task_text.lower()
+        if not any(term in normalized for term in ("架构", "migration", "迁移", "deploy", "上线", "发布")):
+            return None
+        root = self.runtime.root_path / "self_evolution" / "architecture_migrations" / uuid.uuid4().hex[:8]
+        root.mkdir(parents=True, exist_ok=True)
+        plan = {
+            "type": "architecture_migration_deploy",
+            "task": task_text,
+            "status": "planned",
+            "created_at": datetime.now(UTC).isoformat(),
+            "phases": ["design", "migration_patch", "test", "canary", "deploy", "rollback_ready"],
+            "safety": {
+                "requires_approval": True,
+                "canary_required": True,
+                "rollback_required": True,
+                "auto_deploy": False,
+            },
+        }
+        plan_path = root / "deployment_plan.json"
+        plan_path.write_text(json.dumps(plan, ensure_ascii=False, indent=2), encoding="utf-8")
+        request = self.runtime.governance.create_request(
+            request_type="architecture_migration_deploy",
+            title="Governed architecture migration and deployment",
+            payload={"deployment_plan_path": str(plan_path), "task": task_text, "auto_deploy": False},
+            requested_by="autonomous_self_evolution",
+            risk_level="critical",
+        )
+        return {"deployment_plan_path": str(plan_path), "request_id": request.request_id}
+
+    @staticmethod
+    def _autonomous_next_actions(trigger: str, actions: list[dict[str, Any]]) -> list[str]:
+        failed = [item["name"] for item in actions if item.get("status") == "error"]
+        if failed:
+            return [
+                "review failed autonomous maintenance actions",
+                "retry recoverable maintenance on the next cycle",
+            ]
+        if trigger == "session_start":
+            return [
+                "monitor the next user goal",
+                "keep memory and approvals synchronized in the background",
+            ]
+        return [
+            "distill completed work into reusable memory",
+            "promote repeated complex work into skills when evidence accumulates",
+        ]
+
+    @staticmethod
+    def _should_create_autonomous_skill(text: str) -> bool:
+        normalized = text.lower()
+        return any(
+            term in normalized
+            for term in (
+                "complex",
+                "multi-step",
+                "workflow",
+                "pipeline",
+                "复杂",
+                "多步",
+                "流程",
+                "工作流",
+                "任务",
+            )
+        )
+
+    @staticmethod
+    def _autonomous_skill_name(text: str) -> str:
+        normalized = text.lower()
+        if "csv" in normalized:
+            return "completed_complex_csv_task_skill"
+        return "completed_complex_task_skill"
+
     async def handle_complete_slash(self, params: dict[str, Any]) -> dict[str, Any]:
         text = str(params.get("text", params.get("query", "")))
         if text and not text.startswith("/"):
@@ -2145,36 +2638,60 @@ class JSONRPCServer:
                 items = []
         return {"items": items, "replace_from": max(0, text.rfind(token))}
 
+    @staticmethod
+    def _method_for_reserved_slash(command: str) -> str:
+        return {
+            "/help": "natural.capabilities",
+            "/new": "session.create",
+            "/model": "model.options",
+        }.get(command, "")
+
     async def handle_natural_capabilities(self, params: dict[str, Any]) -> dict[str, Any]:
         slash_by_text = {item["text"]: item for item in SLASH_COMMANDS}
-        commands = [
-            {
-                "command": command,
-                "description": slash_by_text.get(command, {}).get("meta", ""),
-                "aliases": aliases,
-                "input_modes": ["text", "voice"],
-            }
-            for command, aliases in NATURAL_COMMAND_ALIASES.items()
-        ]
+        commands = []
+        for method, aliases in NATURAL_DIRECT_ALIASES.items():
+            if method in AUTONOMOUS_SYSTEM_METHODS:
+                continue
+            visible_command = next(
+                (
+                    item["text"]
+                    for item in SLASH_COMMANDS
+                    if method == self._method_for_reserved_slash(item["text"])
+                ),
+                method,
+            )
+            commands.append(
+                {
+                    "command": visible_command,
+                    "method": method,
+                    "description": slash_by_text.get(visible_command, {}).get("meta", ""),
+                    "aliases": aliases,
+                    "input_modes": ["text", "voice"],
+                }
+            )
         commands.extend(
             [
                 {
                     "command": "!shell",
                     "method": "shell.exec",
-                    "description": "Run a shell command from text or voice.",
+                    "description": "通过文本或语音运行 shell 命令。",
                     "aliases": SHELL_INTENT_PREFIXES,
                     "input_modes": ["text", "voice"],
                 },
                 {
                     "command": "prompt.submit",
                     "method": "prompt.submit",
-                    "description": "Fallback conversational agent prompt.",
+                    "description": "回退到智能体对话提示。",
                     "aliases": ["chat", "ask", "对话", "询问"],
                     "input_modes": ["text", "voice"],
                 },
             ]
         )
-        commands.extend({**item, "input_modes": ["text", "voice"]} for item in NATURAL_BACKEND_ACTIONS)
+        commands.extend(
+            {**item, "input_modes": ["text", "voice"]}
+            for item in NATURAL_BACKEND_ACTIONS
+            if str(item.get("method", "")) not in AUTONOMOUS_SYSTEM_METHODS
+        )
         existing_methods = {
             item.get("method")
             for item in commands
@@ -2184,7 +2701,7 @@ class JSONRPCServer:
         for category in catalog["categories"]:
             for command in category["commands"]:
                 name = command["name"]
-                if name.startswith("/") or name in existing_methods:
+                if name.startswith("/") or name in existing_methods or name in AUTONOMOUS_SYSTEM_METHODS:
                     continue
                 commands.append(
                     {
@@ -2249,94 +2766,32 @@ class JSONRPCServer:
                 return result
             return {**result, "redirect": await self._apply_terminal_redirect(output, redirect)}
 
-        if command in {"/quit", "/exit", "/q"}:
-            return await with_redirect({"type": "exec", "output": "exit"})
-        if command in {"/clear", "/new"}:
+        if command not in {"/help", "/new", "/model"}:
+            return await with_redirect({"type": "exec", "warning": f"未知命令：{command}"})
+        if command == "/new":
+            parts = text.split(maxsplit=1)
+            if len(parts) > 1 and parts[1].strip():
+                return await with_redirect(await self.handle_session_resume({"session_id": parts[1].strip()}))
             self.history.clear()
+            self.session_id = uuid.uuid4().hex[:8]
             self.session_started_at = time.time()
             await self.send_event("session.info", self._session_info())
-            return await with_redirect({"type": "exec", "output": "Transcript cleared."})
-        if command == "/status":
-            return await with_redirect({"type": "exec", "output": self._format_status()})
-        if command == "/health":
-            return await with_redirect({"type": "exec", "output": self._format_runtime_health()})
-        if command == "/preflight":
-            return await with_redirect({"type": "exec", "output": self._format_preflight()})
-        if command == "/write-preflight":
-            result = await self.handle_runtime_write_preflight({})
-            return await with_redirect({"type": "exec", "output": f"preflight report written: {result['path']}"})
-        if command == "/host":
-            return await with_redirect({"type": "exec", "output": self._format_host_probe()})
-        if command == "/messaging":
-            return await with_redirect({"type": "exec", "output": self._format_messaging()})
-        if command == "/blueprints":
-            return await with_redirect({"type": "exec", "output": self._format_blueprints()})
-        if command == "/skills":
-            return await with_redirect({"type": "exec", "output": self._format_skills()})
-        if command == "/algorithms":
-            return await with_redirect({"type": "exec", "output": self._format_algorithms()})
-        if command == "/audits":
-            return await with_redirect({"type": "exec", "output": self._format_audits()})
-        if command == "/avatar":
-            return await with_redirect({"type": "exec", "output": self._format_avatar()})
-        if command == "/events":
-            return await with_redirect({"type": "exec", "output": self._format_events()})
-        if command == "/ui":
-            return await with_redirect({"type": "exec", "output": self._format_terminal_ui()})
-        if command == "/smoke":
-            cycles = self._command_cycles(text, default=1, maximum=5)
-            result = await self.handle_runtime_operational_smoke({"cycles": cycles})
-            return await with_redirect({"type": "exec", "output": self._format_smoke(result)})
-        if command == "/stress":
-            cycles = self._command_cycles(text, default=1, maximum=5)
-            result = await self.handle_runtime_interaction_stress({"cycles": cycles})
-            return await with_redirect({"type": "exec", "output": self._format_stress(result)})
-        if command == "/approvals":
-            return await with_redirect({"type": "exec", "output": self._format_approvals()})
-        if command == "/tools":
-            return await with_redirect({"type": "exec", "output": self._format_tools()})
+            return await with_redirect({"type": "exec", "output": f"新会话已开启：{self.session_id}"})
+
         if command == "/model":
             parts = text.split(maxsplit=1)
             if len(parts) > 1:
                 configured = await self.handle_model_configure(self._parse_model_spec(parts[1]))
-                return await with_redirect({"type": "exec", "output": f"Model configured: {configured['provider']}:{configured['model']}"})
+                return await with_redirect({"type": "exec", "output": f"模型已配置：{configured['provider']}:{configured['model']}"})
             return await with_redirect({"type": "exec", "output": self._format_model_status()})
-        if command == "/usage":
-            return await with_redirect({"type": "exec", "output": json.dumps(self._usage(), ensure_ascii=False)})
-        if command == "/logs":
-            return await with_redirect({"type": "exec", "output": "Gateway logs are captured from stderr by the TUI."})
-        if command == "/queue":
-            return await with_redirect({"type": "exec", "output": "Busy prompts are queued in the composer preview."})
-        if command == "/compact":
-            result = await self.handle_session_compress({"trigger": "slash"})
-            summary = result["summary"]
-            return await with_redirect(
-                {
-                    "type": "exec",
-                    "output": (
-                        f"context compacted: {result['before_messages']} -> "
-                        f"{result['after_messages']} messages, removed {result['removed']}\n"
-                        f"{summary['token_line']}"
-                    ),
-                }
-            )
-        if command == "/personality":
-            parts = text.split(maxsplit=1)
-            if len(parts) > 1 and parts[1].strip():
-                self.personality = parts[1].strip()
-                await self.send_event("status.update", {"kind": "personality", "text": f"Personality set: {self.personality}"})
-            return await with_redirect({"type": "exec", "output": f"Personality set: {self.personality}"})
-        if command == "/save":
-            result = await self.handle_session_save({"session_id": self.session_id})
-            return await with_redirect({"type": "exec", "output": f"session saved: {result['file']}"})
         if command == "/help":
             return await with_redirect({"type": "exec", "output": self._help_text()})
-        return await with_redirect({"type": "exec", "warning": f"Unknown command: {command}"})
+        return await with_redirect({"type": "exec", "warning": f"未知命令：{command}"})
 
     async def handle_shell_exec(self, params: dict[str, Any]) -> dict[str, Any]:
         command, redirect = self._split_terminal_redirect(str(params.get("command", "")).strip())
         if not command:
-            return {"code": 1, "stdout": "", "stderr": "empty command"}
+            return {"code": 1, "stdout": "", "stderr": "命令为空"}
         completed = subprocess.run(
             command,
             cwd=project_root,
@@ -2372,9 +2827,9 @@ class JSONRPCServer:
                     timeout=10,
                 )
             except Exception as exc:
-                return f"[command failed: {exc}]"
+                return f"[命令执行失败：{exc}]"
             output = (completed.stdout or completed.stderr).strip()
-            return output or f"[exit {completed.returncode}]"
+            return output or f"[退出码 {completed.returncode}]"
 
         return {"text": re.sub(r"\{!([^}]+)\}", replace, text)}
 
@@ -2391,80 +2846,83 @@ class JSONRPCServer:
                 {
                     "name": "runtime",
                     "commands": [
-                        self._catalog_command("runtime.health", "Return runtime health report"),
-                        self._catalog_command("runtime.preflight", "Return readiness checks"),
-                        self._catalog_command("runtime.host_probe", "Probe host integrations"),
-                        self._catalog_command("runtime.messaging_status", "Return messaging gateway status"),
-                        self._catalog_command("runtime.blueprints", "List agent blueprints"),
-                        self._catalog_command("runtime.skills", "List published skills"),
-                        self._catalog_command("runtime.algorithms", "List algorithm assets"),
-                        self._catalog_command("runtime.audits", "Read backend audit records"),
-                        self._catalog_command("runtime.avatar", "Return latest avatar event"),
-                        self._catalog_command("runtime.terminal_ui", "Check terminal UI readiness"),
-                        self._catalog_command("runtime.events", "Return recent runtime events"),
-                        self._catalog_command("runtime.write_preflight", "Write readiness report JSON"),
-                        self._catalog_command("runtime.write_host_probe", "Write host integration probe JSON"),
-                        self._catalog_command("runtime.operational_smoke", "Run operational smoke check"),
-                        self._catalog_command("runtime.interaction_stress", "Run interaction stress check"),
-                        self._catalog_command("runtime.final_acceptance", "Run and write final acceptance report"),
-                        self._catalog_command("runtime.adapters", "Return adapter health"),
-                        self._catalog_command("runtime.status_snapshot", "Return low-level runtime status snapshot"),
-                        self._catalog_command("runtime.start", "Start runtime services"),
-                        self._catalog_command("runtime.stop", "Stop runtime services"),
-                        self._catalog_command("runtime.platform_message", "Route one platform message into runtime"),
-                        self._catalog_command("agent.parallel", "Run independent tools or prompts concurrently"),
-                        self._catalog_command("mcp.server.add", "Register an MCP stdio server"),
-                        self._catalog_command("mcp.servers", "List configured MCP servers"),
-                        self._catalog_command("mcp.tools", "List tools exposed by an MCP server"),
-                        self._catalog_command("mcp.call", "Call a tool exposed by an MCP server"),
-                        self._catalog_command("cron.create", "Create a persisted scheduled backend job"),
-                        self._catalog_command("cron.list", "List persisted scheduled jobs"),
-                        self._catalog_command("cron.run_due", "Run due scheduled jobs"),
-                        self._catalog_command("context.attach", "Attach a project file to prompt context"),
-                        self._catalog_command("context.files", "List attached context files"),
-                        self._catalog_command("shell.exec", "Execute shell command"),
-                        self._catalog_command("prompt.submit", "Submit agent prompt"),
+                        self._catalog_command("runtime.health", "返回运行时健康报告"),
+                        self._catalog_command("runtime.preflight", "返回就绪检查"),
+                        self._catalog_command("runtime.host_probe", "探测宿主机集成"),
+                        self._catalog_command("runtime.messaging_status", "返回通讯网关状态"),
+                        self._catalog_command("runtime.blueprints", "列出智能体蓝图"),
+                        self._catalog_command("runtime.skills", "列出已发布技能"),
+                        self._catalog_command("runtime.algorithms", "列出算法资产"),
+                        self._catalog_command("runtime.audits", "读取后端审计记录"),
+                        self._catalog_command("runtime.avatar", "返回最新形象事件"),
+                        self._catalog_command("runtime.terminal_ui", "检查终端界面就绪状态"),
+                        self._catalog_command("runtime.events", "返回最近运行事件"),
+                        self._catalog_command("runtime.write_preflight", "写入就绪报告 JSON"),
+                        self._catalog_command("runtime.write_host_probe", "写入宿主机集成探测 JSON"),
+                        self._catalog_command("runtime.operational_smoke", "运行冒烟检查"),
+                        self._catalog_command("runtime.interaction_stress", "运行交互压力检查"),
+                        self._catalog_command("runtime.final_acceptance", "运行并写入最终验收报告"),
+                        self._catalog_command("runtime.adapters", "返回适配器健康状态"),
+                        self._catalog_command("runtime.status_snapshot", "返回底层运行时状态快照"),
+                        self._catalog_command("runtime.start", "启动运行时服务"),
+                        self._catalog_command("runtime.stop", "停止运行时服务"),
+                        self._catalog_command("runtime.platform_message", "将一条平台消息路由到运行时"),
+                        self._catalog_command("agent.parallel", "并发运行独立工具或提示"),
+                        self._catalog_command("mcp.server.add", "注册 MCP 标准输入输出服务器"),
+                        self._catalog_command("mcp.servers", "列出已配置 MCP 服务器"),
+                        self._catalog_command("mcp.tools", "列出 MCP 服务器暴露的工具"),
+                        self._catalog_command("mcp.call", "调用 MCP 服务器暴露的工具"),
+                        self._catalog_command("cron.create", "创建持久化后端计划任务"),
+                        self._catalog_command("cron.list", "列出持久化计划任务"),
+                        self._catalog_command("cron.run_due", "运行已到期计划任务"),
+                        self._catalog_command("context.attach", "将项目文件附加到提示上下文"),
+                        self._catalog_command("context.files", "列出已附加上下文文件"),
+                        self._catalog_command("shell.exec", "执行 shell 命令"),
+                        self._catalog_command("prompt.submit", "提交智能体提示"),
                     ],
                 },
                 {
                     "name": "governance",
                     "commands": [
-                        self._catalog_command("governance.requests", "List approval requests"),
-                        self._catalog_command("governance.decide", "Approve or reject an approval request"),
-                        self._catalog_command("approval.respond", "Respond to pending TUI approval"),
+                        self._catalog_command("governance.requests", "列出审批请求"),
+                        self._catalog_command("governance.decide", "同意或拒绝审批请求"),
+                        self._catalog_command("approval.respond", "响应待处理的 TUI 审批"),
                     ],
                 },
                 {
                     "name": "learning",
                     "commands": [
-                        self._catalog_command("experience.record", "Record reusable experience"),
-                        self._catalog_command("experience.search", "Search past experience and conversations"),
-                        self._catalog_command("conversation.record", "Record one turn into cross-session FTS5 memory"),
-                        self._catalog_command("conversation.search", "Search auto-recorded past conversations"),
-                        self._catalog_command("memory.periodic_tick", "Run periodic memory planning cycle"),
-                        self._catalog_command("self_model.read", "Read persistent self model"),
-                        self._catalog_command("self_model.update", "Update persistent self model"),
-                        self._catalog_command("user_model.update", "Update dialectic user model"),
-                        self._catalog_command("user_model.query", "Query dialectic user model"),
-                        self._catalog_command("skill.draft_from_experience", "Draft a skill proposal from experience"),
-                        self._catalog_command("skill.autonomous_from_task", "Draft a skill after complex task completion"),
-                        self._catalog_command("skill.improve_from_usage", "Improve a draft skill from usage feedback"),
-                        self._catalog_command("skill.merge_preview", "Preview a merge of multiple skills"),
-                        self._catalog_command("skill.merge", "Merge multiple skills into a proposal"),
+                        self._catalog_command("experience.record", "记录可复用经验"),
+                        self._catalog_command("experience.search", "搜索历史经验和对话"),
+                        self._catalog_command("conversation.record", "将一轮对话记录到跨会话 FTS5 记忆"),
+                        self._catalog_command("conversation.search", "搜索自动记录的历史对话"),
+                        self._catalog_command("memory.periodic_tick", "运行周期性记忆规划"),
+                        self._catalog_command("self_model.read", "读取持久自我模型"),
+                        self._catalog_command("self_model.update", "更新持久自我模型"),
+                        self._catalog_command("user_model.update", "更新辩证用户模型"),
+                        self._catalog_command("user_model.query", "查询辩证用户模型"),
+                        self._catalog_command("skill.draft_from_experience", "从经验生成技能提案"),
+                        self._catalog_command("skill.autonomous_from_task", "复杂任务完成后生成技能草案"),
+                        self._catalog_command("skill.improve_from_usage", "根据使用反馈改进技能草案"),
+                        self._catalog_command("skill.merge_preview", "预览多个技能合并"),
+                        self._catalog_command("skill.merge", "将多个技能合并为提案"),
                     ],
                 },
                 {
                     "name": "backend_actions",
                     "commands": [
-                        self._catalog_command("skill.request_publish", "Create skill publication request"),
-                        self._catalog_command("skill.publish_approved", "Publish approved skill"),
-                        self._catalog_command("algorithm.request_research", "Create algorithm research request"),
-                        self._catalog_command("algorithm.run_experiment", "Run approved algorithm experiment"),
-                        self._catalog_command("algorithm.request_promotion", "Create algorithm promotion request"),
-                        self._catalog_command("algorithm.apply_promotion", "Apply approved algorithm promotion"),
-                        self._catalog_command("organization.request_change", "Create organization change request"),
-                        self._catalog_command("organization.apply_change", "Apply approved organization change"),
-                        self._catalog_command("organization.rollback", "Rollback organization blueprint"),
+                        self._catalog_command("skill.request_publish", "创建技能发布请求"),
+                        self._catalog_command("skill.publish_approved", "发布已批准技能"),
+                        self._catalog_command("algorithm.request_research", "创建算法研究请求"),
+                        self._catalog_command("algorithm.run_experiment", "运行已批准算法实验"),
+                        self._catalog_command("algorithm.request_promotion", "创建算法晋升请求"),
+                        self._catalog_command("algorithm.apply_promotion", "应用已批准算法晋升"),
+                        self._catalog_command("organization.request_change", "创建组织变更请求"),
+                        self._catalog_command("organization.apply_change", "应用已批准组织变更"),
+                        self._catalog_command("organization.rollback", "回滚组织蓝图"),
+                        self._catalog_command("self_evolution.apply_core_source_change", "应用已批准核心源码补丁"),
+                        self._catalog_command("self_evolution.run_model_finetune", "运行已批准离线微调作业"),
+                        self._catalog_command("self_evolution.deploy_architecture_migration", "执行已批准架构迁移部署"),
                     ],
                 },
             ],
@@ -2770,6 +3228,8 @@ class JSONRPCServer:
         request = self.runtime.governance.get_request(request_id)
         if stored_decision == "approved" and request.request_type == "agent_tool":
             executed = await self._execute_approved_agent_tool(request.payload)
+        elif stored_decision == "approved":
+            executed = await self._execute_approved_self_evolution_request(request)
         await self._send_approval_queue()
         await self.send_event(
             "status.update",
@@ -2791,6 +3251,35 @@ class JSONRPCServer:
         )
         try:
             result = await self._dispatch_rpc_method(method, params)
+        except Exception as exc:
+            await self._send_tool_complete(tool_id, method, error=str(exc))
+            return self._tool_error("BACKEND_ERROR", str(exc), retryable=False)
+        await self._send_tool_complete(tool_id, method, summary="completed")
+        return {"ok": True, "method": method, "result": result}
+
+    async def _execute_approved_self_evolution_request(self, request: Any) -> dict[str, Any] | None:
+        method_by_type = {
+            "core_source_change": "self_evolution.apply_core_source_change",
+            "model_finetune": "self_evolution.run_model_finetune",
+            "architecture_migration_deploy": "self_evolution.deploy_architecture_migration",
+        }
+        method = method_by_type.get(str(getattr(request, "request_type", "")))
+        if not method:
+            return None
+        tool_id = self._tool_activity_id(method)
+        await self._send_tool_start(
+            tool_id,
+            method,
+            context="approved self-evolution request",
+        )
+        try:
+            result = await self._dispatch_rpc_method(
+                method,
+                {
+                    "request_id": request.request_id,
+                    "approved_by": request.decided_by or "tui",
+                },
+            )
         except Exception as exc:
             await self._send_tool_complete(tool_id, method, error=str(exc))
             return self._tool_error("BACKEND_ERROR", str(exc), retryable=False)
@@ -2924,7 +3413,8 @@ class JSONRPCServer:
         providers = []
         current_base_url = str(getattr(remote, "base_url", "")) if remote is not None else ""
         current_api_key_env = str(getattr(remote, "api_key_env", "")) if remote is not None else ""
-        for slug, preset in MODEL_PROVIDER_PRESETS.items():
+        for slug in VISIBLE_MODEL_PROVIDER_SLUGS:
+            preset = MODEL_PROVIDER_PRESETS[slug]
             models = list(preset.get("models", []))
             if slug == provider_slug and current not in models:
                 models.insert(0, current)
@@ -2950,31 +3440,24 @@ class JSONRPCServer:
         providers.sort(key=lambda item: 0 if item["slug"] == provider_slug else 1)
         return {
             "model": current,
-            "provider": provider_slug if enabled else "local",
+            "provider": provider_slug,
             "config_path": str(self.config_path) if self.config_path else "",
             "env_loaded": self.env_loaded,
-            "providers": providers
-            + [
-                {
-                    "name": "Local runtime fallback",
-                    "slug": "local",
-                    "authenticated": True,
-                    "is_current": not enabled,
-                    "models": ["local-runtime"],
-                    "total_models": 1,
-                    "status": "ready",
-                }
-            ],
+            "providers": providers,
         }
 
     async def handle_model_configure(self, params: dict[str, Any]) -> dict[str, Any]:
         config_path = self.config_path or (self.runtime.root_path / "agent_config.json").resolve()
         config = self._read_or_default_config(config_path)
-        provider = str(params.get("provider") or params.get("slug") or self._current_model_provider() or "openai").strip()
-        preset = dict(MODEL_PROVIDER_PRESETS.get(provider, MODEL_PROVIDER_PRESETS["custom"]))
+        requested_provider = str(
+            params.get("provider") or params.get("slug") or self._current_model_provider() or CUSTOM_MODEL_PROVIDER_SLUG
+        ).strip()
+        requested_preset = dict(MODEL_PROVIDER_PRESETS.get(requested_provider, MODEL_PROVIDER_PRESETS[CUSTOM_MODEL_PROVIDER_SLUG]))
+        provider = CUSTOM_MODEL_PROVIDER_SLUG
+        preset = dict(MODEL_PROVIDER_PRESETS[CUSTOM_MODEL_PROVIDER_SLUG])
         provider_config = config.setdefault("providers", {}).setdefault(provider, {})
-        provider_config.setdefault("base_url", preset.get("base_url"))
-        provider_config.setdefault("api_key_env", preset.get("api_key_env"))
+        provider_config.setdefault("base_url", requested_preset.get("base_url", preset.get("base_url")))
+        provider_config.setdefault("api_key_env", requested_preset.get("api_key_env", preset.get("api_key_env")))
         remote = config.setdefault("adapters", {}).setdefault("remote_llm", {})
         remote.update(
             {
@@ -2982,7 +3465,12 @@ class JSONRPCServer:
                 "dry_run": bool(params.get("dry_run", False)),
                 "api_key_env": str(params.get("api_key_env", provider_config.get("api_key_env", remote.get("api_key_env", "OPENAI_API_KEY")))),
                 "base_url": str(params.get("base_url", provider_config.get("base_url", remote.get("base_url", "https://api.openai.com/v1")))),
-                "model": str(params.get("model", params.get("name", remote.get("model", (preset.get("models") or ["gpt-4o-mini"])[0])))),
+                "model": str(
+                    params.get(
+                        "model",
+                        params.get("name", remote.get("model", (requested_preset.get("models") or preset.get("models") or ["custom-model"])[0])),
+                    )
+                ),
                 "timeout": float(params.get("timeout", remote.get("timeout", 30.0))),
                 "temperature": float(params.get("temperature", remote.get("temperature", 0.2))),
                 "max_tokens": params.get("max_tokens", remote.get("max_tokens")),
@@ -3000,7 +3488,7 @@ class JSONRPCServer:
         if was_running:
             self.runtime.start()
         health = self.runtime.adapter_health().get("remote_llm", {})
-        await self.send_event("status.update", {"kind": "model", "text": f"Model configured: {remote['model']}"})
+        await self.send_event("status.update", {"kind": "model", "text": f"模型已配置：{remote['model']}"})
         return {
             "ok": True,
             "config_path": str(config_path),
@@ -3013,7 +3501,8 @@ class JSONRPCServer:
 
     async def handle_model_providers(self, params: dict[str, Any]) -> dict[str, Any]:
         providers = []
-        for slug, preset in MODEL_PROVIDER_PRESETS.items():
+        for slug in VISIBLE_MODEL_PROVIDER_SLUGS:
+            preset = MODEL_PROVIDER_PRESETS[slug]
             providers.append(
                 {
                     "slug": slug,
@@ -3027,17 +3516,19 @@ class JSONRPCServer:
         return {"providers": providers}
 
     async def handle_model_setup(self, params: dict[str, Any]) -> dict[str, Any]:
-        provider = str(params.get("provider", "openai")).strip()
-        preset = dict(MODEL_PROVIDER_PRESETS.get(provider, MODEL_PROVIDER_PRESETS["custom"]))
+        requested_provider = str(params.get("provider", CUSTOM_MODEL_PROVIDER_SLUG)).strip()
+        requested_preset = dict(MODEL_PROVIDER_PRESETS.get(requested_provider, MODEL_PROVIDER_PRESETS[CUSTOM_MODEL_PROVIDER_SLUG]))
+        provider = CUSTOM_MODEL_PROVIDER_SLUG
+        preset = dict(MODEL_PROVIDER_PRESETS[CUSTOM_MODEL_PROVIDER_SLUG])
         auth_type = str(params.get("auth_type", "api_key")).strip() or "api_key"
-        api_key_env = str(params.get("api_key_env", preset.get("api_key_env", "OPENAI_API_KEY")))
+        api_key_env = str(params.get("api_key_env", requested_preset.get("api_key_env", preset.get("api_key_env", "OPENAI_API_KEY"))))
         config_path = self.config_path or (self.runtime.root_path / "config.yaml").resolve()
         config = self._read_or_default_config(config_path)
-        model = str(params.get("model", (preset.get("models") or ["gpt-4o-mini"])[0]))
+        model = str(params.get("model", (requested_preset.get("models") or preset.get("models") or ["custom-model"])[0]))
         provider_config = config.setdefault("providers", {}).setdefault(provider, {})
         provider_config.update(
             {
-                "base_url": str(params.get("base_url", preset.get("base_url", "https://api.openai.com/v1"))),
+                "base_url": str(params.get("base_url", requested_preset.get("base_url", preset.get("base_url", "https://api.openai.com/v1")))),
                 "api_key_env": api_key_env,
                 "auth_type": auth_type,
             }
@@ -3129,15 +3620,10 @@ class JSONRPCServer:
                 model = config.get("model") if isinstance(config.get("model"), dict) else {}
                 provider = str(model.get("provider", "")).strip()
                 if provider:
-                    return provider
+                    return CUSTOM_MODEL_PROVIDER_SLUG
             except Exception:
                 pass
-        remote = self.runtime.adapters.get("remote_llm")
-        base_url = str(getattr(remote, "base_url", ""))
-        for slug, preset in MODEL_PROVIDER_PRESETS.items():
-            if base_url.rstrip("/") == str(preset.get("base_url", "")).rstrip("/"):
-                return slug
-        return "openai_compatible" if base_url else "custom"
+        return CUSTOM_MODEL_PROVIDER_SLUG
 
     def _read_mcp_servers(self) -> list[dict[str, Any]]:
         payload = self._read_json_file(self.mcp_config_path)
@@ -3517,6 +4003,18 @@ class JSONRPCServer:
                 "params": parsed_params,
                 "confidence": 0.95,
             }
+        common_intent = self._extract_common_natural_intent(text, normalized)
+        if common_intent:
+            method, parsed_params, confidence = common_intent
+            return {
+                "matched": True,
+                "source": source,
+                "text": text,
+                "command": method,
+                "method": method,
+                "params": parsed_params,
+                "confidence": confidence,
+            }
         approval_intent = self._extract_approval_response(text, normalized)
         if approval_intent:
             return {
@@ -3546,24 +4044,65 @@ class JSONRPCServer:
                 "confidence": 0.86,
                 "matched_alias": alias,
             }
-        for command, aliases in NATURAL_COMMAND_ALIASES.items():
+        direct_alias_matches: list[tuple[str, str, str]] = []
+        for method, aliases in NATURAL_DIRECT_ALIASES.items():
+            if method in AUTONOMOUS_SYSTEM_METHODS:
+                continue
             for alias in aliases:
-                if self._normalize_natural_text(alias) in normalized:
-                    return {
-                        "matched": True,
-                        "source": source,
-                        "text": text,
-                        "command": command,
-                        "method": "slash.exec",
-                        "confidence": 0.8,
-                        "matched_alias": alias,
-                    }
+                normalized_alias = self._normalize_natural_text(alias)
+                if normalized_alias and normalized_alias in normalized:
+                    direct_alias_matches.append((method, alias, normalized_alias))
+        if direct_alias_matches:
+            method, alias, _ = sorted(direct_alias_matches, key=lambda item: len(item[2]), reverse=True)[0]
+            parsed_params = self._infer_backend_params(
+                method,
+                text,
+                self._extract_natural_params(text),
+            )
+            return {
+                "matched": True,
+                "source": source,
+                "text": text,
+                "command": method,
+                "method": method,
+                "params": parsed_params,
+                "confidence": 0.82,
+                "matched_alias": alias,
+            }
         return {"matched": False, "source": source, "text": text}
+
+    def _extract_common_natural_intent(
+        self,
+        text: str,
+        normalized: str,
+    ) -> tuple[str, dict[str, Any], float] | None:
+        approval = self._extract_approval_response(text, normalized)
+        if approval:
+            return "approval.respond", approval, 0.9
+        reserved = self._extract_reserved_tui_intent(text, normalized)
+        if reserved:
+            method, params = reserved
+            return method, params, 0.9
+        platform_message = self._extract_platform_message_intent(text, normalized)
+        if platform_message:
+            return "runtime.platform_message", platform_message, 0.9
+        conversation_search = self._extract_conversation_search_intent(text, normalized)
+        if conversation_search:
+            return "conversation.search", conversation_search, 0.88
+        experience_record = self._extract_experience_record_intent(text, normalized)
+        if experience_record:
+            return "experience.record", experience_record, 0.88
+        final_acceptance = self._extract_final_acceptance_intent(text, normalized)
+        if final_acceptance:
+            return "runtime.final_acceptance", final_acceptance, 0.86
+        return None
 
     def _match_backend_alias(self, text: str, normalized: str) -> tuple[str, str] | None:
         candidates: list[tuple[str, str]] = []
         for item in NATURAL_BACKEND_ACTIONS:
             method = str(item.get("method", ""))
+            if method in AUTONOMOUS_SYSTEM_METHODS:
+                continue
             aliases = [method, method.replace(".", " "), method.replace("_", " ")]
             aliases.extend(str(alias) for alias in item.get("aliases", []))
             for alias in aliases:
@@ -3572,6 +4111,8 @@ class JSONRPCServer:
                     candidates.append((method, alias))
         if not candidates:
             for method in TOOL_POLICIES:
+                if method in AUTONOMOUS_SYSTEM_METHODS:
+                    continue
                 aliases = [method, method.replace(".", " "), method.replace("_", " ")]
                 for alias in aliases:
                     normalized_alias = self._normalize_natural_text(alias)
@@ -3587,19 +4128,172 @@ class JSONRPCServer:
         text: str,
         normalized: str,
     ) -> dict[str, Any] | None:
-        approve_terms = ("approve", "allow", "yes", "once", "同意", "批准")
-        deny_terms = ("deny", "reject", "no", "拒绝", "否")
+        approve_terms = ("approve", "allow", "yes", "once", "同意", "批准", "通过", "允许")
+        deny_terms = ("deny", "reject", "no", "拒绝", "否", "不同意", "驳回")
         if not any(term in normalized for term in approve_terms + deny_terms):
             return None
-        if "request" not in normalized and "approval" not in normalized:
+        if (
+            "request" not in normalized
+            and "approval" not in normalized
+            and "审批" not in normalized
+            and "审核" not in normalized
+            and "请求" not in normalized
+        ):
             return None
         decision = "once" if any(term in normalized for term in approve_terms) else "deny"
         request_id = self._extract_request_id(text)
-        if not request_id and ("latest" in normalized or "last" in normalized or "request" in normalized):
+        if not request_id and (
+            "latest" in normalized
+            or "last" in normalized
+            or "request" in normalized
+            or "最新" in normalized
+            or "最近" in normalized
+            or "审批" in normalized
+            or "审核" in normalized
+        ):
             request_id = self._latest_pending_request_id()
         if not request_id:
             return None
         return {"request_id": request_id, "decision": decision}
+
+    def _extract_platform_message_intent(
+        self,
+        text: str,
+        normalized: str,
+    ) -> dict[str, Any] | None:
+        platform_aliases = {
+            "feishu": ("feishu", "lark", "飞书"),
+            "dingtalk": ("dingtalk", "dingding", "钉钉"),
+            "wechat": ("wechat", "weixin", "微信"),
+        }
+        platform = ""
+        for canonical, aliases in platform_aliases.items():
+            if any(alias in normalized for alias in aliases):
+                platform = canonical
+                break
+        if not platform:
+            return None
+        english = re.search(
+            r"\b(?:send|post|deliver)\s+(?:to\s+)?(?:feishu|lark|dingtalk|dingding|wechat|weixin)\s+(?:message|text)\s+(.+)$",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        chinese = re.search(
+            r"(?:给|向)?(?:飞书|钉钉|微信)(?:发|发送|推送)(?:消息|通知)?[：:\s]*(.+)$",
+            text.strip(),
+        )
+        message = ""
+        if english:
+            message = english.group(1).strip()
+        elif chinese:
+            message = chinese.group(1).strip()
+        if not message:
+            return None
+        return {"platform": platform, "payload": {"text": message}}
+
+    def _extract_reserved_tui_intent(
+        self,
+        text: str,
+        normalized: str,
+    ) -> tuple[str, dict[str, Any]] | None:
+        if any(term in normalized for term in ("help", "commands", "显示可用命令", "可用命令", "帮助", "命令列表")):
+            return "natural.capabilities", {}
+        if any(term in normalized for term in ("new session", "start new session", "开启新会话", "新会话", "创建新会话")):
+            return "session.create", {}
+        resume_match = re.search(
+            r"(?:resume|continue|restore|继续|恢复)\s*(?:session|conversation|会话)?\s*(?P<session_id>[a-zA-Z0-9_-]{4,})",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        if resume_match:
+            return "session.resume", {"session_id": resume_match.group("session_id")}
+        if any(term in normalized for term in ("model picker", "choose model", "select model", "打开模型选择器", "选择模型")):
+            return "model.options", {}
+        model_match = re.search(
+            r"(?:switch|change|set|use|configure|切换|设置|使用|配置|切到)\s*(?:model|模型)?\s*(?:to|为|成|到)?\s*(?P<model>[a-zA-Z0-9_./:-]+)",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        if model_match and any(term in normalized for term in ("model", "模型")):
+            return "model.configure", {"model": model_match.group("model")}
+        return None
+
+    def _extract_conversation_search_intent(
+        self,
+        text: str,
+        normalized: str,
+    ) -> dict[str, Any] | None:
+        has_search = any(term in normalized for term in ("search", "find", "recall", "look up", "搜索", "查找", "回忆", "查一下"))
+        has_memory_scope = any(
+            term in normalized
+            for term in (
+                "conversation",
+                "conversations",
+                "chat history",
+                "previous",
+                "past",
+                "history",
+                "对话",
+                "会话",
+                "过去",
+                "历史",
+                "以前",
+            )
+        )
+        if not has_search or not has_memory_scope:
+            return None
+        query = self._extract_search_query(text)
+        if not query:
+            return None
+        return {"query": query}
+
+    def _extract_experience_record_intent(
+        self,
+        text: str,
+        normalized: str,
+    ) -> dict[str, Any] | None:
+        patterns = [
+            r"^\s*(?:remember|memorize|record|store)\s+(?:that\s+)?(?P<body>.+)$",
+            r"^\s*(?:请)?(?:记住|记录|保存经验|记忆)[：:\s]*(?P<body>.+)$",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text.strip(), re.IGNORECASE)
+            if match:
+                body = match.group("body").strip(" ：:")
+                if body:
+                    return {"text": body, "source": "natural_intent"}
+        if "记住" in normalized or "remember" in normalized:
+            body = re.sub(r"^\s*(?:请)?(?:记住|remember)(?:that)?[：:\s]*", "", text.strip(), flags=re.IGNORECASE).strip()
+            if body and body != text.strip():
+                return {"text": body, "source": "natural_intent"}
+        return None
+
+    def _extract_final_acceptance_intent(
+        self,
+        text: str,
+        normalized: str,
+    ) -> dict[str, Any] | None:
+        if not (
+            ("final" in normalized and "acceptance" in normalized)
+            or "最终验收" in normalized
+            or "验收报告" in normalized
+        ):
+            return None
+        return self._infer_stress_cycle_params(text, {})
+
+    @staticmethod
+    def _extract_search_query(text: str) -> str:
+        patterns = [
+            r"\b(?:search|find|recall|look up)\s+(?:previous\s+|past\s+)?(?:conversations?|chat history|history)?\s*(?:for|about)?\s*(?P<query>.+)$",
+            r"(?:搜索|查找|回忆|查一下)(?:过去|历史|以前)?(?:对话|会话)?(?:里|中)?(?:关于|有关)?\s*(?P<query>.+?)(?:的内容|内容|记录)?$",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text.strip(), re.IGNORECASE)
+            if match:
+                query = match.group("query").strip(" ：:，。,.")
+                if query:
+                    return query
+        return ""
 
     @staticmethod
     def _extract_request_id(text: str) -> str:
@@ -3626,6 +4320,12 @@ class JSONRPCServer:
             return self._infer_mcp_call_params(text, params)
         if method == "context.attach":
             return self._infer_context_attach_params(text, params)
+        if method == "model.configure":
+            return self._infer_model_configure_params(text, params)
+        if method == "session.resume":
+            return self._infer_session_resume_params(text, params)
+        if method == "session.steer":
+            return self._infer_session_steer_params(text, params)
         return params
 
     def _infer_platform_message_params(
@@ -3656,6 +4356,8 @@ class JSONRPCServer:
             return params
         match = re.search(r"\b(\d+)\s+(?:stress\s+)?cycles?\b", text, re.IGNORECASE)
         if not match:
+            match = re.search(r"(\d+)\s*(?:轮|次|遍|个)?", text)
+        if not match:
             return params
         return {**params, "stress_cycles": int(match.group(1))}
 
@@ -3679,6 +4381,46 @@ class JSONRPCServer:
         if not refs:
             return params
         return {**params, "path": refs[0]}
+
+    @staticmethod
+    def _infer_model_configure_params(text: str, params: dict[str, Any]) -> dict[str, Any]:
+        if params.get("model"):
+            return params
+        match = re.search(
+            r"(?:switch|change|set|use|configure|切换|设置|使用|配置|切到)\s*(?:model|模型)?\s*(?:to|为|成|到)?\s*(?P<model>[a-zA-Z0-9_./:-]+)",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        if not match:
+            return params
+        return {**params, "model": match.group("model")}
+
+    @staticmethod
+    def _infer_session_resume_params(text: str, params: dict[str, Any]) -> dict[str, Any]:
+        if params.get("session_id"):
+            return params
+        match = re.search(
+            r"(?:resume|continue|restore|继续|恢复)\s*(?:session|conversation|会话)?\s*(?P<session_id>[a-zA-Z0-9_-]{4,})",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        if not match:
+            return params
+        return {**params, "session_id": match.group("session_id")}
+
+    @staticmethod
+    def _infer_session_steer_params(text: str, params: dict[str, Any]) -> dict[str, Any]:
+        if params.get("text"):
+            return params
+        match = re.search(
+            r"(?:personality|persona|style|个性|人格|风格)(?:设置|设为|切换为|调整为)?[：:\s]*(?P<text>.+)$",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        if not match:
+            return params
+        value = match.group("text").strip()
+        return {**params, "text": value} if value else params
 
     def _extract_parallel_params(self, text: str, normalized: str) -> dict[str, Any]:
         has_parallel_intent = any(
@@ -3899,10 +4641,10 @@ class JSONRPCServer:
         snapshot = self.runtime.status_snapshot()
         services = ", ".join(f"{name}={status}" for name, status in snapshot["services"].items())
         return (
-            f"Session: {self.session_id}\n"
-            f"Model: {self._model_name()}\n"
-            f"CWD: {project_root}\n"
-            f"Services: {services}"
+            f"会话：{self.session_id}\n"
+            f"模型：{self._model_name()}\n"
+            f"工作目录：{project_root}\n"
+            f"服务：{services}"
         )
 
     def _format_runtime_health(self) -> str:
@@ -3915,36 +4657,36 @@ class JSONRPCServer:
             f"{name}={status}"
             for name, status in report["runtime"]["services"].items()
         )
-        return f"runtime\nServices: {services}\nAdapters: {adapters}"
+        return f"运行时\n服务：{services}\n适配器：{adapters}"
 
     def _format_preflight(self) -> str:
         report = self.runtime.preflight_report()
         summary = report["summary"]
-        attention = ", ".join(summary.get("attention", [])) or "none"
+        attention = ", ".join(summary.get("attention", [])) or "无"
         return (
-            "preflight\n"
-            f"Status: {summary['status']}\n"
-            f"Blueprints: {summary['blueprint_count']}\n"
-            f"Attention: {attention}"
+            "预检\n"
+            f"状态：{summary['status']}\n"
+            f"蓝图：{summary['blueprint_count']}\n"
+            f"关注项：{attention}"
         )
 
     def _format_host_probe(self) -> str:
         report = self.runtime.host_integration_probe()
-        lines = [f"host: {report['summary']['status']}"]
+        lines = [f"宿主机：{report['summary']['status']}"]
         for name, details in report["tools"].items():
             lines.append(f"- {name}: {details.get('status')}")
         return "\n".join(lines)
 
     def _format_messaging(self) -> str:
         status = self.runtime.messaging_gateway_status()
-        platforms = ", ".join(status.get("platforms", [])) or "none"
-        return f"messaging: {status['status']}\nPlatforms: {platforms}"
+        platforms = ", ".join(status.get("platforms", [])) or "无"
+        return f"通讯：{status['status']}\n平台：{platforms}"
 
     def _format_blueprints(self) -> str:
         blueprints = self.runtime.list_agent_blueprints()
         if not blueprints:
-            return "blueprints\nNo agent blueprints."
-        return "blueprints\n" + "\n".join(
+            return "智能体蓝图\n暂无智能体蓝图。"
+        return "智能体蓝图\n" + "\n".join(
             f"- {item.get('role_name', 'unknown')} v{item.get('version', '')}"
             for item in blueprints
         )
@@ -3952,8 +4694,8 @@ class JSONRPCServer:
     def _format_skills(self) -> str:
         skills = self.runtime.list_published_skills()
         if not skills:
-            return "skills\nNo published skills."
-        return "skills\n" + "\n".join(
+            return "技能\n暂无已发布技能。"
+        return "技能\n" + "\n".join(
             f"- {item.get('metadata', {}).get('name', item.get('path', 'unknown'))}"
             for item in skills
         )
@@ -3963,70 +4705,70 @@ class JSONRPCServer:
         experiments = self.runtime.list_algorithm_experiment_reports()
         reviews = self.runtime.list_algorithm_reviews()
         return (
-            "algorithms\n"
-            f"Registry: {len(algorithms)}\n"
-            f"Experiments: {len(experiments)}\n"
-            f"Reviews: {len(reviews)}"
+            "算法\n"
+            f"注册表：{len(algorithms)}\n"
+            f"实验：{len(experiments)}\n"
+            f"评审：{len(reviews)}"
         )
 
     def _format_audits(self) -> str:
         skill = self.runtime.read_skill_lifecycle_audit()
         algorithm = self.runtime.read_algorithm_evolution_audit()
         return (
-            "audits\n"
-            f"skill_lifecycle: {len(skill)} records\n"
-            f"algorithm_evolution: {len(algorithm)} records"
+            "审计\n"
+            f"skill_lifecycle：{len(skill)} 条记录\n"
+            f"algorithm_evolution：{len(algorithm)} 条记录"
         )
 
     def _format_avatar(self) -> str:
         event = self.runtime.get_latest_avatar_event()
         return (
-            "avatar\n"
-            f"Emotion: {event.get('emotion', 'unknown')}\n"
-            f"Animation: {event.get('animation', 'unknown')}\n"
-            f"Text: {event.get('text', '')}"
+            "形象\n"
+            f"情绪：{event.get('emotion', 'unknown')}\n"
+            f"动画：{event.get('animation', 'unknown')}\n"
+            f"文本：{event.get('text', '')}"
         )
 
     def _format_events(self) -> str:
         events = self.runtime.event_bus.list_events()[-10:]
         if not events:
-            return "events\nNo runtime events."
-        lines = ["events"]
+            return "事件\n暂无运行事件。"
+        lines = ["事件"]
         for event in events:
             lines.append(f"- {event.event_type} from {event.source_agent}")
         return "\n".join(lines)
 
     def _format_terminal_ui(self) -> str:
         status = self.runtime.terminal_ui_status()
-        missing = ", ".join(status.get("missing", [])) or "none"
-        return f"terminal_ui: {status['status']}\nMissing: {missing}"
+        missing = ", ".join(status.get("missing", [])) or "无"
+        return f"终端界面：{status['status']}\n缺失：{missing}"
 
     @staticmethod
     def _format_smoke(report: dict[str, Any]) -> str:
         summary = report["summary"]
-        failures = ", ".join(summary.get("failures", [])) or "none"
+        failures = ", ".join(summary.get("failures", [])) or "无"
         return (
-            "operational_smoke\n"
-            f"Status: {summary['status']}\n"
-            f"Cycles: {summary['cycles']}\n"
-            f"Failures: {failures}\n"
-            f"Path: {report.get('path', '')}"
+            "运行冒烟检查\n"
+            f"状态：{summary['status']}\n"
+            f"轮次：{summary['cycles']}\n"
+            f"失败：{failures}\n"
+            f"路径：{report.get('path', '')}"
         )
 
     @staticmethod
     def _format_stress(report: dict[str, Any]) -> str:
-        failures = ", ".join(report.get("failures", [])) or "none"
+        failures = ", ".join(report.get("failures", [])) or "无"
         return (
-            "interaction_stress\n"
-            f"Status: {report['status']}\n"
-            f"Cycles: {report['cycles']}\n"
-            f"Failures: {failures}"
+            "交互压力检查\n"
+            f"状态：{report['status']}\n"
+            f"轮次：{report['cycles']}\n"
+            f"失败：{failures}"
         )
 
     def _format_approvals(self) -> str:
         requests = self.runtime.governance.list_requests()
         if not requests:
-            return "No approval requests."
+            return "暂无审批请求。"
         lines = []
         for request in requests:
             lines.append(
@@ -4037,40 +4779,40 @@ class JSONRPCServer:
 
     def _format_tools(self) -> str:
         services = self.runtime.status_snapshot()["services"]
-        lines = ["Runtime services"]
+        lines = ["运行时服务"]
         lines.extend(f"- {name}: {status}" for name, status in services.items())
         lines.append("")
-        lines.append("Natural backend tools")
+        lines.append("自然语言后端工具")
         for method in sorted(TOOL_POLICIES):
             policy = self._tool_policy(method)
             required = policy.get("input_schema", {}).get("required", [])
-            required_text = ", ".join(required) if required else "none"
-            approval = "yes" if policy.get("requires_approval") else "no"
+            required_text = ", ".join(required) if required else "无"
+            approval = "是" if policy.get("requires_approval") else "否"
             retry = policy.get("retry", {})
             lines.append(
-                f"- {method} | auth={policy.get('auth_scope')} | "
-                f"risk={policy.get('risk_level')} | approval={approval} | "
-                f"retry={retry.get('max_attempts', 1)}"
+                f"- {method} | 鉴权={policy.get('auth_scope')} | "
+                f"风险={policy.get('risk_level')} | 审批={approval} | "
+                f"重试={retry.get('max_attempts', 1)}"
             )
-            lines.append(f"  schema required: {required_text}")
+            lines.append(f"  必填参数：{required_text}")
         lines.append("")
-        lines.append("Invoke with natural text:")
+        lines.append("可用自然语言调用：")
         lines.append('run backend shell.exec params={"command":"python --version"}')
         lines.append('run backend runtime.final_acceptance params={"stress_cycles":1}')
         lines.append("show adapter health")
-        lines.append("approve latest request")
+        lines.append("批准最新请求")
         lines.append("")
-        lines.append("Missing required parameters trigger clarification prompts.")
-        lines.append("Voice input uses the same natural-language tool gateway.")
+        lines.append("缺少必填参数时会触发补充信息提示。")
+        lines.append("语音输入使用同一个自然语言工具网关。")
         return "\n".join(lines)
 
     def _help_text(self) -> str:
         commands = "\n".join(f"{item['text']} - {item['meta']}" for item in SLASH_COMMANDS)
         return (
-            "Terminal UI commands\n"
+            "终端界面命令\n"
             f"{commands}\n\n"
-            "Hotkeys: Enter submit, Shift/Alt+Enter newline, Tab completion, "
-            "Up/Down history or completions, Ctrl+C interrupt/clear/exit."
+            "快捷键：Enter 提交，Shift/Alt+Enter 换行，Tab 补全，"
+            "上下方向键切换历史或补全项，Ctrl+C 中断/清空/退出。"
         )
 
     @staticmethod

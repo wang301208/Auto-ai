@@ -1,0 +1,45 @@
+{
+  "summary": {
+    "status": "passed",
+    "cycles": 1,
+    "failures": []
+  },
+  "cycles": [
+    {
+      "cycle": 1,
+      "runtime_running": true,
+      "service_count": 10,
+      "adapter_count": 7,
+      "preflight_status": "attention_required",
+      "interaction": {
+        "transcript": "operational smoke cycle 1",
+        "response_text": "治理服务状态为 ready；共有 10 个后端服务可用。；审批队列状态：empty",
+        "response": {
+          "provider": "local_rule_based",
+          "persona": "calm_architect",
+          "text": "治理服务状态为 ready；共有 10 个后端服务可用。；审批队列状态：empty",
+          "emotion": "focused",
+          "action": "explain",
+          "remote_llm_status": {
+            "provider": "remote_openai_compatible",
+            "status": "unconfigured",
+            "text": "Remote LLM is not configured: OPENAI_API_KEY is missing.",
+            "emotion": "focused",
+            "action": "explain",
+            "reason": "OPENAI_API_KEY is not configured."
+          }
+        },
+        "speech": {
+          "mode": "text",
+          "text": "治理服务状态为 ready；共有 10 个后端服务可用。；审批队列状态：empty"
+        },
+        "avatar_event": {
+          "text": "治理服务状态为 ready；共有 10 个后端服务可用。；审批队列状态：empty",
+          "emotion": "focused",
+          "animation": "explain",
+          "timestamp": "2026-05-09T08:13:37.364119+00:00"
+        }
+      }
+    }
+  ]
+}
