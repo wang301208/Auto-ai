@@ -1,0 +1,28 @@
+{
+  "default": {
+    "user_id": "default",
+    "observations": [
+      {
+        "text": "User prompt: 在",
+        "created_at": "2026-05-10T16:09:23.275703+00:00"
+      },
+      {
+        "text": "User prompt: 启动自主自我",
+        "created_at": "2026-05-10T16:10:50.120484+00:00"
+      },
+      {
+        "text": "User prompt: 启动项目所有功能",
+        "created_at": "2026-05-10T16:12:50.799319+00:00"
+      }
+    ],
+    "thesis": "User prompt: 在 User prompt: 启动自主自我 User prompt: 启动项目所有功能",
+    "antithesis": "no strong contradiction detected",
+    "synthesis": "User prompt: 在 User prompt: 启动自主自我 User prompt: 启动项目所有功能",
+    "dialectic": {
+      "thesis": "User prompt: 在 User prompt: 启动自主自我 User prompt: 启动项目所有功能",
+      "antithesis": "no strong contradiction detected",
+      "synthesis": "User prompt: 在 User prompt: 启动自主自我 User prompt: 启动项目所有功能"
+    },
+    "updated_at": "2026-05-10T16:12:50.799319+00:00"
+  }
+}

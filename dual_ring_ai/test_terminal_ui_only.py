@@ -56,6 +56,20 @@ def test_tui_uses_alternate_screen_and_single_startup_branding():
     assert "{!hideBranding ? <Branding info={info} /> : null}" in app_source
 
 
+def test_tui_surfaces_startup_autonomous_self_maintenance():
+    app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
+    panel_source = (
+        ROOT / "ui-tui" / "src" / "components" / "runtimeActivityPanel.tsx"
+    ).read_text(encoding="utf-8")
+
+    assert app_source.index("gateway.on('event', onEvent)") < app_source.index("'session.create'")
+    assert "case 'system.maintenance':" in app_source
+    assert "setAutonomyMaintenance" in app_source
+    assert "自主自我已启动" in app_source
+    assert "maintenance={autonomyMaintenance}" in app_source
+    assert "自主自我" in panel_source
+
+
 def test_terminal_ui_does_not_expose_legacy_branding():
     terminal_files = [
         ROOT / "ui-tui" / "package.json",
@@ -366,6 +380,63 @@ def test_project_runs_high_self_autonomy_loop_and_records_self_state(tmp_path):
     )
 
 
+def test_session_start_boots_full_autonomous_self_automation(tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    from tui_gateway.entry import JSONRPCServer
+
+    cron_jobs = {
+        "jobs": [
+            {
+                "id": "cron_due",
+                "name": "startup due memory tick",
+                "method": "memory.periodic_tick",
+                "params": {"task": "startup due task", "cadence": "startup-cron"},
+                "interval_seconds": 0,
+                "next_run_at": (datetime.now(UTC) - timedelta(seconds=5)).isoformat(),
+                "run_count": 0,
+                "status": "active",
+            }
+        ]
+    }
+    (tmp_path / "cron_jobs.json").write_text(
+        json.dumps(cron_jobs, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    asyncio.run(server.handle_session_create({"cols": 100}))
+    events = [
+        item.get("params", {})
+        for item in writes
+        if item.get("method") == "event"
+    ]
+    maintenance_events = [
+        event.get("payload", {})
+        for event in events
+        if event.get("type") == "system.maintenance"
+    ]
+    latest = maintenance_events[-1]
+    action_names = {item["name"] for item in latest["actions"]}
+    updated_cron = json.loads((tmp_path / "cron_jobs.json").read_text(encoding="utf-8"))
+    self_state = json.loads((tmp_path / "experience" / "self_state.json").read_text(encoding="utf-8"))
+
+    assert "autonomous.startup_orchestrator" in action_names
+    assert "cron.run_due" in action_names
+    assert "context.compaction.check" in action_names
+    assert "self_evolution.governance_ready" in action_names
+    assert "self_evolution.startup_policy" in action_names
+    assert "approval.queue" in [event.get("type") for event in events]
+    assert "cron.run_due" in [event.get("type") for event in events]
+    assert updated_cron["jobs"][0]["status"] == "completed"
+    assert self_state["last_maintenance"]["trigger"] == "session_start"
+    assert "autonomous_startup_orchestration" in self_state["capabilities"]
+    assert "scheduled_task_execution" in self_state["capabilities"]
+    assert "governed_self_evolution_readiness" in self_state["capabilities"]
+
+
 def test_high_self_evolution_creates_guarded_core_training_and_deploy_requests(tmp_path):
     from tui_gateway.entry import JSONRPCServer
 
@@ -629,14 +700,66 @@ def test_tui_approval_countdown_defaults_to_auto_approve():
 
     required = [
         "APPROVAL_AUTO_APPROVE_SECONDS = 30",
+        "APPROVAL_TIMEOUT_DECISION = 'once'",
         "approvalTimeoutRemaining",
-        "void answerOverlay('once')",
-        "后自动本次同意",
+        "void answerOverlay(APPROVAL_TIMEOUT_DECISION)",
+        "30 秒未操作将自动本次同意",
         "timeout_remaining?: number",
     ]
 
     assert all(text in combined for text in required)
-    assert "void answerOverlay('deny')" in app_source
+    assert "timeout_remaining ?? APPROVAL_AUTO_APPROVE_SECONDS) <= 0" in app_source
+    assert "void answerOverlay('deny')" not in app_source
+
+
+def test_gateway_auto_approves_expired_manual_review_requests(tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+    queued = asyncio.run(
+        server.handle_natural_invoke(
+            {
+                "text": (
+                    "run backend shell.exec "
+                    "params={\"command\":\"python --version\"}"
+                ),
+                "auth_scopes": ["shell:execute"],
+            }
+        )
+    )
+    request_path = (
+        tmp_path
+        / "governance"
+        / "requests"
+        / f"{queued['approval_id']}.json"
+    )
+    request_payload = json.loads(request_path.read_text(encoding="utf-8"))
+    request_payload["created_at"] = (
+        datetime.now(UTC) - timedelta(seconds=31)
+    ).isoformat()
+    request_path.write_text(
+        json.dumps(request_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    approvals = asyncio.run(server.handle_governance_requests({}))
+    stored = server.runtime.governance.get_request(queued["approval_id"])
+    completed_tools = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "tool.complete"
+    ]
+
+    assert queued["requires_approval"] is True
+    assert stored.status == "approved"
+    assert stored.decided_by == "auto_approve_timeout"
+    assert approvals["auto_approved"][0]["request_id"] == queued["approval_id"]
+    assert approvals["auto_approved"][0]["executed"]["method"] == "shell.exec"
+    assert any(item.get("name") == "shell.exec" for item in completed_tools)
 
 
 def test_tui_frontend_supports_full_terminal_interaction_contract():
@@ -671,6 +794,82 @@ def test_tui_frontend_supports_full_terminal_interaction_contract():
     ]
 
     assert all(text in combined for text in required)
+
+
+def test_tui_input_mouse_wheel_navigates_message_history():
+    app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
+    entry_source = (ROOT / "ui-tui" / "src" / "entry.tsx").read_text(encoding="utf-8")
+    text_input_source = (
+        ROOT / "ui-tui" / "src" / "components" / "textInput.tsx"
+    ).read_text(encoding="utf-8")
+
+    required_entry = [
+        "enableMouseReporting",
+        "disableMouseReporting",
+        "\\x1b[?1000h\\x1b[?1006h",
+        "\\x1b[?1006l\\x1b[?1000l",
+    ]
+    required_input = [
+        "mouseWheelDirection",
+        "containsTerminalMouseEvent",
+        "onHistoryPrevious",
+        "onHistoryNext",
+        "isWheelOverInputArea",
+    ]
+    required_app = [
+        "navigateInputHistory",
+        "navigateInputHistory('previous')",
+        "navigateInputHistory('next')",
+        "onHistoryPrevious",
+        "onHistoryNext",
+    ]
+
+    assert all(text in entry_source for text in required_entry)
+    assert all(text in text_input_source for text in required_input)
+    assert all(text in app_source for text in required_app)
+
+
+def test_tui_enter_executes_selected_slash_completion():
+    app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
+
+    required = [
+        "submitCurrentInput",
+        "completionItems.length",
+        "completionItems[completionIndex]",
+        "applyCompletionText",
+        "completion.startsWith('/') && text.startsWith('/') && replaceFrom === 1",
+        "void submitCurrentInput(applyCompletionText(input, item.text))",
+        "onSubmit={() => {",
+        "void submitCurrentInput(composedInput)",
+    ]
+
+    assert all(text in app_source for text in required)
+    assert "`${input.slice(0, replaceFrom)}${item.text}`" not in app_source
+
+
+def test_tui_custom_model_picker_collects_base_url_key_and_model():
+    app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
+    types_source = (ROOT / "ui-tui" / "src" / "types.ts").read_text(encoding="utf-8")
+    overlay_source = (
+        ROOT / "ui-tui" / "src" / "components" / "overlays.tsx"
+    ).read_text(encoding="utf-8")
+    combined = "\n".join([app_source, types_source, overlay_source])
+
+    required = [
+        "modelSetup",
+        "base_url",
+        "api_key_env",
+        "api_key",
+        "model.setup",
+        "自定义模型配置",
+        "接口地址",
+        "密钥环境变量",
+        "API 密钥",
+        "模型型号",
+    ]
+
+    assert all(text in combined for text in required)
+    assert "'model.configure', {\n            provider: selected.slug" not in app_source
 
 
 def test_tui_gateway_supports_terminal_redirection_for_slash_shell_and_prompt(tmp_path):
@@ -1361,6 +1560,49 @@ def test_natural_language_intent_recognizer_extracts_common_english_freeform_par
     assert acceptance["matched"] is True
     assert acceptance["method"] == "runtime.final_acceptance"
     assert acceptance["params"] == {"stress_cycles": 2}
+
+
+def test_natural_language_intent_recognizer_understands_plain_chinese_intents(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    remember = asyncio.run(
+        server.handle_natural_resolve({"text": "把这个经验存起来：CSV 清洗前先统一表头"})
+    )
+    recall = asyncio.run(
+        server.handle_natural_resolve({"text": "回忆一下之前关于 CSV 清洗的对话"})
+    )
+    shell = asyncio.run(
+        server.handle_natural_resolve({"text": "帮我跑一下 python --version"})
+    )
+    model = asyncio.run(
+        server.handle_natural_resolve({"text": "切换到模型 LongCat-Flash-Lite"})
+    )
+    weixin = asyncio.run(
+        server.handle_natural_resolve({"text": "给微信发消息：部署完成"})
+    )
+
+    assert remember["matched"] is True
+    assert remember["intent"] == "memory.record_experience"
+    assert remember["method"] == "experience.record"
+    assert remember["params"]["text"] == "CSV 清洗前先统一表头"
+    assert recall["matched"] is True
+    assert recall["intent"] == "memory.search_conversation"
+    assert recall["method"] == "conversation.search"
+    assert recall["params"]["query"] == "CSV 清洗"
+    assert shell["matched"] is True
+    assert shell["intent"] == "system.shell_exec"
+    assert shell["method"] == "shell.exec"
+    assert shell["command_text"] == "python --version"
+    assert model["matched"] is True
+    assert model["intent"] == "model.configure"
+    assert model["method"] == "model.configure"
+    assert model["params"]["model"] == "LongCat-Flash-Lite"
+    assert weixin["matched"] is True
+    assert weixin["intent"] == "messaging.send"
+    assert weixin["method"] == "runtime.platform_message"
+    assert weixin["params"] == {"platform": "weixin", "payload": {"text": "部署完成"}}
 
 
 def test_prompt_submit_is_invoked_by_text_and_voice_natural_language(tmp_path):

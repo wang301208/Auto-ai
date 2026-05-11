@@ -22,7 +22,7 @@ export default function Overlays({ overlay }: { overlay: OverlayState }) {
         <Text>{overlay.command || '操作'}</Text>
         {overlay.description ? <Text color={theme.dim}>{overlay.description}</Text> : null}
         {typeof approvalTimeoutRemaining === 'number' ? (
-          <Text color={theme.dim}>{approvalTimeoutRemaining}s 后自动本次同意</Text>
+          <Text color={theme.dim}>{approvalTimeoutRemaining}s 后自动本次同意，30 秒未操作将自动本次同意</Text>
         ) : null}
         <Text>
           {approvalChoices.map((choice, index) => `${index === overlay.selected ? '>' : ' '} ${approvalChoiceLabels[choice]}`).join('  ')}
@@ -93,6 +93,23 @@ export default function Overlays({ overlay }: { overlay: OverlayState }) {
             {provider.name} <Text color={theme.dim}>{(provider.models || []).join(', ')}</Text>
           </Text>
         ))}
+      </Box>
+    );
+  }
+
+  if (overlay.type === 'modelSetup') {
+    const labels: Record<typeof overlay.step, string> = {
+      base_url: '接口地址',
+      api_key_env: '密钥环境变量',
+      api_key: 'API 密钥',
+      model: '模型型号'
+    };
+    return (
+      <Box borderStyle="round" borderColor={theme.prompt} flexDirection="column" paddingX={1} marginTop={1}>
+        <Text color={theme.prompt} bold>自定义模型配置</Text>
+        <Text color={theme.dim}>{overlay.provider.name}</Text>
+        <Text>{labels[overlay.step]}：{overlay.step === 'api_key' && overlay.value ? '*'.repeat(overlay.value.length) : overlay.value}</Text>
+        <Text color={theme.dim}>按 Enter 确认，Esc 取消</Text>
       </Box>
     );
   }

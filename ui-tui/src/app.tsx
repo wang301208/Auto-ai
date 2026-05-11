@@ -13,6 +13,7 @@ import TextInput from './components/textInput.js';
 import ToolActivityPanel from './components/toolActivity.js';
 import { glyph, theme } from './theme.js';
 import type {
+  AutonomyMaintenance,
   CompletionItem,
   ApprovalQueueItem,
   ContextCompaction,
@@ -42,6 +43,22 @@ const makeMessage = (role: TranscriptMessage['role'], text: string): TranscriptM
 
 const isPathCompletion = (text: string) => /(^|\s)(@|\.\/|\.\.\/|~\/|\/)[^\s]*$/.test(text);
 const APPROVAL_AUTO_APPROVE_SECONDS = 30;
+const APPROVAL_TIMEOUT_DECISION = 'once';
+type ModelSetupOverlay = Extract<OverlayState, { type: 'modelSetup' }>;
+
+function advanceModelSetupOverlay(overlay: ModelSetupOverlay): ModelSetupOverlay | { type: 'complete'; values: ModelSetupOverlay['values'] } {
+  const values = { ...overlay.values, [overlay.step]: overlay.value.trim() };
+  if (overlay.step === 'base_url') {
+    return { ...overlay, step: 'api_key_env', values, value: values.api_key_env };
+  }
+  if (overlay.step === 'api_key_env') {
+    return { ...overlay, step: 'api_key', values, value: values.api_key };
+  }
+  if (overlay.step === 'api_key') {
+    return { ...overlay, step: 'model', values, value: values.model };
+  }
+  return { type: 'complete', values };
+}
 
 function formatNaturalResult(natural: { method?: string; command?: string; result?: unknown }) {
   const label = natural.method || natural.command || '自然语言命令';
@@ -50,6 +67,16 @@ function formatNaturalResult(natural: { method?: string; command?: string; resul
   if (typeof result === 'string') return `${label}: ${result}`;
   if (typeof result === 'object') return `${label}\n${JSON.stringify(result, null, 2)}`;
   return `${label}: ${String(result)}`;
+}
+
+function formatMaintenanceSummary(maintenance: AutonomyMaintenance) {
+  const completed = maintenance.actions?.filter(item => item.status === 'completed').length ?? 0;
+  const failed = maintenance.actions?.filter(item => item.status === 'error').length ?? 0;
+  const actionText = `完成 ${completed} 项自检${failed ? `，${failed} 项异常` : ''}`;
+  const goal = maintenance.self_state?.active_goal || maintenance.trigger;
+  const nextAction = maintenance.next_actions?.[0];
+  const title = maintenance.trigger === 'session_start' ? '自主自我已启动' : '自主自我维护完成';
+  return `${title}：${actionText}。当前目标：${goal}${nextAction ? `。下一步：${nextAction}` : ''}`;
 }
 
 export default function App({ gateway }: Props) {
@@ -61,6 +88,7 @@ export default function App({ gateway }: Props) {
   const [runtimePlan, setRuntimePlan] = useState<RuntimePlan | null>(null);
   const [runtimeSteps, setRuntimeSteps] = useState<RuntimeStep[]>([]);
   const [runtimeRisk, setRuntimeRisk] = useState<RuntimeRisk | null>(null);
+  const [autonomyMaintenance, setAutonomyMaintenance] = useState<AutonomyMaintenance | null>(null);
   const [parallelRun, setParallelRun] = useState<ParallelAgentRun | null>(null);
   const [contextCompaction, setContextCompaction] = useState<ContextCompaction | null>(null);
   const [approvals, setApprovals] = useState<ApprovalQueueItem[]>([]);
@@ -214,6 +242,7 @@ export default function App({ gateway }: Props) {
       setRuntimePlan(null);
       setRuntimeSteps([]);
       setRuntimeRisk(null);
+      setAutonomyMaintenance(null);
       setParallelRun(null);
       setContextCompaction(null);
       setApprovals([]);
@@ -293,13 +322,51 @@ export default function App({ gateway }: Props) {
     [gateway, info?.id]
   );
 
+  const applyCompletionText = useCallback(
+    (text: string, completion: string) => {
+      const start =
+        completion.startsWith('/') && text.startsWith('/') && replaceFrom === 1
+          ? 0
+          : replaceFrom;
+      return `${text.slice(0, Math.max(0, start))}${completion}`;
+    },
+    [replaceFrom]
+  );
+
   const applyCompletion = useCallback(() => {
     const item = completionItems[completionIndex];
     if (!item) return false;
-    setInput(prev => `${prev.slice(0, replaceFrom)}${item.text}`);
+    setInput(prev => applyCompletionText(prev, item.text));
     setCompletionItems([]);
     return true;
-  }, [completionIndex, completionItems, replaceFrom]);
+  }, [applyCompletionText, completionIndex, completionItems]);
+
+  const navigateInputHistory = useCallback(
+    (direction: 'previous' | 'next') => {
+      if (!history.length) return;
+
+      if (direction === 'previous') {
+        const next = historyIndex === null ? 0 : Math.min(history.length - 1, historyIndex + 1);
+        setHistoryIndex(next);
+        setInput(history[next]);
+        return;
+      }
+
+      if (historyIndex === null) return;
+      const next = historyIndex - 1;
+      setHistoryIndex(next >= 0 ? next : null);
+      setInput(next >= 0 ? history[next] : '');
+    },
+    [history, historyIndex]
+  );
+
+  const submitCurrentInput = useCallback(
+    (text: string) => {
+      setInputBuffer([]);
+      void submitPrompt(text);
+    },
+    [submitPrompt]
+  );
 
   const answerOverlay = useCallback(
     async (choice?: string) => {
@@ -361,41 +428,51 @@ export default function App({ gateway }: Props) {
       } else if (overlay.type === 'modelPicker') {
         const selected = overlay.providers[overlay.selected];
         if (selected) {
-          const configured = await gateway.request<{
-            ok?: boolean;
-            provider?: string;
-            model?: string;
-            base_url?: string;
-            health?: { status?: string };
-          }>('model.configure', {
-            provider: selected.slug,
-            model: selected.models?.[0],
-            base_url: selected.base_url,
-            api_key_env: selected.api_key_env,
-            dry_run: selected.dry_run
+          setOverlay({
+            type: 'modelSetup',
+            provider: selected,
+            step: 'base_url',
+            values: {
+              base_url: selected.base_url || 'https://api.openai.com/v1',
+              api_key_env: selected.api_key_env || 'OPENAI_API_KEY',
+              api_key: '',
+              model: selected.models?.[0] || 'custom-model'
+            },
+            value: selected.base_url || 'https://api.openai.com/v1'
           });
-          appendSystem(
-            configured.ok
-              ? `模型已配置：${configured.model} (${configured.health?.status || configured.provider})`
-              : `模型提供方：${selected.name}`
-          );
         } else {
           appendSystem('未选择模型。');
+          setOverlay({ type: 'none' });
         }
+      } else if (overlay.type === 'modelSetup') {
+        const next = advanceModelSetupOverlay(overlay);
+        if (next.type === 'modelSetup') {
+          setOverlay(next);
+          return;
+        }
+        const configured = await gateway.request<{
+          ok?: boolean;
+          provider?: string;
+          model?: string;
+          base_url?: string;
+          health?: { status?: string };
+        }>('model.setup', {
+          provider: overlay.provider.slug,
+          base_url: next.values.base_url,
+          api_key_env: next.values.api_key_env,
+          api_key: next.values.api_key,
+          model: next.values.model
+        });
+        appendSystem(
+          configured.ok
+            ? `模型已配置：${configured.model} (${configured.health?.status || configured.provider})`
+            : `模型提供方：${overlay.provider.name}`
+        );
         setOverlay({ type: 'none' });
       }
     },
     [appendSystem, gateway, overlay]
   );
-
-  useEffect(() => {
-    void gateway.request<{ session_id: string; info?: SessionInfo }>('session.create', {
-      cols: process.stdout.columns || 80
-    }).then(result => {
-      setInfo(result.info || { id: result.session_id });
-      setStatus('ready');
-    }).catch(error => appendSystem(error instanceof Error ? error.message : String(error)));
-  }, [appendSystem, gateway]);
 
   useEffect(() => {
     const onEvent = (event: GatewayEvent) => {
@@ -431,6 +508,11 @@ export default function App({ gateway }: Props) {
           break;
         case 'runtime.risk':
           setRuntimeRisk(payload);
+          break;
+        case 'system.maintenance':
+          setAutonomyMaintenance(payload);
+          setStatus(payload.trigger === 'session_start' ? '自主自我已启动' : '自主自我维护完成');
+          appendSystem(formatMaintenanceSummary(payload));
           break;
         case 'agent.parallel.start':
           setParallelRun({
@@ -565,6 +647,15 @@ export default function App({ gateway }: Props) {
   }, [appendSystem, drainQueue, gateway, status, streaming]);
 
   useEffect(() => {
+    void gateway.request<{ session_id: string; info?: SessionInfo }>('session.create', {
+      cols: process.stdout.columns || 80
+    }).then(result => {
+      setInfo(result.info || { id: result.session_id });
+      setStatus(current => (current === 'starting' ? 'ready' : current));
+    }).catch(error => appendSystem(error instanceof Error ? error.message : String(error)));
+  }, [appendSystem, gateway]);
+
+  useEffect(() => {
     const timer = setTimeout(() => void requestCompletion(input), 60);
     return () => clearTimeout(timer);
   }, [input, requestCompletion]);
@@ -572,7 +663,7 @@ export default function App({ gateway }: Props) {
   useEffect(() => {
     if (overlay.type !== 'approval') return;
     if ((overlay.timeout_remaining ?? APPROVAL_AUTO_APPROVE_SECONDS) <= 0) {
-      void answerOverlay('once');
+      void answerOverlay(APPROVAL_TIMEOUT_DECISION);
       return;
     }
 
@@ -612,8 +703,7 @@ export default function App({ gateway }: Props) {
 
     if (overlayOpen) {
       if (key.escape) {
-        if (overlay.type === 'approval') void answerOverlay('deny');
-        else setOverlay({ type: 'none' });
+        setOverlay({ type: 'none' });
         return;
       }
       if (key.return) {
@@ -657,6 +747,9 @@ export default function App({ gateway }: Props) {
           if (prev.type === 'secret' || prev.type === 'sudo') {
             return { ...prev, value: prev.value.slice(0, -1) };
           }
+          if (prev.type === 'modelSetup') {
+            return { ...prev, value: prev.value.slice(0, -1) };
+          }
           if (prev.type === 'clarify' && (prev.freeText || !prev.choices)) {
             return { ...prev, value: prev.value.slice(0, -1) };
           }
@@ -668,6 +761,9 @@ export default function App({ gateway }: Props) {
         setOverlay(prev =>
           prev.type === 'secret' || prev.type === 'sudo' ? { ...prev, value: `${prev.value}${value}` } : prev
         );
+      }
+      if (overlay.type === 'modelSetup' && value) {
+        setOverlay(prev => (prev.type === 'modelSetup' ? { ...prev, value: `${prev.value}${value}` } : prev));
       }
       if (overlay.type === 'clarify' && (overlay.freeText || !overlay.choices) && value) {
         setOverlay(prev => (prev.type === 'clarify' ? { ...prev, value: `${prev.value}${value}` } : prev));
@@ -688,17 +784,12 @@ export default function App({ gateway }: Props) {
     }
 
     if (key.upArrow && history.length) {
-      const next = historyIndex === null ? 0 : Math.min(history.length - 1, historyIndex + 1);
-      setHistoryIndex(next);
-      setInput(history[next]);
+      navigateInputHistory('previous');
       return;
     }
 
     if (key.downArrow && history.length) {
-      if (historyIndex === null) return;
-      const next = historyIndex - 1;
-      setHistoryIndex(next >= 0 ? next : null);
-      setInput(next >= 0 ? history[next] : '');
+      navigateInputHistory('next');
       return;
     }
 
@@ -762,6 +853,7 @@ export default function App({ gateway }: Props) {
           <RuntimeActivityPanel
             approvals={approvals}
             compaction={contextCompaction}
+            maintenance={autonomyMaintenance}
             parallel={parallelRun}
             plan={runtimePlan}
             risk={runtimeRisk}
@@ -793,10 +885,17 @@ export default function App({ gateway }: Props) {
             placeholder={busy ? 'Ctrl+C 中断当前操作...' : '输入消息或 /help'}
             value={input}
             onChange={setInput}
+            onHistoryPrevious={() => navigateInputHistory('previous')}
+            onHistoryNext={() => navigateInputHistory('next')}
             onSubmit={() => {
-              const text = composedInput;
-              setInputBuffer([]);
-              void submitPrompt(text);
+              if (completionItems.length) {
+                const item = completionItems[completionIndex];
+                if (item) {
+                  void submitCurrentInput(applyCompletionText(input, item.text));
+                  return;
+                }
+              }
+              void submitCurrentInput(composedInput);
             }}
           />
         </Box>

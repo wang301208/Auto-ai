@@ -94,6 +94,30 @@ export interface ContextCompaction {
   };
 }
 
+export interface AutonomyMaintenanceAction {
+  name: string;
+  status: 'completed' | 'error' | string;
+  error?: string;
+  result?: unknown;
+}
+
+export interface AutonomyMaintenance {
+  trigger: string;
+  autonomous?: boolean;
+  autonomy_level?: string;
+  actions?: AutonomyMaintenanceAction[];
+  next_actions?: string[];
+  record_id?: string;
+  self_state?: {
+    identity?: string;
+    autonomy_level?: string;
+    active_goal?: string;
+    capabilities?: string[];
+    next_actions?: string[];
+    [key: string]: unknown;
+  };
+}
+
 export interface ParallelAgentRun {
   parallel_group_id: string;
   total: number;
@@ -110,7 +134,14 @@ export type OverlayState =
   | { type: 'sudo'; request_id: string; value: string }
   | { type: 'secret'; request_id: string; env_var: string; prompt: string; value: string }
   | { type: 'sessionPicker'; selected: number; sessions: SessionListItem[] }
-  | { type: 'modelPicker'; selected: number; providers: ModelProvider[] };
+  | { type: 'modelPicker'; selected: number; providers: ModelProvider[] }
+  | {
+      type: 'modelSetup';
+      provider: ModelProvider;
+      step: 'base_url' | 'api_key_env' | 'api_key' | 'model';
+      values: { base_url: string; api_key_env: string; api_key: string; model: string };
+      value: string;
+    };
 
 export interface SessionListItem {
   id: string;

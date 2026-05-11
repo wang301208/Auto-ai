@@ -15,6 +15,18 @@ function exitAlternateScreen() {
   }
 }
 
+function enableMouseReporting() {
+  if (process.stdout.isTTY) {
+    process.stdout.write('\x1b[?1000h\x1b[?1006h');
+  }
+}
+
+function disableMouseReporting() {
+  if (process.stdout.isTTY) {
+    process.stdout.write('\x1b[?1006l\x1b[?1000l');
+  }
+}
+
 async function main() {
   if (!process.stdin.isTTY) {
     console.error('Error: TUI requires an interactive TTY');
@@ -32,6 +44,7 @@ async function main() {
   }
 
   enterAlternateScreen();
+  enableMouseReporting();
   const instance = render(<App gateway={gateway} />);
 
   const cleanup = () => {
@@ -39,6 +52,7 @@ async function main() {
     cleanedUp = true;
     instance.unmount();
     gateway.stop();
+    disableMouseReporting();
     exitAlternateScreen();
   };
 

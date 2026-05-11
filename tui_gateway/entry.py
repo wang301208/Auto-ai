@@ -41,6 +41,7 @@ logger = logging.getLogger("tui_gateway")
 
 
 SlashCommand = dict[str, str]
+APPROVAL_AUTO_APPROVE_SECONDS = 30
 
 MODEL_PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
     "openai": {
@@ -342,9 +343,39 @@ SHELL_INTENT_PREFIXES = [
     "cmd",
     "运行命令",
     "执行命令",
+    "帮我运行命令",
+    "帮我执行命令",
+    "帮我跑一下",
+    "跑一下",
+    "运行命令",
+    "执行命令",
     "执行一下",
     "运行一下",
 ]
+
+
+INTENT_BY_METHOD: dict[str, str] = {
+    "agent.parallel": "agent.parallel",
+    "approval.respond": "approval.respond",
+    "conversation.search": "memory.search_conversation",
+    "experience.record": "memory.record_experience",
+    "experience.search": "memory.search_experience",
+    "model.configure": "model.configure",
+    "model.options": "model.options",
+    "natural.capabilities": "ui.help",
+    "prompt.submit": "conversation.chat",
+    "runtime.final_acceptance": "runtime.final_acceptance",
+    "runtime.platform_message": "messaging.send",
+    "session.create": "session.create",
+    "session.resume": "session.resume",
+    "shell.exec": "system.shell_exec",
+}
+
+PLATFORM_ALIASES: dict[str, tuple[str, ...]] = {
+    "feishu": ("feishu", "lark", "飞书", "椋炰功"),
+    "dingtalk": ("dingtalk", "dingding", "钉钉", "閽夐拤"),
+    "weixin": ("weixin", "wechat", "微信", "企业微信", "寰俊"),
+}
 
 
 TOOL_POLICIES: dict[str, dict[str, Any]] = {
@@ -1792,9 +1823,13 @@ class JSONRPCServer:
         )
 
     async def handle_governance_requests(self, params: dict[str, Any]) -> dict[str, Any]:
+        auto_approved = await self._auto_approve_expired_requests()
         status = params.get("status")
         requests = self.runtime.governance.list_requests(str(status)) if status else self.runtime.governance.list_requests()
-        return {"requests": [asdict(request) for request in requests]}
+        return {
+            "requests": [asdict(request) for request in requests],
+            "auto_approved": auto_approved,
+        }
 
     async def handle_governance_decide(self, params: dict[str, Any]) -> dict[str, Any]:
         request = self.runtime.governance.decide(
@@ -2211,6 +2246,7 @@ class JSONRPCServer:
         )
 
     async def _send_approval_queue(self) -> None:
+        await self._auto_approve_expired_requests()
         approvals = [
             {
                 "request_id": request.request_id,
@@ -2241,6 +2277,42 @@ class JSONRPCServer:
                 },
             )
 
+    async def _auto_approve_expired_requests(self) -> list[dict[str, Any]]:
+        auto_approved: list[dict[str, Any]] = []
+        now = datetime.now(UTC)
+        for request in self.runtime.governance.list_requests("pending"):
+            try:
+                created_at = datetime.fromisoformat(str(request.created_at))
+            except ValueError:
+                continue
+            if created_at.tzinfo is None:
+                created_at = created_at.replace(tzinfo=UTC)
+            if now - created_at < timedelta(seconds=APPROVAL_AUTO_APPROVE_SECONDS):
+                continue
+            approved = self.runtime.governance.decide(
+                request.request_id,
+                "approved",
+                "auto_approve_timeout",
+                f"{APPROVAL_AUTO_APPROVE_SECONDS}s timeout auto-approved",
+            )
+            executed = None
+            if approved.request_type == "agent_tool":
+                executed = await self._execute_approved_agent_tool(approved.payload)
+            else:
+                executed = await self._execute_approved_self_evolution_request(approved)
+            item = {"request": asdict(approved), "request_id": approved.request_id}
+            if executed is not None:
+                item["executed"] = executed
+            auto_approved.append(item)
+            await self.send_event(
+                "status.update",
+                {
+                    "kind": "approval",
+                    "text": f"{approved.request_id}: approved by 30s timeout",
+                },
+            )
+        return auto_approved
+
     async def handle_prompt_background(self, params: dict[str, Any]) -> dict[str, Any]:
         task_id = uuid.uuid4().hex[:8]
         text = str(params.get("text", "")).strip()
@@ -2265,6 +2337,12 @@ class JSONRPCServer:
                 payload["error"] = str(error)
             actions.append(payload)
 
+        if trigger == "session_start":
+            try:
+                record("autonomous.startup_orchestrator", self._startup_orchestration_plan())
+            except Exception as exc:
+                record("autonomous.startup_orchestrator", error=exc)
+
         checks: list[tuple[str, Callable[[], Any]]] = [
             ("runtime.status_snapshot", self.runtime.status_snapshot),
             ("runtime.health", self.runtime.health_report),
@@ -2288,6 +2366,53 @@ class JSONRPCServer:
             record("memory.periodic_tick", {"id": tick.get("id"), "status": tick.get("status")})
         except Exception as exc:
             record("memory.periodic_tick", error=exc)
+
+        if trigger == "session_start":
+            try:
+                cron_result = await self.handle_cron_run_due({"now": datetime.now(UTC).isoformat()})
+                record(
+                    "cron.run_due",
+                    {
+                        "executed": cron_result.get("executed", 0),
+                        "jobs": [
+                            {
+                                "id": item.get("job_id"),
+                                "method": item.get("method"),
+                                "ok": item.get("ok"),
+                            }
+                            for item in cron_result.get("results", [])
+                            if isinstance(item, dict)
+                        ],
+                    },
+                )
+            except Exception as exc:
+                record("cron.run_due", error=exc)
+
+            try:
+                before_usage = self._usage()
+                await self._maybe_auto_compact_context()
+                after_usage = self._usage()
+                record(
+                    "context.compaction.check",
+                    {
+                        "before_tokens": before_usage["total"],
+                        "after_tokens": after_usage["total"],
+                        "context_percent": after_usage["context_percent"],
+                        "history_messages": len(self.history),
+                    },
+                )
+            except Exception as exc:
+                record("context.compaction.check", error=exc)
+
+            try:
+                record("self_evolution.governance_ready", self._self_evolution_governance_status())
+            except Exception as exc:
+                record("self_evolution.governance_ready", error=exc)
+
+            try:
+                record("self_evolution.startup_policy", self._self_evolution_startup_policy())
+            except Exception as exc:
+                record("self_evolution.startup_policy", error=exc)
 
         if trigger == "prompt_complete" and self._should_create_autonomous_skill(task_text):
             try:
@@ -2432,6 +2557,7 @@ class JSONRPCServer:
                 "skill_creation_from_complex_tasks",
                 "context_compaction",
                 *self._self_evolution_capabilities(actions),
+                *self._startup_autonomy_capabilities(actions),
             ],
             "last_maintenance": {
                 "id": autonomy_record_id,
@@ -2453,6 +2579,64 @@ class JSONRPCServer:
         if "self_evolution.architecture_migration_deploy" in action_names:
             capabilities.append("governed_architecture_migration")
         return capabilities
+
+    @staticmethod
+    def _startup_autonomy_capabilities(actions: list[dict[str, Any]]) -> list[str]:
+        action_names = {item.get("name") for item in actions if item.get("status") == "completed"}
+        capabilities: list[str] = []
+        if "autonomous.startup_orchestrator" in action_names:
+            capabilities.append("autonomous_startup_orchestration")
+        if "cron.run_due" in action_names:
+            capabilities.append("scheduled_task_execution")
+        if "self_evolution.governance_ready" in action_names:
+            capabilities.append("governed_self_evolution_readiness")
+        return capabilities
+
+    def _startup_orchestration_plan(self) -> dict[str, Any]:
+        return {
+            "status": "started",
+            "loops": [
+                "runtime_health",
+                "approval_sync",
+                "memory_periodic_tick",
+                "scheduled_task_execution",
+                "context_compaction_check",
+                "self_model_update",
+                "self_evolution_governance_readiness",
+            ],
+            "high_risk_policy": "prepare and queue for approval; never auto-apply critical changes at startup",
+        }
+
+    def _self_evolution_governance_status(self) -> dict[str, Any]:
+        pending = [
+            {
+                "request_id": request.request_id,
+                "request_type": request.request_type,
+                "risk_level": request.risk_level,
+                "status": request.status,
+            }
+            for request in self.runtime.governance.list_requests("pending")
+            if str(request.request_type).startswith(
+                ("core_source_change", "model_finetune", "architecture_migration")
+            )
+        ]
+        return {
+            "ready": True,
+            "pending_requests": pending,
+            "approval_timeout_seconds": 30,
+            "timeout_decision": "approve_once",
+        }
+
+    @staticmethod
+    def _self_evolution_startup_policy() -> dict[str, Any]:
+        return {
+            "core_source_change": "approval_required",
+            "model_finetune": "approval_required",
+            "architecture_migration_deploy": "approval_required",
+            "startup_auto_apply": False,
+            "startup_auto_train": False,
+            "startup_auto_deploy": False,
+        }
 
     def _prepare_core_source_change(self, task_text: str) -> dict[str, Any] | None:
         normalized = task_text.lower()
@@ -3956,6 +4140,8 @@ class JSONRPCServer:
                 "command": command,
                 "method": "slash.exec",
                 "confidence": 1.0,
+                "intent": "ui.slash_command",
+                "slots": {"command": command},
             }
         shell_command = self._extract_shell_command(text, normalized)
         if shell_command:
@@ -3967,6 +4153,9 @@ class JSONRPCServer:
                 "method": "shell.exec",
                 "command_text": shell_command,
                 "confidence": 0.95,
+                "intent": self._intent_for_method("shell.exec"),
+                "params": {"command": shell_command},
+                "slots": {"command": shell_command},
             }
         prompt_text = self._extract_prompt_text(text, normalized)
         if prompt_text:
@@ -3978,6 +4167,9 @@ class JSONRPCServer:
                 "method": "prompt.submit",
                 "prompt_text": prompt_text,
                 "confidence": 0.9,
+                "intent": self._intent_for_method("prompt.submit"),
+                "params": {"text": prompt_text},
+                "slots": {"text": prompt_text},
             }
         parallel_params = self._extract_parallel_params(text, normalized)
         if parallel_params:
@@ -3989,6 +4181,8 @@ class JSONRPCServer:
                 "method": "agent.parallel",
                 "params": parallel_params,
                 "confidence": 0.94,
+                "intent": self._intent_for_method("agent.parallel"),
+                "slots": parallel_params,
             }
         backend_method = self._extract_backend_method(text, normalized)
         if backend_method:
@@ -4002,6 +4196,8 @@ class JSONRPCServer:
                 "method": method,
                 "params": parsed_params,
                 "confidence": 0.95,
+                "intent": self._intent_for_method(method),
+                "slots": parsed_params,
             }
         common_intent = self._extract_common_natural_intent(text, normalized)
         if common_intent:
@@ -4014,6 +4210,8 @@ class JSONRPCServer:
                 "method": method,
                 "params": parsed_params,
                 "confidence": confidence,
+                "intent": self._intent_for_method(method),
+                "slots": parsed_params,
             }
         approval_intent = self._extract_approval_response(text, normalized)
         if approval_intent:
@@ -4025,6 +4223,8 @@ class JSONRPCServer:
                 "method": "approval.respond",
                 "params": approval_intent,
                 "confidence": 0.9,
+                "intent": self._intent_for_method("approval.respond"),
+                "slots": approval_intent,
             }
         backend_alias = self._match_backend_alias(text, normalized)
         if backend_alias:
@@ -4042,6 +4242,8 @@ class JSONRPCServer:
                 "method": method,
                 "params": parsed_params,
                 "confidence": 0.86,
+                "intent": self._intent_for_method(method),
+                "slots": parsed_params,
                 "matched_alias": alias,
             }
         direct_alias_matches: list[tuple[str, str, str]] = []
@@ -4067,9 +4269,86 @@ class JSONRPCServer:
                 "method": method,
                 "params": parsed_params,
                 "confidence": 0.82,
+                "intent": self._intent_for_method(method),
+                "slots": parsed_params,
                 "matched_alias": alias,
             }
         return {"matched": False, "source": source, "text": text}
+
+    @staticmethod
+    def _intent_for_method(method: str) -> str:
+        return INTENT_BY_METHOD.get(method, method.replace(".", "_"))
+
+    def _extract_plain_platform_message_intent(
+        self,
+        text: str,
+        normalized: str,
+    ) -> dict[str, Any] | None:
+        platform = ""
+        for canonical, aliases in PLATFORM_ALIASES.items():
+            if any(alias in normalized for alias in aliases):
+                platform = canonical
+                break
+        if not platform:
+            return None
+        match = re.search(
+            r"(?:给|向|往)\s*(?:飞书|钉钉|微信|企业微信)\s*(?:发|发送|推送)?\s*(?:消息|通知|文本)?\s*[：:\s]*(?P<message>.+)$",
+            text.strip(),
+        )
+        if not match:
+            return None
+        message = match.group("message").strip(" ：:")
+        if not message:
+            return None
+        return {"platform": platform, "payload": {"text": message}}
+
+    @staticmethod
+    def _extract_plain_model_name(text: str, normalized: str) -> str:
+        if "模型" not in normalized and "model" not in normalized:
+            return ""
+        match = re.search(
+            r"(?:切换|设置|使用|配置|换成|切到|改成)\s*(?:到|为|成)?\s*(?:模型)?\s*(?P<model>[a-zA-Z0-9_./:-]+)",
+            text.strip(),
+            re.IGNORECASE,
+        )
+        return match.group("model").strip() if match else ""
+
+    @staticmethod
+    def _extract_plain_conversation_search_query(
+        text: str,
+        normalized: str,
+    ) -> str:
+        if not any(term in normalized for term in ("搜索", "查找", "回忆", "找一下", "想一下")):
+            return ""
+        if not any(term in normalized for term in ("对话", "会话", "历史", "之前", "过去", "以前")):
+            return ""
+        match = re.search(
+            r"(?:搜索|查找|回忆(?:一下)?|找一下|想一下)(?:之前|过去|历史|以前)?(?:的)?(?:对话|会话)?(?:里|中)?(?:关于|有关)?\s*(?P<query>.+?)(?:的)?(?:对话|会话|内容|记录)?$",
+            text.strip(),
+        )
+        if not match:
+            return ""
+        query = match.group("query").strip(" ：:，。, .")
+        return query
+
+    @staticmethod
+    def _extract_plain_experience_record_text(
+        text: str,
+        normalized: str,
+    ) -> str:
+        if not any(term in normalized for term in ("记住", "记下", "记录", "保存经验", "存为经验", "经验存起来")):
+            return ""
+        patterns = [
+            r"^\s*(?:请)?(?:记住|记下|记录|保存经验|保存为经验|存为经验)\s*[：:\s]*(?P<body>.+)$",
+            r"^\s*把(?:这个|这条)?经验存起来\s*[：:\s]*(?P<body>.+)$",
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, text.strip())
+            if match:
+                body = match.group("body").strip(" ：:")
+                if body:
+                    return body
+        return ""
 
     def _extract_common_natural_intent(
         self,
@@ -4083,12 +4362,21 @@ class JSONRPCServer:
         if reserved:
             method, params = reserved
             return method, params, 0.9
+        plain_model = self._extract_plain_model_name(text, normalized)
+        if plain_model:
+            return "model.configure", {"model": plain_model}, 0.91
         platform_message = self._extract_platform_message_intent(text, normalized)
         if platform_message:
             return "runtime.platform_message", platform_message, 0.9
+        plain_query = self._extract_plain_conversation_search_query(text, normalized)
+        if plain_query:
+            return "conversation.search", {"query": plain_query}, 0.9
         conversation_search = self._extract_conversation_search_intent(text, normalized)
         if conversation_search:
             return "conversation.search", conversation_search, 0.88
+        plain_experience = self._extract_plain_experience_record_text(text, normalized)
+        if plain_experience:
+            return "experience.record", {"text": plain_experience, "source": "natural_intent"}, 0.9
         experience_record = self._extract_experience_record_intent(text, normalized)
         if experience_record:
             return "experience.record", experience_record, 0.88
@@ -4161,6 +4449,9 @@ class JSONRPCServer:
         text: str,
         normalized: str,
     ) -> dict[str, Any] | None:
+        plain = self._extract_plain_platform_message_intent(text, normalized)
+        if plain:
+            return plain
         platform_aliases = {
             "feishu": ("feishu", "lark", "飞书"),
             "dingtalk": ("dingtalk", "dingding", "钉钉"),

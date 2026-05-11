@@ -1,6 +1,14 @@
 import React from 'react';
 import { Box, Text } from 'ink';
-import type { ApprovalQueueItem, ContextCompaction, ParallelAgentRun, RuntimePlan, RuntimeRisk, RuntimeStep } from '../types.js';
+import type {
+  ApprovalQueueItem,
+  AutonomyMaintenance,
+  ContextCompaction,
+  ParallelAgentRun,
+  RuntimePlan,
+  RuntimeRisk,
+  RuntimeStep
+} from '../types.js';
 import { theme } from '../theme.js';
 
 function stepGlyph(status: RuntimeStep['status']) {
@@ -41,6 +49,7 @@ function statusText(status: string) {
 export default function RuntimeActivityPanel({
   approvals,
   compaction,
+  maintenance,
   parallel,
   plan,
   risk,
@@ -48,13 +57,16 @@ export default function RuntimeActivityPanel({
 }: {
   approvals: ApprovalQueueItem[];
   compaction?: ContextCompaction | null;
+  maintenance?: AutonomyMaintenance | null;
   parallel?: ParallelAgentRun | null;
   plan?: RuntimePlan | null;
   risk?: RuntimeRisk | null;
   steps: RuntimeStep[];
 }) {
   const pendingApprovals = approvals.filter(item => item.status === 'pending');
-  if (!plan && steps.length === 0 && pendingApprovals.length === 0 && !risk && !compaction && !parallel) return null;
+  if (!plan && steps.length === 0 && pendingApprovals.length === 0 && !risk && !compaction && !parallel && !maintenance) return null;
+  const maintenanceCompleted = maintenance?.actions?.filter(item => item.status === 'completed').length ?? 0;
+  const maintenanceErrors = maintenance?.actions?.filter(item => item.status === 'error').length ?? 0;
 
   return (
     <Box borderColor={theme.border} borderStyle="round" flexDirection="column" marginTop={1} paddingX={1}>
@@ -73,11 +85,19 @@ export default function RuntimeActivityPanel({
         </Text>
       ))}
 
-      {parallel || risk || compaction ? (
+      {parallel || risk || compaction || maintenance ? (
         <Box flexDirection="column" marginTop={1}>
           <Text bold color={theme.label}>
             运行信号
           </Text>
+          {maintenance ? (
+            <Text color={maintenanceErrors ? theme.warn : theme.ok} wrap="truncate">
+              自主自我：{maintenance.trigger === 'session_start' ? '已启动' : '已维护'}
+              <Text color={theme.dim}>
+                {' '}| 完成={maintenanceCompleted} | 异常={maintenanceErrors} | 目标={maintenance.self_state?.active_goal || maintenance.trigger}
+              </Text>
+            </Text>
+          ) : null}
           {parallel ? (
             <Text color={parallel.status === 'error' ? theme.error : parallel.status === 'running' ? theme.warn : theme.ok} wrap="truncate">
               并行智能体：{parallel.completed ?? 0}/{parallel.total} 完成
