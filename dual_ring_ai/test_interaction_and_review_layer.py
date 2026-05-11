@@ -16,6 +16,29 @@ def test_local_llm_adapter_personalizes_backend_status_without_network():
     assert response["action"] == "explain"
 
 
+def test_local_llm_adapter_reports_missing_desktop_and_software_capabilities():
+    from dual_ring_ai.adapters.local_llm import LocalLLMAdapter
+
+    adapter = LocalLLMAdapter()
+    response = adapter.generate_response(
+        user_text="控制电脑并安装软件",
+        backend_payload={
+            "capabilities": {
+                "computer_control": False,
+                "software_management": False,
+                "user_visible_boundary": (
+                    "当前项目可执行命令行级操作；尚未实现原生截图、鼠标、键盘、窗口控制、"
+                    "软件安装或软件卸载专用工具。"
+                ),
+            }
+        },
+    )
+
+    assert "尚未实现原生截图、鼠标、键盘、窗口控制" in response["text"]
+    assert "软件安装或软件卸载专用工具" in response["text"]
+    assert "可执行高级操作" not in response["text"]
+
+
 def test_multimodal_interaction_pipeline_combines_voice_llm_and_avatar():
     from dual_ring_ai.interaction.pipeline import InteractionPipeline
 

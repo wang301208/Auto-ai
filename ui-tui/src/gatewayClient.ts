@@ -51,6 +51,8 @@ export class GatewayClient extends EventEmitter {
   private requestId = 0;
   private pendingRequests = new Map<string, PendingRequest>();
   private logs: string[] = [];
+  private restarting = false;
+  private stopping = false;
 
   constructor() {
     super();
@@ -62,15 +64,18 @@ export class GatewayClient extends EventEmitter {
       return;
     }
 
+    this.stopping = false;
     const python = process.env.TUI_PYTHON || process.env.PYTHON || 'python';
     const root = resolveProjectRoot();
     const cwd = process.env.TUI_CWD || root;
+    const defaultConfigPath = path.join(root, 'config.yaml');
     const env = {
       ...process.env,
       LANG: process.env.LANG || 'zh_CN.UTF-8',
       LC_ALL: process.env.LC_ALL || 'zh_CN.UTF-8',
       PYTHONIOENCODING: 'utf-8',
       PYTHONUTF8: '1',
+      LOCAL_AGENT_CONFIG_PATH: process.env.LOCAL_AGENT_CONFIG_PATH || defaultConfigPath,
       PYTHONPATH: process.env.PYTHONPATH ? `${root}${path.delimiter}${process.env.PYTHONPATH}` : root
     };
 
@@ -104,7 +109,9 @@ export class GatewayClient extends EventEmitter {
     });
 
     this.process.on('exit', code => {
-      this.rejectPending(new Error(`gateway exited${code === null ? '' : ` (${code})`}`));
+      if (!this.restarting && !this.stopping) {
+        this.rejectPending(new Error(`gateway exited${code === null ? '' : ` (${code})`}`));
+      }
       this.emit('exit', code);
       this.emitGatewayEvent({ type: 'gateway.exit', payload: { code } });
     });
@@ -154,6 +161,7 @@ export class GatewayClient extends EventEmitter {
   }
 
   stop(): void {
+    this.stopping = true;
     this.rejectPending(new Error('gateway stopped'));
     this.process?.kill();
     this.process = null;
@@ -175,6 +183,9 @@ export class GatewayClient extends EventEmitter {
 
     if (data.method === 'event' && data.params?.type) {
       this.emitGatewayEvent(data.params);
+      if (data.params.type === 'gateway.reload_required') {
+        void this.restartAfterReloadRequired(data.params.payload || {});
+      }
       return;
     }
 
@@ -201,6 +212,35 @@ export class GatewayClient extends EventEmitter {
       pending.reject(error);
     }
     this.pendingRequests.clear();
+  }
+
+  private async restartAfterReloadRequired(payload: Record<string, any>): Promise<void> {
+    if (this.restarting) return;
+    this.restarting = true;
+    this.pushLog(`[reload] restarting gateway: ${payload.reason || 'source changed'}`);
+    this.emitGatewayEvent({ type: 'gateway.reload_start', payload });
+    try {
+      await this.restart();
+      this.emitGatewayEvent({ type: 'gateway.reload_complete', payload });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      this.emitGatewayEvent({ type: 'gateway.stderr', payload: { line: `[reload] ${message}` } });
+    } finally {
+      this.restarting = false;
+    }
+  }
+
+  private async restart(): Promise<void> {
+    const oldProcess = this.process;
+    if (oldProcess && !oldProcess.killed && oldProcess.exitCode === null) {
+      oldProcess.kill();
+      await new Promise<void>(resolve => {
+        oldProcess.once('exit', () => resolve());
+        setTimeout(resolve, 1500);
+      });
+    }
+    this.process = null;
+    await this.start();
   }
 }
 

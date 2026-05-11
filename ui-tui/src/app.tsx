@@ -42,8 +42,11 @@ const makeMessage = (role: TranscriptMessage['role'], text: string): TranscriptM
 });
 
 const isPathCompletion = (text: string) => /(^|\s)(@|\.\/|\.\.\/|~\/|\/)[^\s]*$/.test(text);
-const APPROVAL_AUTO_APPROVE_SECONDS = 30;
-const APPROVAL_TIMEOUT_DECISION = 'once';
+const APPROVAL_TIMEOUT_SECONDS = 30;
+const APPROVAL_TIMEOUT_DECISION = 'approve';
+const VIEWPORT_MESSAGE_LIMIT = 80;
+const SCROLL_STEP = 3;
+const SCROLL_PAGE = 12;
 type ModelSetupOverlay = Extract<OverlayState, { type: 'modelSetup' }>;
 
 function advanceModelSetupOverlay(overlay: ModelSetupOverlay): ModelSetupOverlay | { type: 'complete'; values: ModelSetupOverlay['values'] } {
@@ -97,7 +100,6 @@ export default function App({ gateway }: Props) {
   const [input, setInput] = useState('');
   const [inputBuffer, setInputBuffer] = useState<string[]>([]);
   const [history, setHistory] = useState<string[]>([]);
-  const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [queue, setQueue] = useState<string[]>([]);
   const [completionItems, setCompletionItems] = useState<CompletionItem[]>([]);
   const [completionIndex, setCompletionIndex] = useState(0);
@@ -107,12 +109,17 @@ export default function App({ gateway }: Props) {
   const [status, setStatus] = useState('starting');
   const [compact, setCompact] = useState(false);
   const [showDetails, setShowDetails] = useState(true);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
   const overlayOpen = overlay.type !== 'none';
 
   const appendSystem = useCallback((text: string) => {
     setTranscript(prev => [...prev, makeMessage('system', text)]);
   }, []);
+
+  const scrollTranscript = useCallback((delta: number) => {
+    setScrollOffset(prev => Math.max(0, Math.min(Math.max(0, transcript.length - 1), prev + delta)));
+  }, [transcript.length]);
 
   const submitPrompt = useCallback(
     async (text: string) => {
@@ -130,18 +137,16 @@ export default function App({ gateway }: Props) {
         setCompletionItems([]);
         try {
           const result = await gateway.request<{
-            code: number;
-            stdout?: string;
-            stderr?: string;
-            redirect?: { path?: string; mode?: string };
-          }>('shell.exec', {
-            command: trimmed.slice(1)
+            matched?: boolean;
+            command?: string;
+            method?: string;
+            result?: unknown;
+          }>('natural.invoke', {
+            session_id: info?.id,
+            text: `run command ${trimmed.slice(1)}`,
+            source: 'text'
           });
-          if (result.redirect?.path) {
-            appendSystem(`已重定向 ${result.redirect.mode || 'write'}: ${result.redirect.path}`);
-          } else {
-            appendSystem((result.stdout || result.stderr || `exit ${result.code}`).trim());
-          }
+          appendSystem(formatNaturalResult(result));
         } catch (error) {
           appendSystem(error instanceof Error ? error.message : String(error));
         }
@@ -187,7 +192,7 @@ export default function App({ gateway }: Props) {
 
       setTranscript(prev => [...prev, makeMessage('user', submitted)]);
       setHistory(prev => [submitted, ...prev.filter(item => item !== submitted)].slice(0, 100));
-      setHistoryIndex(null);
+      setScrollOffset(0);
       setInput('');
       setCompletionItems([]);
       setBusy(true);
@@ -235,6 +240,7 @@ export default function App({ gateway }: Props) {
 
     if (command === '/new') {
       setTranscript([]);
+      setScrollOffset(0);
       setQueue([]);
       setStreaming('');
       setThinking('');
@@ -254,6 +260,7 @@ export default function App({ gateway }: Props) {
             { session_id: parts[1] }
           );
           setTranscript((result.messages || []).map(item => makeMessage(item.role || 'system', item.text || '')));
+          setScrollOffset(0);
         } catch (error) {
           appendSystem(error instanceof Error ? error.message : String(error));
         }
@@ -341,25 +348,6 @@ export default function App({ gateway }: Props) {
     return true;
   }, [applyCompletionText, completionIndex, completionItems]);
 
-  const navigateInputHistory = useCallback(
-    (direction: 'previous' | 'next') => {
-      if (!history.length) return;
-
-      if (direction === 'previous') {
-        const next = historyIndex === null ? 0 : Math.min(history.length - 1, historyIndex + 1);
-        setHistoryIndex(next);
-        setInput(history[next]);
-        return;
-      }
-
-      if (historyIndex === null) return;
-      const next = historyIndex - 1;
-      setHistoryIndex(next >= 0 ? next : null);
-      setInput(next >= 0 ? history[next] : '');
-    },
-    [history, historyIndex]
-  );
-
   const submitCurrentInput = useCallback(
     (text: string) => {
       setInputBuffer([]);
@@ -423,6 +411,7 @@ export default function App({ gateway }: Props) {
           setTranscript(
             (result.messages || []).map(item => makeMessage(item.role || 'system', item.text || ''))
           );
+          setScrollOffset(0);
         }
         setOverlay({ type: 'none' });
       } else if (overlay.type === 'modelPicker') {
@@ -596,7 +585,7 @@ export default function App({ gateway }: Props) {
             description: payload.description,
             request_id: payload.request_id,
             selected: 0,
-            timeout_remaining: APPROVAL_AUTO_APPROVE_SECONDS
+            timeout_remaining: APPROVAL_TIMEOUT_SECONDS
           });
           break;
         case 'clarify.request':
@@ -662,7 +651,7 @@ export default function App({ gateway }: Props) {
 
   useEffect(() => {
     if (overlay.type !== 'approval') return;
-    if ((overlay.timeout_remaining ?? APPROVAL_AUTO_APPROVE_SECONDS) <= 0) {
+    if ((overlay.timeout_remaining ?? APPROVAL_TIMEOUT_SECONDS) <= 0) {
       void answerOverlay(APPROVAL_TIMEOUT_DECISION);
       return;
     }
@@ -670,7 +659,7 @@ export default function App({ gateway }: Props) {
     const timer = setTimeout(() => {
       setOverlay(prev => {
         if (prev.type !== 'approval') return prev;
-        const nextRemaining = Math.max(0, (prev.timeout_remaining ?? APPROVAL_AUTO_APPROVE_SECONDS) - 1);
+        const nextRemaining = Math.max(0, (prev.timeout_remaining ?? APPROVAL_TIMEOUT_SECONDS) - 1);
         return { ...prev, timeout_remaining: nextRemaining };
       });
     }, 1000);
@@ -783,18 +772,9 @@ export default function App({ gateway }: Props) {
       return;
     }
 
-    if (key.upArrow && history.length) {
-      navigateInputHistory('previous');
-      return;
-    }
-
-    if (key.downArrow && history.length) {
-      navigateInputHistory('next');
-      return;
-    }
-
     if (key.ctrl && value === 'l') {
       setTranscript([]);
+      setScrollOffset(0);
       setQueue([]);
       setStreaming('');
       setThinking('');
@@ -805,6 +785,12 @@ export default function App({ gateway }: Props) {
       setParallelRun(null);
       setContextCompaction(null);
       setApprovals([]);
+      return;
+    }
+
+    if (!completionItems.length && input.length === 0 && (key.upArrow || key.downArrow || key.pageUp || key.pageDown)) {
+      const delta = key.pageUp ? SCROLL_PAGE : key.pageDown ? -SCROLL_PAGE : key.upArrow ? SCROLL_STEP : -SCROLL_STEP;
+      scrollTranscript(delta);
       return;
     }
 
@@ -829,6 +815,9 @@ export default function App({ gateway }: Props) {
   const composedInput = inputBuffer.length ? `${inputBuffer.join('\n')}\n${input}` : input;
   const showEmptyState = transcript.length === 0 && !streamingMessage && !thinking && tools.length === 0;
   const hideBranding = showEmptyState;
+  const transcriptWindowEnd = Math.max(0, transcript.length - scrollOffset);
+  const transcriptWindowStart = Math.max(0, transcriptWindowEnd - VIEWPORT_MESSAGE_LIMIT);
+  const visibleTranscript = transcript.slice(transcriptWindowStart, transcriptWindowEnd);
 
   return (
     <Box flexDirection="column" minHeight={24}>
@@ -837,7 +826,11 @@ export default function App({ gateway }: Props) {
       <Box flexDirection="column" flexGrow={1} paddingX={1}>
         {showEmptyState ? <EmptyState info={info} /> : null}
 
-        {transcript.map((message, index) => (
+        {scrollOffset > 0 ? (
+          <Text color={theme.dim}>已上翻 {scrollOffset} 条消息，PageDown 或向下滚轮返回最新内容</Text>
+        ) : null}
+
+        {visibleTranscript.map((message, index) => (
           <MessageLine compact={compact} key={message.id || index} message={message} />
         ))}
 
@@ -885,8 +878,6 @@ export default function App({ gateway }: Props) {
             placeholder={busy ? 'Ctrl+C 中断当前操作...' : '输入消息或 /help'}
             value={input}
             onChange={setInput}
-            onHistoryPrevious={() => navigateInputHistory('previous')}
-            onHistoryNext={() => navigateInputHistory('next')}
             onSubmit={() => {
               if (completionItems.length) {
                 const item = completionItems[completionIndex];

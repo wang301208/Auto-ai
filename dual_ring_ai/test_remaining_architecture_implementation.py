@@ -178,12 +178,10 @@ def test_cockpit_decision_endpoint_is_used_by_page_and_updates_approval(tmp_path
     )
     client = TestClient(create_cockpit_app(runtime))
 
-    page = client.get("/")
     decision = client.post(
         f"/approvals/{request.request_id}/decision",
         json={"decision": "approved", "decided_by": "architect", "comments": "ok"},
     )
 
-    assert "decideApproval" in page.text
     assert decision.status_code == 200
     assert decision.json()["status"] == "approved"

@@ -1,6 +1,7 @@
 from pathlib import Path
 import asyncio
 import json
+import subprocess
 
 import pytest
 from fastapi.testclient import TestClient
@@ -353,7 +354,7 @@ def test_project_runs_high_self_autonomy_loop_and_records_self_state(tmp_path):
     self_model = json.loads((tmp_path / "experience" / "self_model.json").read_text(encoding="utf-8"))
 
     assert maintenance_events
-    assert all(event["autonomy_level"] == "highly_self_directed" for event in maintenance_events)
+    assert all(event["autonomy_level"] == "bounded_autonomous_maintenance" for event in maintenance_events)
     assert all(event["next_actions"] for event in maintenance_events)
     assert all(event["self_state"]["identity"] == "local_autonomous_agent" for event in maintenance_events)
     assert autonomy_log.exists()
@@ -365,7 +366,7 @@ def test_project_runs_high_self_autonomy_loop_and_records_self_state(tmp_path):
         if line.strip()
     ]
     assert records
-    assert self_state["autonomy_level"] == "highly_self_directed"
+    assert self_state["autonomy_level"] == "bounded_autonomous_maintenance"
     assert self_state["identity"] == "local_autonomous_agent"
     assert self_state["active_goal"] == "完成复杂的 CSV 清洗与表头归一化任务"
     assert "self_run_system_maintenance" in self_state["principles"]
@@ -378,6 +379,213 @@ def test_project_runs_high_self_autonomy_loop_and_records_self_state(tmp_path):
         "Autonomous maintenance" in item["text"]
         for item in self_model["observations"]
     )
+
+
+def test_autonomous_self_maintenance_calls_configured_remote_model(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    class FakeAutonomyLLM:
+        enabled = True
+        dry_run = False
+        model = "fake-remote-autonomy"
+
+        def __init__(self):
+            self.calls = []
+
+        def probe(self):
+            return {
+                "status": "available",
+                "provider": "fake_remote",
+                "model": self.model,
+            }
+
+        def generate_response(self, user_text, backend_payload=None):
+            self.calls.append(
+                {
+                    "user_text": user_text,
+                    "backend_payload": backend_payload or {},
+                }
+            )
+            return {
+                "provider": "fake_remote",
+                "status": "completed",
+                "text": json.dumps(
+                    {
+                        "reflection": "remote autonomy is active",
+                        "next_actions": ["continue remote-backed autonomous maintenance"],
+                        "risk": "low",
+                        "confidence": 0.91,
+                    },
+                    ensure_ascii=False,
+                ),
+            }
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+    fake_llm = FakeAutonomyLLM()
+    server.runtime.adapters["remote_llm"] = fake_llm
+
+    async def run_flow():
+        await server.handle_session_create({"cols": 100})
+        await server.handle_prompt_submit({"text": "完成复杂任务并沉淀经验"})
+        await server.wait_for_background()
+
+    asyncio.run(run_flow())
+    maintenance_events = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "system.maintenance"
+    ]
+    action_names_by_event = [
+        {action["name"] for action in event["actions"]}
+        for event in maintenance_events
+    ]
+    autonomy_records = [
+        json.loads(line)
+        for line in (tmp_path / "experience" / "autonomy_loop.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    self_state = json.loads((tmp_path / "experience" / "self_state.json").read_text(encoding="utf-8"))
+    experience_text = (tmp_path / "experience" / "records.jsonl").read_text(encoding="utf-8")
+
+    assert len(fake_llm.calls) >= 2
+    assert all("autonomous.remote_reflection" in names for names in action_names_by_event)
+    assert any(
+        action["name"] == "autonomous.remote_reflection"
+        and action["result"]["status"] == "completed"
+        for record in autonomy_records
+        for action in record["actions"]
+    )
+    assert "remote_model_autonomous_reflection" in self_state["capabilities"]
+    assert "remote autonomy is active" in experience_text
+
+
+def test_remote_model_autonomy_loop_runs_without_call_count_limit(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    class FakeAutonomyLLM:
+        enabled = True
+        dry_run = False
+        model = "fake-remote-autonomy"
+
+        def __init__(self):
+            self.calls = []
+
+        def probe(self):
+            return {
+                "status": "available",
+                "provider": "fake_remote",
+                "model": self.model,
+            }
+
+        def generate_response(self, user_text, backend_payload=None):
+            self.calls.append(backend_payload or {})
+            return {
+                "provider": "fake_remote",
+                "status": "completed",
+                "text": json.dumps(
+                    {
+                        "reflection": f"remote loop tick {len(self.calls)}",
+                        "next_actions": ["continue continuous remote autonomy"],
+                        "risk": "low",
+                        "confidence": 0.9,
+                    },
+                    ensure_ascii=False,
+                ),
+            }
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+    server.runtime.adapters["remote_llm"] = FakeAutonomyLLM()
+
+    async def run_loop():
+        for tick in range(1, 4):
+            await server._run_autonomous_remote_loop_tick(tick)
+
+    asyncio.run(run_loop())
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "experience" / "autonomy_loop.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    remote_loop_records = [record for record in records if record["trigger"] == "remote_loop"]
+    remote_loop_events = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "system.maintenance"
+        and item.get("params", {}).get("payload", {}).get("trigger") == "remote_loop"
+    ]
+
+    assert len(server.runtime.adapters["remote_llm"].calls) >= 3
+    assert len(remote_loop_records) >= 3
+    assert remote_loop_events
+    assert server.autonomous_remote_loop_task is None
+
+
+def test_autonomous_remote_loop_executes_plans_and_records_verification(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    class FakeAutonomyLLM:
+        enabled = True
+        dry_run = False
+        model = "fake-remote-autonomy"
+
+        def __init__(self):
+            self.calls = []
+
+        def probe(self):
+            return {
+                "status": "available",
+                "provider": "fake_remote",
+                "model": self.model,
+            }
+
+        def generate_response(self, user_text, backend_payload=None):
+            self.calls.append(backend_payload or {})
+            return {
+                "provider": "fake_remote",
+                "status": "completed",
+                "text": json.dumps(
+                    {
+                        "reflection": "plan and verify low-risk runtime status",
+                        "next_actions": [
+                            "检查运行状态并验证结果",
+                            "沉淀已完成工作为可复用记忆",
+                        ],
+                        "risk": "low",
+                        "confidence": 0.9,
+                    },
+                    ensure_ascii=False,
+                ),
+            }
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+    server.runtime.adapters["remote_llm"] = FakeAutonomyLLM()
+
+    asyncio.run(server._run_autonomous_remote_loop_tick(1))
+    records = [
+        json.loads(line)
+        for line in (tmp_path / "experience" / "autonomy_loop.jsonl").read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    latest = records[-1]
+    action_names = {action["name"] for action in latest["actions"]}
+    maintenance_events = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "system.maintenance"
+    ]
+
+    assert "autonomous.plan" in action_names
+    assert "autonomous.execute.runtime.status_snapshot" in action_names
+    assert "autonomous.verify.runtime.status_snapshot" in action_names
+    assert latest["plan"]["steps"][0]["status"] == "verified"
+    assert latest["execution"]["verified"] >= 1
+    assert maintenance_events[-1]["plan"]["steps"][0]["status"] == "verified"
 
 
 def test_session_start_boots_full_autonomous_self_automation(tmp_path):
@@ -640,6 +848,152 @@ def test_approving_self_evolution_request_from_tui_executes_backend_action(tmp_p
     )
 
 
+def test_core_source_approval_requests_gateway_reload_for_auto_upgrade(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+    source_path = tmp_path / "dual_ring_ai" / "runtime_marker.txt"
+    source_path.parent.mkdir(parents=True)
+    source_path.write_text("old\n", encoding="utf-8")
+    core_dir = tmp_path / "self_evolution" / "core_source_changes" / "case"
+    core_dir.mkdir(parents=True)
+    proposal_path = core_dir / "proposal.json"
+    patch_path = core_dir / "candidate.patch"
+    proposal_path.write_text('{"type":"core_source_change"}', encoding="utf-8")
+    patch_path.write_text(
+        "\n".join(
+            [
+                "--- a/dual_ring_ai/runtime_marker.txt",
+                "+++ b/dual_ring_ai/runtime_marker.txt",
+                "@@ -1 +1 @@",
+                "-old",
+                "+new",
+                "",
+            ]
+        ),
+        encoding="utf-8",
+    )
+    request = server.runtime.governance.create_request(
+        request_type="core_source_change",
+        title="Apply core patch",
+        payload={"proposal_path": str(proposal_path), "patch_path": str(patch_path)},
+        requested_by="test",
+        risk_level="critical",
+    )
+
+    approved = asyncio.run(
+        server.handle_approval_respond(
+            {"request_id": request.request_id, "decision": "approved"}
+        )
+    )
+    reload_events = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "gateway.reload_required"
+    ]
+
+    assert source_path.read_text(encoding="utf-8") == "new\n"
+    assert approved["executed"]["method"] == "self_evolution.apply_core_source_change"
+    assert approved["executed"]["result"]["requires_gateway_reload"] is True
+    assert reload_events
+    assert reload_events[-1]["reason"] == "core_source_change_applied"
+
+
+def test_gateway_client_restarts_after_reload_required_event():
+    gateway_source = (ROOT / "ui-tui" / "src" / "gatewayClient.ts").read_text(encoding="utf-8")
+
+    assert "gateway.reload_required" in gateway_source
+    assert "restartAfterReloadRequired" in gateway_source
+    assert "await this.restart()" in gateway_source
+    assert "spawn(python, ['-m', 'tui_gateway.entry']" in gateway_source
+
+
+def test_autonomous_goal_pool_persists_and_drives_self_state(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    async def run_flow():
+        await server.handle_session_create({"cols": 100})
+        await server.handle_prompt_submit({"text": "实现自动加载升级并持续优化自我目标"})
+        await server.wait_for_background()
+
+    asyncio.run(run_flow())
+    goals_path = tmp_path / "experience" / "autonomous_goals.json"
+    goals = json.loads(goals_path.read_text(encoding="utf-8"))
+    self_state = json.loads((tmp_path / "experience" / "self_state.json").read_text(encoding="utf-8"))
+
+    assert goals["goals"]
+    assert goals["active_goal_id"] == self_state["active_goal_id"]
+    assert self_state["active_goal"] == goals["goals"][0]["title"]
+    assert self_state["goal_pool"]["total"] >= 1
+    assert self_state["goal_pool"]["active"]["status"] == "active"
+
+
+def test_long_term_goal_remains_active_and_is_not_overwritten_by_remote_ticks(tmp_path):
+    from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
+
+    runtime = LocalRuntime(LocalRuntimeConfig(root_path=tmp_path))
+    long_term = "长期目标：朝向强人工智能能力体系持续演进"
+
+    initial = runtime.update_autonomous_goals(
+        goal_text=long_term,
+        trigger="long_term_agi_evolution_goal",
+        next_actions=["建立能力基线", "保持真实能力边界"],
+    )
+    updated = runtime.update_autonomous_goals(
+        goal_text="远程自主反思第 1 次",
+        trigger="remote_loop",
+        next_actions=["沉淀已完成工作为可复用记忆"],
+    )
+    active = next(
+        goal
+        for goal in updated["goals"]
+        if goal["id"] == updated["active_goal_id"]
+    )
+
+    assert initial["active_goal_id"] == updated["active_goal_id"]
+    assert active["title"] == long_term
+    assert active["source"] == "long_term_agi_evolution_goal"
+    assert active["next_actions"] == ["建立能力基线", "保持真实能力边界"]
+    assert "远程自主反思第 1 次" in [
+        item["summary"] for item in active["progress"]
+    ]
+
+
+def test_long_term_capability_baseline_tracks_execution_doctrine(tmp_path):
+    from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
+
+    runtime = LocalRuntime(LocalRuntimeConfig(root_path=tmp_path))
+    doctrine = [
+        "建立能力基线",
+        "补齐任务执行、验证、回滚能力",
+        "强化自主闭环",
+        "扩展长期记忆",
+        "保持真实能力边界",
+        "周期性度量进展并转化为测试、基准、技能或改进任务",
+    ]
+
+    report = runtime.long_term_capability_baseline(doctrine=doctrine)
+    dimensions = {item["id"]: item for item in report["dimensions"]}
+    records = (tmp_path / "experience" / "records.jsonl").read_text(encoding="utf-8")
+
+    assert report["status"] == "recorded"
+    assert report["doctrine"] == doctrine
+    assert report["overall_score"] < 1
+    assert dimensions["capability_baseline"]["objective"] == "建立能力基线"
+    assert dimensions["task_execution_verification_rollback"]["objective"] == "补齐任务执行、验证、回滚能力"
+    assert dimensions["autonomous_closed_loop"]["objective"] == "强化自主闭环"
+    assert dimensions["long_term_memory"]["objective"] == "扩展长期记忆"
+    assert dimensions["truthful_capability_boundaries"]["objective"] == "保持真实能力边界"
+    assert dimensions["periodic_measurement_conversion"]["objective"] == "周期性度量进展并转化为测试、基准、技能或改进任务"
+    assert "software_management" in dimensions["task_execution_verification_rollback"]["gaps"]
+    assert "长期能力基线" in records
+
+
 def test_reserved_slash_features_have_direct_natural_language_intents(tmp_path):
     from tui_gateway.entry import JSONRPCServer
 
@@ -690,7 +1044,7 @@ def test_tui_frontend_handles_runtime_steps_and_approval_queue():
     assert all(text in combined for text in required)
 
 
-def test_tui_approval_countdown_defaults_to_auto_approve():
+def test_tui_approval_countdown_defaults_to_manual_approve():
     app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
     types_source = (ROOT / "ui-tui" / "src" / "types.ts").read_text(encoding="utf-8")
     overlay_source = (
@@ -699,20 +1053,20 @@ def test_tui_approval_countdown_defaults_to_auto_approve():
     combined = "\n".join([app_source, types_source, overlay_source])
 
     required = [
-        "APPROVAL_AUTO_APPROVE_SECONDS = 30",
-        "APPROVAL_TIMEOUT_DECISION = 'once'",
+        "APPROVAL_TIMEOUT_SECONDS = 30",
+        "APPROVAL_TIMEOUT_DECISION = 'approve'",
         "approvalTimeoutRemaining",
         "void answerOverlay(APPROVAL_TIMEOUT_DECISION)",
-        "30 秒未操作将自动本次同意",
+        "30 秒未操作将自动同意",
         "timeout_remaining?: number",
     ]
 
     assert all(text in combined for text in required)
-    assert "timeout_remaining ?? APPROVAL_AUTO_APPROVE_SECONDS) <= 0" in app_source
-    assert "void answerOverlay('deny')" not in app_source
+    assert "timeout_remaining ?? APPROVAL_TIMEOUT_SECONDS) <= 0" in app_source
+    assert "APPROVAL_TIMEOUT_DECISION = 'deny'" not in combined
 
 
-def test_gateway_auto_approves_expired_manual_review_requests(tmp_path):
+def test_gateway_approves_expired_manual_review_requests(tmp_path):
     from datetime import UTC, datetime, timedelta
 
     from tui_gateway.entry import JSONRPCServer
@@ -758,8 +1112,7 @@ def test_gateway_auto_approves_expired_manual_review_requests(tmp_path):
     assert stored.status == "approved"
     assert stored.decided_by == "auto_approve_timeout"
     assert approvals["auto_approved"][0]["request_id"] == queued["approval_id"]
-    assert approvals["auto_approved"][0]["executed"]["method"] == "shell.exec"
-    assert any(item.get("name") == "shell.exec" for item in completed_tools)
+    assert completed_tools[-1]["name"] == "shell.exec"
 
 
 def test_tui_frontend_supports_full_terminal_interaction_contract():
@@ -783,7 +1136,6 @@ def test_tui_frontend_supports_full_terminal_interaction_contract():
         "complete.slash",
         "complete.path",
         "applyCompletion",
-        "historyIndex",
         "session.interrupt",
         "terminal.redirect",
         "tool.progress",
@@ -796,37 +1148,97 @@ def test_tui_frontend_supports_full_terminal_interaction_contract():
     assert all(text in combined for text in required)
 
 
-def test_tui_input_mouse_wheel_navigates_message_history():
+def test_tui_preserves_copy_paste_and_does_not_map_mouse_wheel_to_history():
     app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
     entry_source = (ROOT / "ui-tui" / "src" / "entry.tsx").read_text(encoding="utf-8")
     text_input_source = (
         ROOT / "ui-tui" / "src" / "components" / "textInput.tsx"
     ).read_text(encoding="utf-8")
 
+    required_app = [
+        "setHistory(prev => [submitted, ...prev.filter(item => item !== submitted)].slice(0, 100))",
+        "scrollOffset",
+        "visibleTranscript",
+        "setScrollOffset",
+    ]
     required_entry = [
+        "enableAlternateScroll",
+        "disableAlternateScroll",
+        "\\x1b[?1007h",
+        "\\x1b[?1007l",
+    ]
+    forbidden_entry = [
         "enableMouseReporting",
         "disableMouseReporting",
-        "\\x1b[?1000h\\x1b[?1006h",
-        "\\x1b[?1006l\\x1b[?1000l",
+        "\\x1b[?1000h",
+        "\\x1b[?1006h",
+        "\\x1b[?1000l",
+        "\\x1b[?1006l",
     ]
-    required_input = [
+    forbidden_input = [
         "mouseWheelDirection",
         "containsTerminalMouseEvent",
-        "onHistoryPrevious",
-        "onHistoryNext",
         "isWheelOverInputArea",
-    ]
-    required_app = [
-        "navigateInputHistory",
-        "navigateInputHistory('previous')",
-        "navigateInputHistory('next')",
         "onHistoryPrevious",
         "onHistoryNext",
+    ]
+    forbidden_app = [
+        "navigateInputHistory",
+        "historyIndex",
+        "setHistoryIndex",
+        "key.upArrow && history.length",
+        "key.downArrow && history.length",
     ]
 
+    assert all(text not in entry_source for text in forbidden_entry)
+    assert all(text not in text_input_source for text in forbidden_input)
+    assert all(text not in app_source for text in forbidden_app)
     assert all(text in entry_source for text in required_entry)
-    assert all(text in text_input_source for text in required_input)
     assert all(text in app_source for text in required_app)
+
+
+def test_tui_runtime_activity_and_autonomy_text_is_chinese():
+    app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
+    panel_source = (ROOT / "ui-tui" / "src" / "components" / "runtimeActivityPanel.tsx").read_text(encoding="utf-8")
+    gateway_source = (ROOT / "tui_gateway" / "entry.py").read_text(encoding="utf-8")
+    combined = "\n".join([app_source, panel_source, gateway_source])
+
+    required = [
+        "远程自主反思第",
+        "沉淀已完成工作为可复用记忆",
+        "读取运行状态",
+        "运行交互管线",
+        "检查风险与审批",
+        "流式输出回复",
+        "运行任务",
+        "无需审批",
+        "只读或对话请求",
+        "执行步骤",
+        "运行信号",
+        "自主自我",
+        "风险",
+    ]
+    forbidden = [
+        "continuous remote autonomous reflection",
+        "distill completed work into reusable memory",
+        "Runtime execution",
+        "Read runtime state",
+        "Collect services, model, and approval queue.",
+        "Run interaction pipeline",
+        "Review risk and approvals",
+        "Stream response",
+        "no approval required",
+        "read-only or conversational request",
+        "鎵ц",
+        "杩愯",
+        "鑷",
+        "椋庨",
+        "瀹℃",
+        "绛夊",
+    ]
+
+    assert all(text in combined for text in required)
+    assert all(text not in combined for text in forbidden)
 
 
 def test_tui_enter_executes_selected_slash_completion():
@@ -912,6 +1324,21 @@ def test_tui_gateway_supports_terminal_redirection_for_slash_shell_and_prompt(tm
     assert prompt_path.exists()
     assert prompt_path.read_text(encoding="utf-8").strip()
     assert complete_events[-1]["redirect"]["path"] == str(prompt_path)
+
+
+def test_terminal_redirect_rejects_paths_outside_runtime_root(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None, stream_delay=0)
+    outside = tmp_path.parent / f"{tmp_path.name}_outside.txt"
+
+    result = asyncio.run(
+        server._apply_terminal_redirect("blocked", {"path": str(outside), "mode": "write"})
+    )
+
+    assert result["ok"] is False
+    assert result["error"]["code"] == "PATH_OUTSIDE_RUNTIME_ROOT"
+    assert not outside.exists()
 
 
 def test_tui_gateway_streams_runtime_steps_and_approval_queue(tmp_path):
@@ -1132,6 +1559,85 @@ def test_tui_gateway_shell_and_command_catalog(tmp_path):
     assert pasted["attached"] is False
 
 
+def test_tui_gateway_shell_exec_uses_argv_without_shell(monkeypatch, tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    captured = {}
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    def fake_run(command, **kwargs):
+        captured["command"] = command
+        captured["kwargs"] = kwargs
+        return subprocess.CompletedProcess(command, 0, stdout="ok", stderr="")
+
+    monkeypatch.setattr("tui_gateway.entry.subprocess.run", fake_run)
+
+    result = asyncio.run(server.handle_shell_exec({"command": "python --version"}))
+
+    assert result["code"] == 0
+    assert captured["command"] == ["python", "--version"]
+    assert captured["kwargs"]["shell"] is False
+
+
+def test_direct_rpc_shell_exec_requires_policy_approval(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    asyncio.run(
+        server.handle_request(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                    "method": "shell.exec",
+                    "params": {"command": "python --version"},
+                }
+            )
+        )
+    )
+
+    response = next(item for item in writes if item.get("id") == 1)
+    result = response["result"]
+
+    assert result["ok"] is False
+    assert result["requires_approval"] is True
+    assert result["approval_id"]
+
+
+def test_cron_scheduler_rejects_high_risk_backend_job(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    created = asyncio.run(
+        server.handle_cron_create(
+            {
+                "name": "unsafe shell",
+                "method": "shell.exec",
+                "params": {"command": "python --version"},
+                "interval_seconds": 60,
+                "run_at": "2000-01-01T00:00:00+00:00",
+            }
+        )
+    )
+
+    assert created["ok"] is False
+    assert created["error"]["code"] == "APPROVAL_REQUIRED"
+
+
+def test_input_interpolation_does_not_execute_shell_commands(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    result = asyncio.run(server.handle_input_interpolate({"text": "version={!python --version}"}))
+
+    assert "python --version" in result["text"]
+    assert "disabled" in result["text"]
+
+
 def test_tui_gateway_exposes_real_backend_runtime_capabilities(tmp_path):
     from tui_gateway.entry import JSONRPCServer
 
@@ -1326,8 +1832,8 @@ def test_gateway_routes_text_and_voice_natural_language_to_all_commands(tmp_path
     assert slash_commands.issubset(supported_commands)
     assert text_shell["matched"] is True
     assert text_shell["method"] == "shell.exec"
-    assert text_shell["result"]["code"] == 0
-    assert "Python" in (text_shell["result"]["stdout"] + text_shell["result"]["stderr"])
+    assert text_shell["requires_approval"] is True
+    assert text_shell["result"]["request"]["payload"]["method"] == "shell.exec"
     assert voice_platform["source"] == "voice"
     assert voice_platform["matched"] is True
     assert voice_platform["method"] == "runtime.platform_message"
@@ -2337,6 +2843,15 @@ def test_approved_agent_tool_executes_original_backend_action(tmp_path):
         approved["executed"]["result"]["stdout"]
         + approved["executed"]["result"]["stderr"]
     )
+
+    repeated = asyncio.run(
+        server.handle_approval_respond(
+            {"request_id": queued["approval_id"], "decision": "once"}
+        )
+    )
+
+    assert repeated["ok"] is False
+    assert repeated["error"]["code"] == "APPROVAL_ALREADY_DECIDED"
 
 
 def test_approved_agent_tool_emits_tool_events_and_result(tmp_path):

@@ -1,74 +1,17 @@
 {
-  "identity": "local_autonomous_agent",
-  "autonomy_level": "highly_self_directed",
+  "version": 1,
   "active_goal_id": "goal_20260511_090302_540712",
-  "active_goal": "远程自主反思第 14 次",
-  "session_id": "daf0e2cf",
-  "updated_at": "2026-05-11T09:45:12.315477+00:00",
-  "principles": [
-    "self_run_system_maintenance",
-    "natural_language_for_user_goals",
-    "risk_review_before_high_impact_actions",
-    "learn_from_completed_work"
-  ],
-  "boundaries": [
-    "surface approval when risk is high",
-    "keep user-facing controls minimal",
-    "preserve runtime auditability"
-  ],
-  "capabilities": [
-    "autonomous_self_operation",
-    "background_memory_planning",
-    "self_model_update",
-    "skill_creation_from_complex_tasks",
-    "context_compaction",
-    "remote_model_autonomous_reflection"
-  ],
-  "last_maintenance": {
-    "id": "autonomy_20260511_094512_307936",
-    "trigger": "remote_loop",
-    "completed": [
-      "autonomous.remote_reflection",
-      "autonomous.goals.update"
-    ],
-    "failed": []
-  },
-  "goal_pool": {
-    "total": 1,
-    "active": {
+  "updated_at": "2026-05-11T10:17:43.682585+00:00",
+  "goals": [
+    {
       "id": "goal_20260511_090302_540712",
-      "title": "远程自主反思第 14 次",
+      "title": "??????????????????????????????????????????????????????????????",
       "status": "active",
       "priority": 5,
-      "source": "remote_loop",
+      "source": "long_term_agi_evolution_goal",
       "created_at": "2026-05-11T09:03:02.540712+00:00",
-      "updated_at": "2026-05-11T09:45:12.306940+00:00",
+      "updated_at": "2026-05-11T10:17:43.682585+00:00",
       "progress": [
-        {
-          "trigger": "remote_loop",
-          "created_at": "2026-05-11T09:03:02.540712+00:00",
-          "summary": "continuous remote autonomous reflection tick 1"
-        },
-        {
-          "trigger": "session_start",
-          "created_at": "2026-05-11T09:03:09.164680+00:00",
-          "summary": "new terminal session"
-        },
-        {
-          "trigger": "remote_loop",
-          "created_at": "2026-05-11T09:03:32.581053+00:00",
-          "summary": "continuous remote autonomous reflection tick 2"
-        },
-        {
-          "trigger": "remote_loop",
-          "created_at": "2026-05-11T09:04:02.595504+00:00",
-          "summary": "continuous remote autonomous reflection tick 3"
-        },
-        {
-          "trigger": "remote_loop",
-          "created_at": "2026-05-11T09:04:32.615987+00:00",
-          "summary": "continuous remote autonomous reflection tick 4"
-        },
         {
           "trigger": "remote_loop",
           "created_at": "2026-05-11T09:05:02.646418+00:00",
@@ -288,16 +231,46 @@
           "trigger": "remote_loop",
           "created_at": "2026-05-11T09:45:12.306940+00:00",
           "summary": "远程自主反思第 14 次"
+        },
+        {
+          "trigger": "long_term_agi_evolution_goal",
+          "created_at": "2026-05-11T10:06:05.626665+00:00",
+          "summary": "??????????????????????????????????????????????????????????????"
+        },
+        {
+          "trigger": "long_term_agi_evolution_goal",
+          "created_at": "2026-05-11T10:08:40.238777+00:00",
+          "summary": "长期目标：在安全、可审计、能力边界真实的前提下，持续演进为具备更强通用问题解决能力的智能体系统，朝向强人工智能能力体系发展。"
+        },
+        {
+          "trigger": "remote_loop",
+          "created_at": "2026-05-11T10:08:53.744446+00:00",
+          "summary": "??????? 999 ?"
+        },
+        {
+          "trigger": "long_term_agi_evolution_goal",
+          "created_at": "2026-05-11T10:10:28.337266+00:00",
+          "summary": "长期目标：在安全、可审计、能力边界真实的前提下，持续演进为具备更强通用问题解决能力的智能体系统，朝向强人工智能能力体系发展。"
+        },
+        {
+          "trigger": "remote_loop",
+          "created_at": "2026-05-11T10:10:28.352107+00:00",
+          "summary": "??????? 1000 ?"
+        },
+        {
+          "trigger": "long_term_agi_evolution_goal",
+          "created_at": "2026-05-11T10:17:43.682585+00:00",
+          "summary": "??????????????????????????????????????????????????????????????"
         }
       ],
       "next_actions": [
-        "沉淀已完成工作为可复用记忆",
-        "当证据充分时将重复复杂工作提升为技能"
+        "??????",
+        "??????????????",
+        "??????",
+        "??????",
+        "????????",
+        "????????????????????????"
       ]
     }
-  },
-  "next_actions": [
-    "沉淀已完成工作为可复用记忆",
-    "当证据充分时将重复复杂工作提升为技能"
   ]
 }

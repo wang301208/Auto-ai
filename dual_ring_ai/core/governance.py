@@ -74,6 +74,8 @@ class GovernanceStore:
         if decision not in {"approved", "rejected"}:
             raise ValueError("decision must be 'approved' or 'rejected'")
         request = self.get_request(request_id)
+        if request.status != "pending":
+            raise ValueError(f"approval request is already decided: {request_id}")
         request.status = decision
         request.decided_by = decided_by
         request.comments = comments
@@ -83,6 +85,8 @@ class GovernanceStore:
 
     def get_request(self, request_id: str) -> ApprovalRequest:
         path = self.requests_path / f"{request_id}.json"
+        if not path.exists():
+            raise ValueError(f"approval request not found: {request_id}")
         data = json.loads(path.read_text(encoding="utf-8"))
         return ApprovalRequest(**data)
 

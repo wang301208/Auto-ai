@@ -22,7 +22,7 @@ export default function Overlays({ overlay }: { overlay: OverlayState }) {
         <Text>{overlay.command || '操作'}</Text>
         {overlay.description ? <Text color={theme.dim}>{overlay.description}</Text> : null}
         {typeof approvalTimeoutRemaining === 'number' ? (
-          <Text color={theme.dim}>{approvalTimeoutRemaining}s 后自动本次同意，30 秒未操作将自动本次同意</Text>
+          <Text color={theme.dim}>{approvalTimeoutRemaining}s 后自动同意，30 秒未操作将自动同意</Text>
         ) : null}
         <Text>
           {approvalChoices.map((choice, index) => `${index === overlay.selected ? '>' : ' '} ${approvalChoiceLabels[choice]}`).join('  ')}

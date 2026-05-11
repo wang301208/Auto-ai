@@ -49,6 +49,35 @@ def test_remote_llm_adapter_dry_run_masks_secret_and_shapes_request(monkeypatch)
     assert "secret-value" not in json.dumps(result)
 
 
+def test_remote_llm_system_prompt_requires_truthful_capability_boundaries(monkeypatch):
+    monkeypatch.setenv("REMOTE_LLM_API_KEY", "secret-value")
+
+    from dual_ring_ai.adapters.remote_llm import RemoteLLMAdapter
+
+    adapter = RemoteLLMAdapter(
+        enabled=True,
+        dry_run=True,
+        api_key_env="REMOTE_LLM_API_KEY",
+        base_url="https://llm.example/v1",
+        model="model-x",
+    )
+    result = adapter.generate_response(
+        "控制电脑并安装软件",
+        {
+            "capabilities": {
+                "shell": True,
+                "computer_control": False,
+                "software_management": False,
+            }
+        },
+    )
+    system_prompt = result["request"]["json"]["messages"][0]["content"]
+
+    assert "Do not claim abilities that are not exposed in backend context" in system_prompt
+    assert "Do not say the system can perform advanced operations" in system_prompt
+    assert "computer_control" in system_prompt
+
+
 def test_remote_llm_adapter_refuses_live_request_without_key(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
 
@@ -91,10 +120,31 @@ def test_local_runtime_wires_remote_llm_health_and_interaction_dry_run(tmp_path)
     assert "test-secret" not in json.dumps(interaction)
 
 
-def test_local_runtime_falls_back_to_local_llm_when_remote_is_unconfigured(tmp_path):
+def test_local_runtime_uses_local_llm_by_default_without_remote_probe(tmp_path, monkeypatch):
     from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
 
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     runtime = LocalRuntime(LocalRuntimeConfig(root_path=tmp_path))
+
+    health = runtime.adapter_health()
+    interaction = runtime.handle_interaction("status")
+
+    assert health["remote_llm"]["status"] == "disabled"
+    assert interaction["response"]["provider"] == "local_rule_based"
+    assert "remote_llm_status" not in interaction["response"]
+    assert interaction["response_text"]
+
+
+def test_local_runtime_falls_back_to_local_llm_when_remote_is_enabled_but_unconfigured(tmp_path, monkeypatch):
+    from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
+
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    runtime = LocalRuntime(
+        LocalRuntimeConfig(
+            root_path=tmp_path,
+            adapters={"remote_llm": {"enabled": True, "dry_run": False}},
+        )
+    )
 
     health = runtime.adapter_health()
     interaction = runtime.handle_interaction("status")
@@ -102,6 +152,33 @@ def test_local_runtime_falls_back_to_local_llm_when_remote_is_unconfigured(tmp_p
     assert health["remote_llm"]["status"] == "unconfigured"
     assert interaction["response"]["provider"] == "local_rule_based"
     assert interaction["response"]["remote_llm_status"]["status"] == "unconfigured"
+    assert interaction["response_text"]
+
+
+def test_local_runtime_falls_back_to_local_llm_when_remote_is_unavailable(tmp_path):
+    from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
+
+    runtime = LocalRuntime(
+        LocalRuntimeConfig(
+            root_path=tmp_path,
+            adapters={
+                "remote_llm": {
+                    "enabled": True,
+                    "dry_run": False,
+                    "api_key": "test-key",
+                    "base_url": "http://127.0.0.1:1/v1",
+                    "timeout": 0.1,
+                }
+            },
+        )
+    )
+
+    health = runtime.adapter_health()
+    interaction = runtime.handle_interaction("status")
+
+    assert health["remote_llm"]["status"] == "unavailable"
+    assert interaction["response"]["provider"] == "local_rule_based"
+    assert interaction["response"]["remote_llm_status"]["status"] == "unavailable"
     assert interaction["response_text"]
 
 
@@ -296,6 +373,55 @@ def test_tui_gateway_model_setup_wizard_records_api_key_and_oauth_config(tmp_pat
     assert config["providers"]["custom"]["auth_type"] == "oauth"
     assert config["providers"]["custom"]["oauth"]["client_id"] == "client-id"
     assert config["model"] == {"provider": "custom", "name": "portal-chat"}
+
+
+def test_tui_gateway_auto_loads_project_config_yaml_without_env(tmp_path, monkeypatch):
+    monkeypatch.delenv("LOCAL_AGENT_CONFIG_PATH", raising=False)
+    monkeypatch.delenv("DUAL_RING_CONFIG_PATH", raising=False)
+    monkeypatch.setenv("OPENAI_API_KEY", "secret-value")
+
+    from tui_gateway.entry import JSONRPCServer
+
+    config_path = tmp_path / "config.yaml"
+    config_path.write_text(
+        yaml.safe_dump(
+            {
+                "root_path": str(tmp_path),
+                "model": {"provider": "custom", "name": "LongCat-Flash-Lite"},
+                "providers": {
+                    "custom": {
+                        "base_url": "https://api.longcat.chat/openai",
+                        "api_key_env": "OPENAI_API_KEY",
+                    }
+                },
+                "adapters": {
+                    "remote_llm": {
+                        "enabled": True,
+                        "dry_run": True,
+                        "api_key_env": "OPENAI_API_KEY",
+                        "base_url": "https://api.longcat.chat/openai",
+                        "model": "LongCat-Flash-Lite",
+                    }
+                },
+            },
+            sort_keys=False,
+        ),
+        encoding="utf-8",
+    )
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+    options = __import__("asyncio").run(server.handle_model_options({}))
+
+    assert server.config_path == config_path.resolve()
+    assert options["model"] == "LongCat-Flash-Lite"
+    assert options["providers"][0]["base_url"] == "https://api.longcat.chat/openai"
+
+
+def test_tui_gateway_client_sets_default_config_path_for_gateway_process():
+    gateway_source = (ROOT / "ui-tui" / "src" / "gatewayClient.ts").read_text(encoding="utf-8")
+
+    assert "defaultConfigPath" in gateway_source
+    assert "LOCAL_AGENT_CONFIG_PATH: process.env.LOCAL_AGENT_CONFIG_PATH || defaultConfigPath" in gateway_source
 
 
 def test_local_agent_cli_quickstart_model_and_doctor_noninteractive(tmp_path, monkeypatch):

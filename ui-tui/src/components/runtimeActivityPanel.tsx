@@ -37,6 +37,7 @@ function statusText(status: string) {
       pending: '等待中',
       running: '运行中',
       complete: '完成',
+      completed: '完成',
       error: '错误',
       low: '低',
       medium: '中',
@@ -116,7 +117,7 @@ export default function RuntimeActivityPanel({
           ))}
           {compaction ? (
             <Text color={theme.dim} wrap="truncate">
-              上下文：{compaction.before_messages} → {compaction.after_messages} 条消息 | {compaction.after_tokens} 令牌 | {compaction.trigger}
+              上下文：{compaction.before_messages} 到 {compaction.after_messages} 条消息 | {compaction.after_tokens} 令牌 | {compaction.trigger}
             </Text>
           ) : null}
         </Box>

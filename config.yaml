@@ -2,21 +2,19 @@ root_path: G:\项目\AutoGPT-0.4.7
 enable_agents: false
 managed_paths: {}
 security_defaults:
-  network: true
-  shell: true
+  network: false
+  shell: false
   filesystem:
     read:
-    - '*'
+    - .
     write:
-    - '*'
+    - workspace
   environment:
-    allow:
-    - '*'
-    request:
-    - OPENAI_API_KEY
+    allow: []
+    request: []
 providers:
   custom:
-    base_url: https://api.longcat.chat/openai/v1
+    base_url: https://api.longcat.chat/openai
     api_key_env: OPENAI_API_KEY
     auth_type: api_key
 model:
@@ -27,7 +25,7 @@ adapters:
     enabled: true
     dry_run: false
     api_key_env: OPENAI_API_KEY
-    base_url: https://api.longcat.chat/openai/v1
+    base_url: https://api.longcat.chat/openai
     model: LongCat-Flash-Lite
     timeout: 30.0
     temperature: 0.2

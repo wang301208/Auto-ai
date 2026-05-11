@@ -34,6 +34,20 @@ from ..gateway import GatewayRunner, PlatformConfig
 from ..gateway.platforms import DingTalkAdapter, FeishuAdapter, WeixinAdapter
 from ..interaction.pipeline import InteractionPipeline
 
+USER_VISIBLE_CAPABILITY_BOUNDARY = (
+    "当前项目可执行命令行级操作；尚未实现原生截图、鼠标、键盘、窗口控制、"
+    "软件安装或软件卸载专用工具。"
+)
+
+DEFAULT_LONG_TERM_DOCTRINE = [
+    "建立能力基线",
+    "补齐任务执行、验证、回滚能力",
+    "强化自主闭环",
+    "扩展长期记忆",
+    "保持真实能力边界",
+    "周期性度量进展并转化为测试、基准、技能或改进任务",
+]
+
 
 def asyncio_run(awaitable):
     """Run a coroutine from sync runtime methods."""
@@ -118,7 +132,7 @@ class LocalRuntime:
         xtts_config = adapters_config.get("xtts", {})
         messaging_config = adapters_config.get("messaging_gateway", {})
         remote_llm = RemoteLLMAdapter(
-            enabled=bool(remote_llm_config.get("enabled", True)),
+            enabled=bool(remote_llm_config.get("enabled", bool(remote_llm_config))),
             dry_run=bool(remote_llm_config.get("dry_run", False)),
             api_key=remote_llm_config.get("api_key"),
             api_key_env=remote_llm_config.get("api_key_env", "OPENAI_API_KEY"),
@@ -177,6 +191,7 @@ class LocalRuntime:
         self.self_model_path = self.root_path / "experience" / "self_model.json"
         self.user_model_path = self.root_path / "experience" / "user_models.json"
         self.memory_cycle_path = self.root_path / "experience" / "periodic_memory.jsonl"
+        self.autonomous_goals_path = self.root_path / "experience" / "autonomous_goals.json"
         self.conversation_db_path = self.root_path / "experience" / "conversations.sqlite3"
         self.skill_proposals_path = self.root_path / "workspace" / "skill_proposals"
         self.self_evolution_audit_path = self.root_path / "self_evolution" / "audit.jsonl"
@@ -260,6 +275,7 @@ class LocalRuntime:
             backend_payload={
                 "services": self.status_snapshot()["services"],
                 "approvals": [asdict(item) for item in self.governance.list_requests()],
+                "capabilities": self._truthful_interaction_capabilities(),
             },
         )
         self.latest_avatar_event = result["avatar_event"]
@@ -273,6 +289,26 @@ class LocalRuntime:
             "interaction_pipeline",
         )
         return result
+
+    @staticmethod
+    def _truthful_interaction_capabilities() -> dict[str, Any]:
+        return {
+            "natural_language": True,
+            "shell": True,
+            "computer_control": False,
+            "software_management": False,
+            "native_desktop_actions": [],
+            "implemented_direct_tools": [
+                "shell.exec",
+                "runtime.status_snapshot",
+                "memory.periodic_tick",
+                "conversation.search",
+            ],
+            "user_visible_boundary": (
+                "当前项目可执行命令行级操作；尚未实现原生截图、鼠标、键盘、窗口控制、"
+                "软件安装或软件卸载专用工具。"
+            ),
+        }
 
     def record_experience(
         self,
@@ -493,6 +529,215 @@ class LocalRuntime:
             metadata={"cycle_id": payload["id"], "cadence": payload["cadence"]},
         )
         return payload
+
+    def read_autonomous_goals(self) -> dict[str, Any]:
+        payload = self._read_json_file(self.autonomous_goals_path)
+        if isinstance(payload, dict):
+            goals = payload.get("goals", [])
+            if isinstance(goals, list):
+                payload["goals"] = [goal for goal in goals if isinstance(goal, dict)]
+                payload.setdefault("active_goal_id", "")
+                payload.setdefault("updated_at", "")
+                return payload
+        return {"version": 1, "active_goal_id": "", "updated_at": "", "goals": []}
+
+    def update_autonomous_goals(
+        self,
+        goal_text: str,
+        trigger: str,
+        next_actions: list[str] | None = None,
+    ) -> dict[str, Any]:
+        title = str(goal_text or trigger).strip() or "autonomous self-maintenance"
+        goals_payload = self.read_autonomous_goals()
+        goals = list(goals_payload.get("goals", []))
+        active = self._select_active_goal(goals, title)
+        now = datetime.now(UTC).isoformat()
+        preserve_active_identity = (
+            active is not None
+            and active.get("source") == "long_term_agi_evolution_goal"
+            and trigger in {"remote_loop", "session_start"}
+        )
+        if active is None:
+            active = {
+                "id": f"goal_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}",
+                "title": title,
+                "status": "active",
+                "priority": self._goal_priority(trigger),
+                "source": trigger,
+                "created_at": now,
+                "updated_at": now,
+                "progress": [],
+                "next_actions": [],
+            }
+            goals.insert(0, active)
+        if not preserve_active_identity:
+            active["title"] = title
+        active["status"] = "active"
+        if not preserve_active_identity:
+            active["source"] = str(trigger or active.get("source", "autonomous"))
+        active["priority"] = max(int(active.get("priority", 1) or 1), self._goal_priority(trigger))
+        active["updated_at"] = now
+        progress = list(active.get("progress", [])) if isinstance(active.get("progress"), list) else []
+        progress.append({"trigger": trigger, "created_at": now, "summary": title})
+        active["progress"] = progress[-50:]
+        if not preserve_active_identity:
+            active["next_actions"] = [str(item) for item in (next_actions or []) if str(item).strip()][:8]
+        for goal in goals:
+            if goal is not active and goal.get("status") == "active" and goal.get("source") == trigger:
+                goal["status"] = "watching"
+        goals = sorted(
+            goals,
+            key=lambda item: (
+                0 if item.get("id") == active.get("id") else 1,
+                -int(item.get("priority", 1) or 1),
+                str(item.get("updated_at", "")),
+            ),
+        )[:100]
+        payload = {
+            "version": int(goals_payload.get("version", 1) or 1),
+            "active_goal_id": active["id"],
+            "updated_at": now,
+            "goals": goals,
+        }
+        self.autonomous_goals_path.parent.mkdir(parents=True, exist_ok=True)
+        self.autonomous_goals_path.write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+        return payload
+
+    @staticmethod
+    def _select_active_goal(goals: list[dict[str, Any]], title: str) -> dict[str, Any] | None:
+        normalized = title.casefold()
+        for goal in goals:
+            if str(goal.get("title", "")).casefold() == normalized:
+                return goal
+        for goal in goals:
+            if goal.get("status") == "active":
+                return goal
+        return None
+
+    @staticmethod
+    def _goal_priority(trigger: str) -> int:
+        if trigger == "prompt_complete":
+            return 5
+        if trigger == "session_start":
+            return 3
+        if trigger == "remote_loop":
+            return 2
+        return 1
+
+    def autonomous_remote_reflection(
+        self,
+        trigger: str,
+        task_text: str,
+        actions: list[dict[str, Any]],
+        next_actions: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Ask the configured remote model to reflect on one autonomous maintenance cycle."""
+        llm = self.adapters.get("remote_llm") if hasattr(self, "adapters") else None
+        if llm is None or not hasattr(llm, "generate_response"):
+            return {
+                "status": "unavailable",
+                "reason": "remote_llm adapter is unavailable",
+            }
+
+        health: dict[str, Any] = {"status": "unknown"}
+        if hasattr(llm, "probe"):
+            try:
+                health = llm.probe()
+            except Exception as exc:
+                health = {"status": "unavailable", "reason": str(exc)}
+        health_status = str(health.get("status", "unknown"))
+        if health_status in {"disabled", "unconfigured", "unavailable"}:
+            return {
+                "status": "skipped",
+                "remote_status": health_status,
+                "reason": health.get("reason", f"remote_llm is {health_status}"),
+                "model": health.get("model", getattr(llm, "model", "")),
+            }
+
+        action_summary = [
+            {
+                "name": str(item.get("name", "")),
+                "status": str(item.get("status", "")),
+                "result": item.get("result", {}),
+                "error": item.get("error", ""),
+            }
+            for item in actions[-20:]
+            if isinstance(item, dict)
+        ]
+        payload = {
+            "mode": "autonomous_remote_reflection",
+            "trigger": trigger,
+            "task": task_text,
+            "runtime": self.status_snapshot(),
+            "remote_health": health,
+            "actions": action_summary,
+            "next_actions": list(next_actions or []),
+            "self_model": self.read_self_model(),
+        }
+        prompt = (
+            "You are the remote reasoning engine for the autonomous self-maintenance loop. "
+            "Review the maintenance cycle and return JSON only with keys: "
+            "reflection, next_actions, risk, confidence. "
+            "Do not propose applying critical source, training, or deployment changes without approval.\n"
+            + json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+        )
+        try:
+            response = llm.generate_response(prompt, payload)
+        except Exception as exc:
+            return {"status": "error", "reason": str(exc)}
+
+        status = str(response.get("status", ""))
+        if status in {"disabled", "unconfigured", "unavailable"}:
+            return {
+                "status": "skipped",
+                "remote_status": status,
+                "reason": response.get("reason") or response.get("text", ""),
+                "model": getattr(llm, "model", ""),
+            }
+
+        raw_text = str(response.get("text", "")).strip()
+        parsed = self._extract_json_object(raw_text)
+        next_suggestions = parsed.get("next_actions", []) if isinstance(parsed, dict) else []
+        if not isinstance(next_suggestions, list):
+            next_suggestions = []
+        reflection = (
+            str(parsed.get("reflection", "")).strip()
+            if parsed
+            else raw_text
+        )
+        result = {
+            "status": "completed" if status in {"completed", "dry_run"} else status or "completed",
+            "remote_status": status or "completed",
+            "provider": response.get("provider", "remote_llm"),
+            "model": getattr(llm, "model", response.get("model", "")),
+            "reflection": reflection[:2000],
+            "next_actions": [str(item) for item in next_suggestions if str(item).strip()][:8],
+            "risk": str(parsed.get("risk", "")) if parsed else "",
+            "confidence": parsed.get("confidence") if parsed else None,
+        }
+        self.record_experience(
+            text=f"Autonomous remote reflection ({trigger}): {result['reflection']}",
+            source="autonomous_remote_reflection",
+            tags=["autonomous", "remote_llm", "self_reflection"],
+            metadata={
+                "trigger": trigger,
+                "remote_status": result["remote_status"],
+                "provider": result["provider"],
+                "model": result["model"],
+                "next_actions": result["next_actions"],
+                "risk": result["risk"],
+            },
+        )
+        if result["reflection"]:
+            self.update_self_model(
+                observation=f"Remote autonomous reflection {trigger}: {result['reflection']}",
+                capability="remote_model_autonomous_reflection",
+                preference="use_remote_model_for_autonomous_self_maintenance",
+            )
+        return result
 
     def autonomous_skill_from_task(
         self,
@@ -1108,6 +1353,156 @@ class LocalRuntime:
         )
         return target
 
+    def long_term_capability_baseline(
+        self,
+        doctrine: list[str] | None = None,
+    ) -> dict[str, Any]:
+        """Record a measurable baseline for the long-term autonomous evolution doctrine."""
+        doctrine_items = [
+            str(item).strip()
+            for item in (
+                doctrine
+                or [
+                    "建立能力基线",
+                    "补齐任务执行、验证、回滚能力",
+                    "强化自主闭环",
+                    "扩展长期记忆",
+                    "保持真实能力边界",
+                    "周期性度量进展并转化为测试、基准、技能或改进任务",
+                ]
+            )
+            if str(item).strip()
+        ]
+        capabilities = self._truthful_interaction_capabilities()
+        self_model = self.read_self_model()
+        goals = self.read_autonomous_goals()
+        dimensions = [
+            self._baseline_dimension(
+                "capability_baseline",
+                doctrine_items[0] if len(doctrine_items) > 0 else "建立能力基线",
+                evidence=[
+                    "runtime.status_snapshot",
+                    "runtime.health_report",
+                    "preflight_report",
+                ],
+                gaps=[],
+            ),
+            self._baseline_dimension(
+                "task_execution_verification_rollback",
+                doctrine_items[1] if len(doctrine_items) > 1 else "补齐任务执行、验证、回滚能力",
+                evidence=[
+                    "shell.exec",
+                    "autonomous.execute.runtime.status_snapshot",
+                    "autonomous.verify.runtime.status_snapshot",
+                    "self_evolution rollback artifacts",
+                ],
+                gaps=[
+                    gap
+                    for gap, available in {
+                        "computer_control": bool(capabilities.get("computer_control")),
+                        "software_management": bool(capabilities.get("software_management")),
+                        "native_desktop_actions": bool(capabilities.get("native_desktop_actions")),
+                    }.items()
+                    if not available
+                ],
+            ),
+            self._baseline_dimension(
+                "autonomous_closed_loop",
+                doctrine_items[2] if len(doctrine_items) > 2 else "强化自主闭环",
+                evidence=[
+                    "autonomous.plan",
+                    "autonomous.execute.*",
+                    "autonomous.verify.*",
+                    "autonomy_loop.jsonl",
+                ],
+                gaps=[],
+            ),
+            self._baseline_dimension(
+                "long_term_memory",
+                doctrine_items[3] if len(doctrine_items) > 3 else "扩展长期记忆",
+                evidence=[
+                    "sqlite_fts5_conversation_search",
+                    "experience records",
+                    "self_model",
+                    "autonomous_goals",
+                ],
+                gaps=[],
+            ),
+            self._baseline_dimension(
+                "truthful_capability_boundaries",
+                doctrine_items[4] if len(doctrine_items) > 4 else "保持真实能力边界",
+                evidence=[
+                    "truthful_interaction_capabilities",
+                    capabilities.get("user_visible_boundary", ""),
+                    "remote LLM boundary prompt",
+                ],
+                gaps=[],
+            ),
+            self._baseline_dimension(
+                "periodic_measurement_conversion",
+                doctrine_items[5] if len(doctrine_items) > 5 else "周期性度量进展并转化为测试、基准、技能或改进任务",
+                evidence=[
+                    "periodic_memory_tick",
+                    "run_operational_smoke",
+                    "run_interaction_stress",
+                    "autonomous_skill_from_task",
+                ],
+                gaps=[],
+            ),
+        ]
+        overall_score = round(
+            sum(float(item["score"]) for item in dimensions) / max(1, len(dimensions)),
+            3,
+        )
+        report = {
+            "id": f"baseline_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}",
+            "status": "recorded",
+            "created_at": datetime.now(UTC).isoformat(),
+            "doctrine": doctrine_items,
+            "overall_score": overall_score,
+            "dimensions": dimensions,
+            "active_goal_id": goals.get("active_goal_id", ""),
+            "self_model_version": self_model.get("version", 0),
+            "next_actions": self._baseline_next_actions(dimensions),
+        }
+        self.record_experience(
+            text=(
+                f"长期能力基线 {report['id']}: overall_score={overall_score}; "
+                f"gaps={', '.join(report['next_actions']) or 'none'}"
+            ),
+            source="long_term_capability_baseline",
+            tags=["long_term_goal", "capability_baseline", "measurement"],
+            metadata=report,
+        )
+        return report
+
+    @staticmethod
+    def _baseline_dimension(
+        dimension_id: str,
+        objective: str,
+        evidence: list[Any],
+        gaps: list[str],
+    ) -> dict[str, Any]:
+        clean_evidence = [str(item) for item in evidence if str(item).strip()]
+        clean_gaps = [str(item) for item in gaps if str(item).strip()]
+        score = round(len(clean_evidence) / (len(clean_evidence) + len(clean_gaps) or 1), 3)
+        return {
+            "id": dimension_id,
+            "objective": str(objective),
+            "score": score,
+            "evidence": clean_evidence,
+            "gaps": clean_gaps,
+            "status": "attention_required" if clean_gaps else "tracked",
+        }
+
+    @staticmethod
+    def _baseline_next_actions(dimensions: list[dict[str, Any]]) -> list[str]:
+        actions: list[str] = []
+        for dimension in dimensions:
+            for gap in dimension.get("gaps", []):
+                actions.append(f"{dimension['id']}: 补齐 {gap}")
+        return actions[:12]
+
     def run_operational_smoke(self, cycles: int = 1) -> dict[str, Any]:
         """Run repeatable local smoke cycles across core runtime surfaces."""
         if cycles < 1:
@@ -1463,6 +1858,8 @@ class LocalRuntime:
             "patch_path": str(patch_path),
             "changed_files": [str(item["path"]) for item in changed_files],
             "rollback_artifact": str(rollback_artifact),
+            "requires_gateway_reload": True,
+            "reload_reason": "core_source_change_applied",
             "applied_at": datetime.now(UTC).isoformat(),
         }
         self._record_self_evolution_audit("core_source_change.applied", result)

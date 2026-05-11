@@ -29,10 +29,10 @@ def test_local_runtime_startup_artifacts_exist():
     assert config["adapters"]["ollama"]["enabled"] is True
     assert config["adapters"]["whisper"]["enabled"] is True
     assert config["adapters"]["xtts"]["enabled"] is True
-    assert config["security_defaults"]["network"] is True
-    assert config["security_defaults"]["shell"] is True
-    assert config["security_defaults"]["filesystem"]["write"] == ["*"]
-    assert config["security_defaults"]["environment"]["allow"] == ["*"]
+    assert config["security_defaults"]["network"] is False
+    assert config["security_defaults"]["shell"] is False
+    assert config["security_defaults"]["filesystem"]["write"] == ["workspace"]
+    assert config["security_defaults"]["environment"]["allow"] == []
 
     runtime_script_text = runtime_script.read_text(encoding="utf-8")
     cockpit_script_text = cockpit_script.read_text(encoding="utf-8")

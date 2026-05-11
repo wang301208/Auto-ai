@@ -62,15 +62,15 @@
     }
   },
   "security_defaults": {
-    "network": true,
-    "shell": true,
+    "network": false,
+    "shell": false,
     "filesystem": {
-      "read": ["*"],
-      "write": ["*"]
+      "read": ["."],
+      "write": ["workspace"]
     },
     "environment": {
-      "allow": ["*"],
-      "request": ["OPENAI_API_KEY"]
+      "allow": [],
+      "request": []
     }
   }
 }

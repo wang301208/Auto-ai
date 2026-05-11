@@ -15,15 +15,15 @@ function exitAlternateScreen() {
   }
 }
 
-function enableMouseReporting() {
+function enableAlternateScroll() {
   if (process.stdout.isTTY) {
-    process.stdout.write('\x1b[?1000h\x1b[?1006h');
+    process.stdout.write('\x1b[?1007h');
   }
 }
 
-function disableMouseReporting() {
+function disableAlternateScroll() {
   if (process.stdout.isTTY) {
-    process.stdout.write('\x1b[?1006l\x1b[?1000l');
+    process.stdout.write('\x1b[?1007l');
   }
 }
 
@@ -44,7 +44,7 @@ async function main() {
   }
 
   enterAlternateScreen();
-  enableMouseReporting();
+  enableAlternateScroll();
   const instance = render(<App gateway={gateway} />);
 
   const cleanup = () => {
@@ -52,7 +52,7 @@ async function main() {
     cleanedUp = true;
     instance.unmount();
     gateway.stop();
-    disableMouseReporting();
+    disableAlternateScroll();
     exitAlternateScreen();
   };
 

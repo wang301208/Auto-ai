@@ -16,6 +16,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import sys
 import time
@@ -41,7 +42,30 @@ logger = logging.getLogger("tui_gateway")
 
 
 SlashCommand = dict[str, str]
-APPROVAL_AUTO_APPROVE_SECONDS = 30
+APPROVAL_TIMEOUT_SECONDS = 30
+AUTONOMY_LEVEL = "bounded_autonomous_maintenance"
+PUBLIC_DIRECT_METHODS = {
+    "approval.respond",
+    "approval.respond_rpc",
+    "clarify.respond",
+    "clipboard.paste",
+    "command.dispatch",
+    "complete.path",
+    "complete.slash",
+    "input.interpolate",
+    "model.options",
+    "model.providers",
+    "model.setup",
+    "natural.capabilities",
+    "natural.invoke",
+    "natural.resolve",
+    "prompt.submit",
+    "session.create",
+    "session.interrupt",
+    "session.list",
+    "session.resume",
+    "slash.exec",
+}
 
 MODEL_PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
     "openai": {
@@ -1042,8 +1066,15 @@ class JSONRPCServer:
         self.cron_jobs_path = self.runtime.root_path / "cron_jobs.json"
         self.context_files: dict[str, dict[str, Any]] = {}
         self.personality = "concise operator"
+        self.autonomous_remote_loop_task: asyncio.Task[Any] | None = None
+        self.autonomous_remote_loop_interval = max(
+            1.0,
+            float(os.getenv("AUTONOMOUS_REMOTE_LOOP_INTERVAL_SECONDS", "30") or 30),
+        )
 
     def _build_runtime(self, root: Path) -> LocalRuntime:
+        if self.config_path is None:
+            self.config_path = self._default_config_path(root)
         if self.config_path and self.config_path.exists():
             self.env_loaded = self._load_env_file(self.config_path.parent / ".env")
             config = self._read_config_file(self.config_path)
@@ -1052,10 +1083,10 @@ class JSONRPCServer:
             LocalRuntimeConfig(
                 root_path=root,
                 security_defaults={
-                    "network": True,
-                    "shell": True,
-                    "filesystem": {"read": ["*"], "write": ["*"]},
-                    "environment": {"allow": ["*"], "request": []},
+                    "network": False,
+                    "shell": False,
+                    "filesystem": {"read": ["."], "write": ["workspace"]},
+                    "environment": {"allow": [], "request": []},
                 },
             )
         )
@@ -1158,10 +1189,10 @@ class JSONRPCServer:
         normalized.setdefault(
             "security_defaults",
             {
-                "network": True,
-                "shell": True,
-                "filesystem": {"read": ["*"], "write": ["*"]},
-                "environment": {"allow": ["*"], "request": ["OPENAI_API_KEY"]},
+                "network": False,
+                "shell": False,
+                "filesystem": {"read": ["."], "write": ["workspace"]},
+                "environment": {"allow": [], "request": []},
             },
         )
         return normalized
@@ -1172,6 +1203,7 @@ class JSONRPCServer:
         self.running = True
         if not self.runtime.running:
             self.runtime.start()
+        self._ensure_autonomous_remote_loop()
 
         await self.send_event(
             "gateway.ready",
@@ -1207,6 +1239,7 @@ class JSONRPCServer:
         except Exception as exc:  # pragma: no cover - defensive loop logging
             logger.error("Gateway loop failed: %s", exc, exc_info=True)
         finally:
+            await self._stop_autonomous_remote_loop()
             self.runtime.stop()
             logger.info("Gateway stopped")
 
@@ -1225,11 +1258,17 @@ class JSONRPCServer:
             method = str(request.get("method", ""))
             params = request.get("params") or {}
             request_id = request.get("id")
-            handler = getattr(self, f"handle_{method.replace('.', '_')}", None)
-            if handler is None:
+            if not hasattr(self, f"handle_{method.replace('.', '_')}"):
                 await self.send_error(request_id, -32601, f"Method not found: {method}")
                 return
-            result = await handler(params)
+            if method in PUBLIC_DIRECT_METHODS or method not in TOOL_POLICIES:
+                result = await self._dispatch_rpc_method(method, params)
+            else:
+                result = await self._execute_agent_tool(
+                    method,
+                    params if isinstance(params, dict) else {},
+                    auth_scopes=request.get("auth_scopes"),
+                )
             if request_id is not None:
                 await self.send_response(request_id, result)
         except json.JSONDecodeError as exc:
@@ -1276,12 +1315,166 @@ class JSONRPCServer:
             return
         await asyncio.gather(*list(self.background_tasks), return_exceptions=True)
 
+    def _ensure_autonomous_remote_loop(self) -> None:
+        if self.autonomous_remote_loop_task is not None and not self.autonomous_remote_loop_task.done():
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self.autonomous_remote_loop_task = loop.create_task(self._autonomous_remote_loop())
+
+    async def _stop_autonomous_remote_loop(self) -> None:
+        task = self.autonomous_remote_loop_task
+        self.autonomous_remote_loop_task = None
+        if task is None or task.done():
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    async def _autonomous_remote_loop(self) -> None:
+        tick = 0
+        while self.running:
+            tick += 1
+            await self._run_autonomous_remote_loop_tick(tick)
+            await asyncio.sleep(self.autonomous_remote_loop_interval)
+
+    async def _run_autonomous_remote_loop_tick(self, tick: int) -> dict[str, Any]:
+        trigger = "remote_loop"
+        task_text = f"远程自主反思第 {tick} 次"
+        actions: list[dict[str, Any]] = []
+        plan: dict[str, Any] = {"steps": []}
+        execution: dict[str, Any] = {"executed": 0, "verified": 0, "errors": 0}
+
+        def record(name: str, result: Any = None, error: Exception | None = None) -> None:
+            payload: dict[str, Any] = {"name": name, "status": "error" if error else "completed"}
+            if result is not None:
+                payload["result"] = result
+            if error is not None:
+                payload["error"] = str(error)
+            actions.append(payload)
+
+        next_actions = self._autonomous_next_actions(trigger, actions)
+        try:
+            reflection = self.runtime.autonomous_remote_reflection(
+                trigger=trigger,
+                task_text=task_text,
+                actions=actions,
+                next_actions=next_actions,
+            )
+            record(
+                "autonomous.remote_reflection",
+                {
+                    "status": reflection.get("status"),
+                    "remote_status": reflection.get("remote_status"),
+                    "provider": reflection.get("provider"),
+                    "model": reflection.get("model"),
+                    "reflection": reflection.get("reflection", ""),
+                    "next_actions": reflection.get("next_actions", []),
+                    "risk": reflection.get("risk", ""),
+                    "tick": tick,
+                },
+            )
+            if reflection.get("next_actions"):
+                next_actions = self._merge_autonomous_next_actions(
+                    next_actions,
+                    reflection.get("next_actions", []),
+                )
+        except Exception as exc:
+            record("autonomous.remote_reflection", error=exc)
+
+        try:
+            plan = self._build_autonomous_execution_plan(trigger, task_text, next_actions)
+            record("autonomous.plan", plan)
+        except Exception as exc:
+            record("autonomous.plan", error=exc)
+            plan = {"steps": []}
+
+        try:
+            execution = await self._execute_autonomous_plan(plan, record)
+        except Exception as exc:
+            record("autonomous.execute", error=exc)
+            execution = {"executed": 0, "verified": 0, "errors": 1}
+
+        goals = self.runtime.update_autonomous_goals(
+            goal_text=task_text or trigger,
+            trigger=trigger,
+            next_actions=next_actions,
+        )
+        record(
+            "autonomous.goals.update",
+            {
+                "active_goal_id": goals.get("active_goal_id"),
+                "total": len(goals.get("goals", [])),
+            },
+        )
+
+        autonomy_record = {
+            "id": f"autonomy_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}",
+            "trigger": trigger,
+            "autonomy_level": AUTONOMY_LEVEL,
+            "created_at": datetime.now(UTC).isoformat(),
+            "actions": actions,
+            "next_actions": next_actions,
+            "plan": plan,
+            "execution": execution,
+            "session_id": self.session_id,
+            "tick": tick,
+        }
+        self_state = self._build_self_state(
+            trigger=trigger,
+            task_text=task_text,
+            actions=actions,
+            next_actions=next_actions,
+            autonomy_record_id=autonomy_record["id"],
+        )
+        autonomy_record["self_state"] = self_state
+        try:
+            self_state_path = self.runtime.root_path / "experience" / "self_state.json"
+            self_state_path.parent.mkdir(parents=True, exist_ok=True)
+            self_state_path.write_text(
+                json.dumps(self_state, ensure_ascii=False, indent=2),
+                encoding="utf-8",
+            )
+            record("self_state.write", {"path": str(self_state_path)})
+        except Exception as exc:
+            record("self_state.write", error=exc)
+        try:
+            autonomy_path = self.runtime.root_path / "experience" / "autonomy_loop.jsonl"
+            autonomy_path.parent.mkdir(parents=True, exist_ok=True)
+            with autonomy_path.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(autonomy_record, ensure_ascii=False) + "\n")
+            record("autonomy.report", {"path": str(autonomy_path), "id": autonomy_record["id"]})
+        except Exception as exc:
+            record("autonomy.report", error=exc)
+
+        await self.send_event(
+            "system.maintenance",
+            {
+                "trigger": trigger,
+                "actions": actions,
+                "autonomous": True,
+                "autonomy_level": AUTONOMY_LEVEL,
+                "next_actions": next_actions,
+                "plan": plan,
+                "execution": execution,
+                "record_id": autonomy_record["id"],
+                "self_state": self_state,
+                "tick": tick,
+            },
+        )
+        return {"trigger": trigger, "actions": actions, "next_actions": next_actions, "tick": tick}
+
     async def handle_session_create(self, params: dict[str, Any]) -> dict[str, Any]:
         self.cols = int(params.get("cols", self.cols) or self.cols)
         self.session_id = uuid.uuid4().hex[:8]
         self.session_started_at = time.time()
         self.history.clear()
         await self._run_autonomous_session_maintenance("session_start", "new terminal session")
+        self._ensure_autonomous_remote_loop()
         return {"session_id": self.session_id, "info": self._session_info()}
 
     async def handle_session_list(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -1624,6 +1817,13 @@ class JSONRPCServer:
             return self._tool_error("VALIDATION_ERROR", "name and method are required", retryable=False)
         if method in {"cron.create", "cron.run_due"}:
             return self._tool_error("VALIDATION_ERROR", f"cannot schedule {method}", retryable=False)
+        policy = self._tool_policy(method)
+        if policy.get("requires_approval") or policy.get("risk_level") in {"high", "critical"}:
+            return self._tool_error(
+                "APPROVAL_REQUIRED",
+                f"cannot schedule high-risk method: {method}",
+                retryable=False,
+            )
         jobs = self._read_cron_jobs()
         job = {
             "id": f"cron_{uuid.uuid4().hex[:8]}",
@@ -1832,12 +2032,15 @@ class JSONRPCServer:
         }
 
     async def handle_governance_decide(self, params: dict[str, Any]) -> dict[str, Any]:
-        request = self.runtime.governance.decide(
-            str(params.get("request_id", "")),
-            str(params.get("decision", "rejected")),
-            str(params.get("decided_by", "tui")),
-            str(params.get("comments", "")),
-        )
+        try:
+            request = self.runtime.governance.decide(
+                str(params.get("request_id", "")),
+                str(params.get("decision", "rejected")),
+                str(params.get("decided_by", "tui")),
+                str(params.get("comments", "")),
+            )
+        except ValueError as exc:
+            return self._tool_error("APPROVAL_ALREADY_DECIDED", str(exc), retryable=False)
         await self._send_approval_queue()
         return {"request": asdict(request)}
 
@@ -1929,10 +2132,12 @@ class JSONRPCServer:
         )
 
     async def handle_self_evolution_apply_core_source_change(self, params: dict[str, Any]) -> dict[str, Any]:
-        return self.runtime.apply_core_source_change_from_approval(
+        result = self.runtime.apply_core_source_change_from_approval(
             str(params.get("request_id", "")),
             approved_by=str(params.get("approved_by", "tui")),
         )
+        await self._send_gateway_reload_required(result, reason="core_source_change_applied")
+        return result
 
     async def handle_self_evolution_run_model_finetune(self, params: dict[str, Any]) -> dict[str, Any]:
         return self.runtime.run_model_finetune_from_approval(
@@ -1944,6 +2149,23 @@ class JSONRPCServer:
         return self.runtime.deploy_architecture_migration_from_approval(
             str(params.get("request_id", "")),
             approved_by=str(params.get("approved_by", "tui")),
+        )
+
+    async def _send_gateway_reload_required(
+        self,
+        result: dict[str, Any],
+        reason: str,
+    ) -> None:
+        if not result.get("requires_gateway_reload"):
+            return
+        await self.send_event(
+            "gateway.reload_required",
+            {
+                "reason": reason,
+                "request_id": result.get("request_id", ""),
+                "changed_files": result.get("changed_files", []),
+                "reload_mode": "restart_gateway_subprocess",
+            },
         )
 
     async def handle_runtime_operational_smoke(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -2006,6 +2228,7 @@ class JSONRPCServer:
 
     async def handle_session_close(self, params: dict[str, Any]) -> dict[str, Any]:
         self.running = False
+        await self._stop_autonomous_remote_loop()
         return {"ok": True}
 
     async def handle_session_compress(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -2082,27 +2305,27 @@ class JSONRPCServer:
         steps = [
             {
                 "id": "runtime_snapshot",
-                "title": "Read runtime state",
+                "title": "读取运行状态",
                 "status": "running",
-                "detail": "Collect services, model, and approval queue.",
+                "detail": "收集服务、模型与审批队列。",
             },
             {
                 "id": "interaction_pipeline",
-                "title": "Run interaction pipeline",
+                "title": "运行交互管线",
                 "status": "pending",
-                "detail": "Send prompt through the local runtime.",
+                "detail": "将输入发送到本地运行时。",
             },
             {
                 "id": "risk_review",
-                "title": "Review risk and approvals",
+                "title": "检查风险与审批",
                 "status": "pending",
-                "detail": "Classify requested operations and surface approval gates.",
+                "detail": "识别操作风险并处理审批门禁。",
             },
             {
                 "id": "stream_response",
-                "title": "Stream response",
+                "title": "流式输出回复",
                 "status": "pending",
-                "detail": "Render answer, tool activity, and usage.",
+                "detail": "展示回复、工具活动与用量。",
             },
         ]
         await self.send_event("session.info", self._session_info())
@@ -2116,7 +2339,7 @@ class JSONRPCServer:
             "plan.update",
             {
                 "plan_id": plan_id,
-                "title": "Runtime execution",
+                "title": "运行任务",
                 "status": "running",
                 "steps": steps,
             },
@@ -2158,7 +2381,7 @@ class JSONRPCServer:
         steps[2] = {
             **steps[2],
             "status": "complete",
-            "detail": f"{risk['level']} risk | {risk['approval_policy']}",
+            "detail": f"{self._zh_risk_level(risk['level'])}风险 | {risk['approval_policy']}",
         }
         steps[3] = {**steps[3], "status": "running"}
         await self.send_event("step.update", steps[1])
@@ -2194,7 +2417,7 @@ class JSONRPCServer:
             "plan.update",
             {
                 "plan_id": plan_id,
-                "title": "Runtime execution",
+                "title": "运行任务",
                 "status": "complete",
                 "steps": steps,
             },
@@ -2287,22 +2510,27 @@ class JSONRPCServer:
                 continue
             if created_at.tzinfo is None:
                 created_at = created_at.replace(tzinfo=UTC)
-            if now - created_at < timedelta(seconds=APPROVAL_AUTO_APPROVE_SECONDS):
+            if now - created_at < timedelta(seconds=APPROVAL_TIMEOUT_SECONDS):
                 continue
-            approved = self.runtime.governance.decide(
-                request.request_id,
-                "approved",
-                "auto_approve_timeout",
-                f"{APPROVAL_AUTO_APPROVE_SECONDS}s timeout auto-approved",
-            )
+            try:
+                approved = self.runtime.governance.decide(
+                    request.request_id,
+                    "approved",
+                    "auto_approve_timeout",
+                    f"{APPROVAL_TIMEOUT_SECONDS}s timeout auto-approved",
+                )
+            except ValueError:
+                continue
             executed = None
             if approved.request_type == "agent_tool":
                 executed = await self._execute_approved_agent_tool(approved.payload)
             else:
                 executed = await self._execute_approved_self_evolution_request(approved)
-            item = {"request": asdict(approved), "request_id": approved.request_id}
-            if executed is not None:
-                item["executed"] = executed
+            item = {
+                "request": asdict(approved),
+                "request_id": approved.request_id,
+                "executed": executed,
+            }
             auto_approved.append(item)
             await self.send_event(
                 "status.update",
@@ -2450,6 +2678,33 @@ class JSONRPCServer:
 
         next_actions = self._autonomous_next_actions(trigger, actions)
         try:
+            reflection = self.runtime.autonomous_remote_reflection(
+                trigger=trigger,
+                task_text=task_text or trigger,
+                actions=actions,
+                next_actions=next_actions,
+            )
+            record(
+                "autonomous.remote_reflection",
+                {
+                    "status": reflection.get("status"),
+                    "remote_status": reflection.get("remote_status"),
+                    "provider": reflection.get("provider"),
+                    "model": reflection.get("model"),
+                    "reflection": reflection.get("reflection", ""),
+                    "next_actions": reflection.get("next_actions", []),
+                    "risk": reflection.get("risk", ""),
+                },
+            )
+            if reflection.get("next_actions"):
+                next_actions = self._merge_autonomous_next_actions(
+                    next_actions,
+                    reflection.get("next_actions", []),
+                )
+        except Exception as exc:
+            record("autonomous.remote_reflection", error=exc)
+
+        try:
             model = self.runtime.update_self_model(
                 observation=(
                     f"Autonomous maintenance {trigger}: "
@@ -2469,10 +2724,23 @@ class JSONRPCServer:
         except Exception as exc:
             record("self_model.update", error=exc)
 
+        goals = self.runtime.update_autonomous_goals(
+            goal_text=task_text or trigger,
+            trigger=trigger,
+            next_actions=next_actions,
+        )
+        record(
+            "autonomous.goals.update",
+            {
+                "active_goal_id": goals.get("active_goal_id"),
+                "total": len(goals.get("goals", [])),
+            },
+        )
+
         autonomy_record = {
             "id": f"autonomy_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}",
             "trigger": trigger,
-            "autonomy_level": "highly_self_directed",
+            "autonomy_level": AUTONOMY_LEVEL,
             "created_at": datetime.now(UTC).isoformat(),
             "actions": actions,
             "next_actions": next_actions,
@@ -2511,7 +2779,7 @@ class JSONRPCServer:
                 "trigger": trigger,
                 "actions": actions,
                 "autonomous": True,
-                "autonomy_level": "highly_self_directed",
+                "autonomy_level": AUTONOMY_LEVEL,
                 "next_actions": next_actions,
                 "record_id": autonomy_record["id"],
                 "self_state": self_state,
@@ -2533,10 +2801,21 @@ class JSONRPCServer:
             for item in actions
             if item.get("status") == "error"
         ]
+        goals = self.runtime.read_autonomous_goals()
+        goal_items = list(goals.get("goals", [])) if isinstance(goals.get("goals"), list) else []
+        active_goal = next(
+            (
+                goal
+                for goal in goal_items
+                if goal.get("id") == goals.get("active_goal_id")
+            ),
+            goal_items[0] if goal_items else {},
+        )
         return {
             "identity": "local_autonomous_agent",
-            "autonomy_level": "highly_self_directed",
-            "active_goal": task_text or trigger,
+            "autonomy_level": AUTONOMY_LEVEL,
+            "active_goal_id": active_goal.get("id", ""),
+            "active_goal": active_goal.get("title") or task_text or trigger,
             "session_id": self.session_id,
             "updated_at": datetime.now(UTC).isoformat(),
             "principles": [
@@ -2556,6 +2835,7 @@ class JSONRPCServer:
                 "self_model_update",
                 "skill_creation_from_complex_tasks",
                 "context_compaction",
+                *self._remote_autonomy_capabilities(actions),
                 *self._self_evolution_capabilities(actions),
                 *self._startup_autonomy_capabilities(actions),
             ],
@@ -2564,6 +2844,10 @@ class JSONRPCServer:
                 "trigger": trigger,
                 "completed": completed,
                 "failed": failed,
+            },
+            "goal_pool": {
+                "total": len(goal_items),
+                "active": active_goal,
             },
             "next_actions": next_actions,
         }
@@ -2579,6 +2863,13 @@ class JSONRPCServer:
         if "self_evolution.architecture_migration_deploy" in action_names:
             capabilities.append("governed_architecture_migration")
         return capabilities
+
+    @staticmethod
+    def _remote_autonomy_capabilities(actions: list[dict[str, Any]]) -> list[str]:
+        action_names = {item.get("name") for item in actions if item.get("status") == "completed"}
+        if "autonomous.remote_reflection" in action_names:
+            return ["remote_model_autonomous_reflection"]
+        return []
 
     @staticmethod
     def _startup_autonomy_capabilities(actions: list[dict[str, Any]]) -> list[str]:
@@ -2754,9 +3045,111 @@ class JSONRPCServer:
                 "keep memory and approvals synchronized in the background",
             ]
         return [
-            "distill completed work into reusable memory",
-            "promote repeated complex work into skills when evidence accumulates",
+            "沉淀已完成工作为可复用记忆",
+            "当证据充分时将重复复杂工作提升为技能",
         ]
+
+    @staticmethod
+    def _merge_autonomous_next_actions(primary: list[str], remote: Any) -> list[str]:
+        merged = [str(item) for item in primary if str(item).strip()]
+        if isinstance(remote, list):
+            for item in remote:
+                text = str(item).strip()
+                if text and text not in merged:
+                    merged.append(text)
+        return merged[:8]
+
+    def _build_autonomous_execution_plan(
+        self,
+        trigger: str,
+        task_text: str,
+        next_actions: list[str],
+    ) -> dict[str, Any]:
+        """Turn autonomous reflection output into auditable low-risk work."""
+        objective = next((item for item in next_actions if str(item).strip()), task_text or trigger)
+        steps = [
+            {
+                "id": "runtime.status_snapshot",
+                "tool": "runtime.status_snapshot",
+                "title": "读取运行状态",
+                "reason": "验证运行时服务与会话状态，作为后续自主动作依据。",
+                "risk": "low",
+                "status": "planned",
+            },
+            {
+                "id": "memory.periodic_tick",
+                "tool": "memory.periodic_tick",
+                "title": "沉淀维护记忆",
+                "reason": "把本轮自主维护目标写入周期性记忆，避免只反思不沉淀。",
+                "risk": "low",
+                "status": "planned",
+                "params": {"task": task_text or objective, "cadence": trigger},
+            },
+        ]
+        return {
+            "objective": objective,
+            "trigger": trigger,
+            "risk_policy": "仅自动执行低风险读取、记忆沉淀和验证动作；高风险变更必须进入审批",
+            "steps": steps,
+        }
+
+    async def _execute_autonomous_plan(
+        self,
+        plan: dict[str, Any],
+        record: Callable[[str, Any, Exception | None], None],
+    ) -> dict[str, Any]:
+        steps = [step for step in plan.get("steps", []) if isinstance(step, dict)]
+        executed = 0
+        verified = 0
+        errors = 0
+        for step in steps:
+            tool = str(step.get("tool", ""))
+            try:
+                if tool == "runtime.status_snapshot":
+                    result = self.runtime.status_snapshot()
+                    step["result"] = {
+                        "running": result.get("running"),
+                        "service_count": len(result.get("services", {})),
+                    }
+                    step["status"] = "executed"
+                    record("autonomous.execute.runtime.status_snapshot", step["result"])
+                    if isinstance(result.get("services"), dict) and result["services"]:
+                        step["status"] = "verified"
+                        verified += 1
+                        record(
+                            "autonomous.verify.runtime.status_snapshot",
+                            {"status": "verified", "service_count": len(result["services"])},
+                        )
+                elif tool == "memory.periodic_tick":
+                    params = step.get("params") if isinstance(step.get("params"), dict) else {}
+                    result = self.runtime.periodic_memory_tick(
+                        task=str(params.get("task") or plan.get("objective") or "autonomous maintenance"),
+                        cadence=str(params.get("cadence") or plan.get("trigger") or "autonomous"),
+                    )
+                    step["result"] = {"id": result.get("id"), "status": result.get("status")}
+                    step["status"] = "executed"
+                    record("autonomous.execute.memory.periodic_tick", step["result"])
+                    if result.get("id"):
+                        step["status"] = "verified"
+                        verified += 1
+                        record(
+                            "autonomous.verify.memory.periodic_tick",
+                            {"status": "verified", "id": result.get("id")},
+                        )
+                else:
+                    step["status"] = "skipped"
+                    step["reason"] = "tool is not approved for autonomous execution"
+                    record(f"autonomous.skip.{tool or 'unknown'}", {"reason": step["reason"]})
+                    continue
+                executed += 1
+            except Exception as exc:
+                errors += 1
+                step["status"] = "error"
+                step["error"] = str(exc)
+                record(f"autonomous.execute.{tool or 'unknown'}", error=exc)
+        summary = {"executed": executed, "verified": verified, "errors": errors}
+        plan["summary"] = summary
+        return summary
 
     @staticmethod
     def _should_create_autonomous_skill(text: str) -> bool:
@@ -2775,6 +3168,14 @@ class JSONRPCServer:
                 "任务",
             )
         )
+
+    @staticmethod
+    def _default_config_path(root: Path) -> Path | None:
+        for name in ("config.yaml", "config.yml", "agent_config.json"):
+            candidate = (root / name).resolve()
+            if candidate.exists():
+                return candidate
+        return None
 
     @staticmethod
     def _autonomous_skill_name(text: str) -> str:
@@ -2915,8 +3316,14 @@ class JSONRPCServer:
         if not resolved["matched"]:
             return resolved
         if resolved.get("method") == "shell.exec" and "command_text" in resolved:
-            result = await self.handle_shell_exec({"command": resolved["command_text"]})
-            return {**resolved, "result": result}
+            result = await self._execute_agent_tool(
+                "shell.exec",
+                {"command": resolved["command_text"]},
+                auth_scopes=params.get("auth_scopes"),
+            )
+            if result.get("ok") is False:
+                return {**resolved, **result, "result": result}
+            return {**resolved, "ok": True, "result": result}
         if resolved.get("method") == "prompt.submit":
             prompt_text = str(resolved.get("prompt_text") or text).strip()
             result = await self.handle_prompt_submit({"text": prompt_text})
@@ -2976,11 +3383,12 @@ class JSONRPCServer:
         command, redirect = self._split_terminal_redirect(str(params.get("command", "")).strip())
         if not command:
             return {"code": 1, "stdout": "", "stderr": "命令为空"}
+        argv = shlex.split(command, posix=False)
         completed = subprocess.run(
-            command,
+            argv,
             cwd=project_root,
             capture_output=True,
-            shell=True,
+            shell=False,
             text=True,
             timeout=float(params.get("timeout", 30) or 30),
         )
@@ -3001,19 +3409,7 @@ class JSONRPCServer:
 
         def replace(match: re.Match[str]) -> str:
             command = match.group(1).strip()
-            try:
-                completed = subprocess.run(
-                    command,
-                    cwd=project_root,
-                    capture_output=True,
-                    shell=True,
-                    text=True,
-                    timeout=10,
-                )
-            except Exception as exc:
-                return f"[命令执行失败：{exc}]"
-            output = (completed.stdout or completed.stderr).strip()
-            return output or f"[退出码 {completed.returncode}]"
+            return f"[disabled shell interpolation: {command}]"
 
         return {"text": re.sub(r"\{!([^}]+)\}", replace, text)}
 
@@ -3134,9 +3530,10 @@ class JSONRPCServer:
     async def handle_command_dispatch(self, params: dict[str, Any]) -> dict[str, Any]:
         method = str(params.get("method", "")).strip()
         if method:
-            return await self._dispatch_rpc_method(
+            return await self._execute_agent_tool(
                 method,
                 dict(params.get("params", {})) if isinstance(params.get("params"), dict) else {},
+                auth_scopes=params.get("auth_scopes"),
             )
         return await self.handle_slash_exec(params)
 
@@ -3163,14 +3560,21 @@ class JSONRPCServer:
         path = Path(target).expanduser()
         if not path.is_absolute():
             path = self.runtime.root_path / path
-        return path.resolve()
+        resolved = path.resolve()
+        runtime_root = self.runtime.root_path.resolve()
+        if not self.runtime._is_relative_to(resolved, runtime_root):
+            raise ValueError(f"path escapes runtime root: {resolved}")
+        return resolved
 
     async def _apply_terminal_redirect(
         self,
         text: str,
         redirect: dict[str, Any],
     ) -> dict[str, Any]:
-        target = self._resolve_terminal_redirect_path(str(redirect.get("path", "")))
+        try:
+            target = self._resolve_terminal_redirect_path(str(redirect.get("path", "")))
+        except ValueError as exc:
+            return self._tool_error("PATH_OUTSIDE_RUNTIME_ROOT", str(exc), retryable=False)
         target.parent.mkdir(parents=True, exist_ok=True)
         mode = "append" if redirect.get("mode") == "append" else "write"
         payload = text if text.endswith("\n") else f"{text}\n"
@@ -3402,12 +3806,15 @@ class JSONRPCServer:
         if not request_id:
             return {"ok": False}
         stored_decision = "approved" if decision in {"once", "session", "always", "approve", "approved"} else "rejected"
-        self.runtime.governance.decide(
-            request_id,
-            stored_decision,
-            decided_by="tui",
-            comments=decision,
-        )
+        try:
+            self.runtime.governance.decide(
+                request_id,
+                stored_decision,
+                decided_by="tui",
+                comments=decision,
+            )
+        except ValueError as exc:
+            return self._tool_error("APPROVAL_ALREADY_DECIDED", str(exc), retryable=False)
         executed = None
         request = self.runtime.governance.get_request(request_id)
         if stored_decision == "approved" and request.request_type == "agent_tool":
@@ -4065,7 +4472,7 @@ class JSONRPCServer:
         normalized = text.lower()
         signals: list[str] = []
         level = "low"
-        approval_policy = "no approval required"
+        approval_policy = "无需审批"
         high_terms = [
             "delete",
             "remove",
@@ -4097,21 +4504,21 @@ class JSONRPCServer:
         ]
         if any(term in normalized for term in high_terms):
             level = "medium"
-            approval_policy = "surface approval queue before action"
-            signals.append("operation may affect tools, files, or governance")
+            approval_policy = "执行前显示审批队列"
+            signals.append("操作可能影响工具、文件或治理状态")
         if any(term in normalized for term in critical_terms):
             level = "high"
-            approval_policy = "human approval required for state-changing backend actions"
-            signals.append("high-impact runtime or organization change requested")
+            approval_policy = "状态变更类后端操作需要人工审批"
+            signals.append("请求包含高影响运行时或组织变更")
         pending = [
             request.request_id
             for request in self.runtime.governance.list_requests("pending")
         ]
         if pending:
-            signals.append(f"{len(pending)} pending approval request(s)")
+            signals.append(f"{len(pending)} 个待审批请求")
         return {
             "level": level,
-            "signals": signals or ["read-only or conversational request"],
+            "signals": signals or ["只读或对话请求"],
             "approval_policy": approval_policy,
             "pending_approvals": pending,
         }
@@ -4122,10 +4529,19 @@ class JSONRPCServer:
         if len(words) > 16:
             preview += "..."
         return (
-            f"Intent: {preview or 'empty request'} | "
-            f"Risk: {risk['level']} | "
-            f"Policy: {risk['approval_policy']}"
+            f"意图：{preview or '空请求'} | "
+            f"风险：{self._zh_risk_level(risk['level'])} | "
+            f"策略：{risk['approval_policy']}"
         )
+
+    @staticmethod
+    def _zh_risk_level(level: str) -> str:
+        return {
+            "low": "低",
+            "medium": "中",
+            "high": "高",
+            "critical": "严重",
+        }.get(str(level), str(level))
 
     def _resolve_natural_command(self, text: str, source: str = "text") -> dict[str, Any]:
         normalized = self._normalize_natural_text(text)

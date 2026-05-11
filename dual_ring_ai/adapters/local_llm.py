@@ -30,6 +30,9 @@ class LocalLLMAdapter:
                 str(item.get("status", "unknown")) for item in approvals
             )
             fragments.append(f"审批队列状态：{statuses or 'empty'}")
+        capabilities = payload.get("capabilities", {})
+        if isinstance(capabilities, dict) and capabilities.get("user_visible_boundary"):
+            fragments.append(str(capabilities["user_visible_boundary"]))
         if not fragments:
             fragments.append(f"已收到请求：{user_text}")
 

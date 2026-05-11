@@ -27,7 +27,13 @@ class RemoteLLMAdapter:
     max_tokens: int | None = None
     system_prompt: str = (
         "You are the remote reasoning engine for the local autonomous runtime. "
-        "Answer concisely and preserve safety boundaries."
+        "Answer concisely and preserve safety boundaries. "
+        "Do not claim abilities that are not exposed in backend context. "
+        "Do not say the system can perform advanced operations unless the backend context "
+        "shows the exact tool is available and executable. "
+        "If computer_control or software_management is false or absent, say that only "
+        "shell-level command execution is available and native computer_control/software "
+        "actions are not implemented."
     )
 
     @property
@@ -212,7 +218,7 @@ class HybridLLMAdapter:
             return self.local.generate_response(user_text, backend_payload)
 
         response = self.remote.generate_response(user_text, backend_payload)
-        if response.get("status") == "unconfigured":
+        if response.get("status") in {"unconfigured", "unavailable", "disabled"}:
             fallback = self.local.generate_response(user_text, backend_payload)
             fallback["remote_llm_status"] = response
             return fallback
