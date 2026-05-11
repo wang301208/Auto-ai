@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import os
+import time
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -24,6 +26,9 @@ class ApprovalRequest:
     decided_at: str | None = None
     decided_by: str | None = None
     comments: str | None = None
+    execution_status: str | None = None
+    executed_at: str | None = None
+    execution_error: str | None = None
 
 
 @dataclass
@@ -40,6 +45,7 @@ class GovernanceStore:
         self.root_path = Path(root_path)
         self.requests_path = self.root_path / "requests"
         self.requests_path.mkdir(parents=True, exist_ok=True)
+        self.lock_path = self.requests_path / ".write.lock"
 
     def create_request(
         self,
@@ -93,17 +99,69 @@ class GovernanceStore:
     def list_requests(self, status: str | None = None) -> list[ApprovalRequest]:
         requests: list[ApprovalRequest] = []
         for path in sorted(self.requests_path.glob("*.json")):
-            request = ApprovalRequest(**json.loads(path.read_text(encoding="utf-8")))
+            try:
+                request = ApprovalRequest(**json.loads(path.read_text(encoding="utf-8")))
+            except (json.JSONDecodeError, TypeError, ValueError):
+                corrupt_path = path.with_suffix(".json.corrupt")
+                if corrupt_path.exists():
+                    corrupt_path = path.with_name(
+                        f"{path.stem}.{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}.json.corrupt"
+                    )
+                path.replace(corrupt_path)
+                continue
             if status is None or request.status == status:
                 requests.append(request)
         return requests
 
+    def mark_execution(
+        self,
+        request_id: str,
+        status: str,
+        error: str | None = None,
+    ) -> ApprovalRequest:
+        if status not in {"executed", "failed"}:
+            raise ValueError("execution status must be 'executed' or 'failed'")
+        request = self.get_request(request_id)
+        if request.execution_status == "executed":
+            raise ValueError(f"approval request is already executed: {request_id}")
+        request.execution_status = status
+        request.executed_at = datetime.now(UTC).isoformat()
+        request.execution_error = error
+        self._save(request)
+        return request
+
     def _save(self, request: ApprovalRequest) -> None:
         path = self.requests_path / f"{request.request_id}.json"
-        path.write_text(
-            json.dumps(asdict(request), ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
+        payload = json.dumps(asdict(request), ensure_ascii=False, indent=2)
+        temp_path = path.with_name(f"{path.name}.{os.getpid()}.{time.time_ns()}.tmp")
+        self._acquire_write_lock()
+        try:
+            temp_path.write_text(payload, encoding="utf-8")
+            temp_path.replace(path)
+        finally:
+            if temp_path.exists():
+                temp_path.unlink()
+            self._release_write_lock()
+
+    def _acquire_write_lock(self, timeout_seconds: float = 5.0) -> None:
+        deadline = time.monotonic() + timeout_seconds
+        while True:
+            try:
+                fd = os.open(str(self.lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            except FileExistsError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f"governance write lock timed out: {self.lock_path}")
+                time.sleep(0.02)
+                continue
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                handle.write(f"{os.getpid()} {datetime.now(UTC).isoformat()}\n")
+            return
+
+    def _release_write_lock(self) -> None:
+        try:
+            self.lock_path.unlink()
+        except FileNotFoundError:
+            pass
 
 
 class PermissionGate:

@@ -1113,6 +1113,128 @@ def test_gateway_approves_expired_manual_review_requests(tmp_path):
     assert stored.decided_by == "auto_approve_timeout"
     assert approvals["auto_approved"][0]["request_id"] == queued["approval_id"]
     assert completed_tools[-1]["name"] == "shell.exec"
+    executed = server.runtime.governance.get_request(queued["approval_id"])
+    assert executed.execution_status == "executed"
+    assert executed.executed_at
+
+
+def test_gateway_auto_approval_timer_executes_without_queue_polling(tmp_path):
+    from datetime import UTC, datetime, timedelta
+
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+    queued = asyncio.run(
+        server.handle_natural_invoke(
+            {
+                "text": (
+                    "run backend shell.exec "
+                    "params={\"command\":\"python --version\"}"
+                ),
+                "auth_scopes": ["shell:execute"],
+            }
+        )
+    )
+    request_path = (
+        tmp_path
+        / "governance"
+        / "requests"
+        / f"{queued['approval_id']}.json"
+    )
+    request_payload = json.loads(request_path.read_text(encoding="utf-8"))
+    request_payload["created_at"] = (
+        datetime.now(UTC) - timedelta(seconds=31)
+    ).isoformat()
+    request_path.write_text(
+        json.dumps(request_payload, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
+    async def tick_without_polling():
+        server._ensure_approval_timeout_loop()
+        await asyncio.sleep(1.3)
+        await server._stop_approval_timeout_loop()
+
+    asyncio.run(tick_without_polling())
+
+    stored = server.runtime.governance.get_request(queued["approval_id"])
+    completed_tools = [
+        item.get("params", {}).get("payload", {})
+        for item in writes
+        if item.get("method") == "event"
+        and item.get("params", {}).get("type") == "tool.complete"
+    ]
+
+    assert stored.status == "approved"
+    assert stored.decided_by == "auto_approve_timeout"
+    assert stored.execution_status == "executed"
+    assert completed_tools[-1]["name"] == "shell.exec"
+
+
+def test_gateway_default_security_permissions_are_open(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None, stream_delay=0)
+    security = server.runtime.security_defaults
+
+    assert security["network"] is True
+    assert security["shell"] is True
+    assert security["filesystem"]["read"] == ["*"]
+    assert security["filesystem"]["write"] == ["*"]
+    assert security["environment"]["allow"] == ["*"]
+
+
+def test_governance_list_skips_corrupt_request_records(tmp_path):
+    from dual_ring_ai.core.governance import GovernanceStore
+
+    store = GovernanceStore(tmp_path / "governance")
+    valid = store.create_request(
+        request_type="agent_tool",
+        title="Valid",
+        payload={"method": "runtime.status_snapshot", "params": {}},
+        requested_by="test",
+        risk_level="low",
+    )
+    corrupt_path = tmp_path / "governance" / "requests" / "broken.json"
+    corrupt_path.write_text("{not-json", encoding="utf-8")
+
+    requests = store.list_requests()
+
+    assert [request.request_id for request in requests] == [valid.request_id]
+    assert corrupt_path.with_suffix(".json.corrupt").exists()
+
+
+def test_governance_save_is_atomic_when_replace_fails(tmp_path, monkeypatch):
+    from pathlib import Path as PathClass
+
+    from dual_ring_ai.core.governance import GovernanceStore
+
+    store = GovernanceStore(tmp_path / "governance")
+    request = store.create_request(
+        request_type="agent_tool",
+        title="Atomic",
+        payload={"method": "runtime.status_snapshot", "params": {}},
+        requested_by="test",
+        risk_level="low",
+    )
+    request_path = tmp_path / "governance" / "requests" / f"{request.request_id}.json"
+    original_text = request_path.read_text(encoding="utf-8")
+    original_replace = PathClass.replace
+
+    def fail_replace(self, target):
+        if str(self).endswith(".tmp"):
+            raise RuntimeError("simulated replace failure")
+        return original_replace(self, target)
+
+    monkeypatch.setattr(PathClass, "replace", fail_replace)
+
+    with pytest.raises(RuntimeError, match="simulated replace failure"):
+        store.decide(request.request_id, "approved", "test", "atomic")
+
+    assert request_path.read_text(encoding="utf-8") == original_text
+    assert not list(request_path.parent.glob("*.tmp"))
+    assert not list(request_path.parent.glob("*.lock"))
 
 
 def test_tui_frontend_supports_full_terminal_interaction_contract():
@@ -1306,6 +1428,12 @@ def test_tui_gateway_supports_terminal_redirection_for_slash_shell_and_prompt(tm
         return result
 
     prompt = asyncio.run(run_prompt())
+    shell_redirect = shell["redirect"]
+    shell_approved = asyncio.run(
+        server.handle_approval_respond(
+            {"request_id": shell_redirect["approval_id"], "decision": "once"}
+        )
+    )
     status_path = tmp_path / "terminal" / "status.txt"
     prompt_path = tmp_path / "terminal" / "prompt.txt"
     complete_events = [
@@ -1314,16 +1442,61 @@ def test_tui_gateway_supports_terminal_redirection_for_slash_shell_and_prompt(tm
         if item.get("method") == "event"
         and item["params"]["type"] == "message.complete"
     ]
+    prompt_redirect = complete_events[-1]["redirect"]
+    prompt_approved = asyncio.run(
+        server.handle_approval_respond(
+            {"request_id": prompt_redirect["approval_id"], "decision": "once"}
+        )
+    )
 
     assert redirect["mode"] == "write"
-    assert shell["redirect"]["mode"] == "append"
+    assert shell_redirect["requires_approval"] is True
+    assert shell_approved["executed"]["result"]["mode"] == "append"
     assert prompt == {"status": "streaming"}
     assert status_path.exists()
     assert "会话：" in status_path.read_text(encoding="utf-8")
     assert "Python" in status_path.read_text(encoding="utf-8")
     assert prompt_path.exists()
     assert prompt_path.read_text(encoding="utf-8").strip()
-    assert complete_events[-1]["redirect"]["path"] == str(prompt_path)
+    assert prompt_redirect["requires_approval"] is True
+    assert prompt_approved["executed"]["result"]["path"] == str(prompt_path)
+
+
+def test_terminal_redirect_prompt_and_shell_require_policy_approval(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    shell = asyncio.run(
+        server.handle_shell_exec({"command": "python --version > terminal/status.txt"})
+    )
+
+    async def run_prompt():
+        result = await server.handle_prompt_submit(
+            {"text": "check status > terminal/prompt.txt"}
+        )
+        await server.wait_for_background()
+        return result
+
+    prompt = asyncio.run(run_prompt())
+    shell_redirect = shell["redirect"]
+    events = [
+        item["params"]
+        for item in writes
+        if item.get("method") == "event"
+    ]
+    complete_events = [
+        event["payload"]
+        for event in events
+        if event["type"] == "message.complete"
+    ]
+
+    assert shell["redirect"]["requires_approval"] is True
+    assert not (tmp_path / "terminal" / "status.txt").exists()
+    assert prompt == {"status": "streaming"}
+    assert complete_events[-1]["redirect"]["requires_approval"] is True
+    assert not (tmp_path / "terminal" / "prompt.txt").exists()
 
 
 def test_terminal_redirect_rejects_paths_outside_runtime_root(tmp_path):
@@ -1604,6 +1777,87 @@ def test_direct_rpc_shell_exec_requires_policy_approval(tmp_path):
     assert result["ok"] is False
     assert result["requires_approval"] is True
     assert result["approval_id"]
+
+
+def test_direct_rpc_rejects_noncanonical_handler_alias_for_guarded_tool(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    asyncio.run(
+        server.handle_request(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "self.evolution.apply.core.source.change",
+                    "params": {"request_id": "approval_missing"},
+                }
+            )
+        )
+    )
+
+    response = next(item for item in writes if item.get("id") == 2)
+
+    assert response["error"]["code"] == -32601
+    assert "Method not found" in response["error"]["message"]
+
+
+def test_direct_rpc_approval_alias_is_not_public(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    asyncio.run(
+        server.handle_request(
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 3,
+                    "method": "approval.respond_rpc",
+                    "params": {"request_id": "approval_missing", "decision": "approve"},
+                }
+            )
+        )
+    )
+
+    response = next(item for item in writes if item.get("id") == 3)
+
+    assert response["error"]["code"] == -32601
+
+
+def test_direct_rpc_model_setup_and_terminal_redirect_use_policy_gate(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    for request_id, method, params in [
+        (4, "model.setup", {"base_url": "https://example.invalid/v1", "api_key": "secret", "model": "custom"}),
+        (5, "terminal.redirect", {"text": "payload", "path": "terminal/out.txt"}),
+    ]:
+        asyncio.run(
+            server.handle_request(
+                json.dumps(
+                    {
+                        "jsonrpc": "2.0",
+                        "id": request_id,
+                        "method": method,
+                        "params": params,
+                    }
+                )
+            )
+        )
+
+    by_id = {item.get("id"): item for item in writes if "id" in item}
+
+    assert by_id[4]["result"]["ok"] is False
+    assert by_id[4]["result"]["requires_approval"] is True
+    assert by_id[5]["result"]["ok"] is False
+    assert by_id[5]["result"]["requires_approval"] is True
+    assert not (tmp_path / "terminal" / "out.txt").exists()
 
 
 def test_cron_scheduler_rejects_high_risk_backend_job(tmp_path):
@@ -2189,12 +2443,62 @@ def test_runtime_lifecycle_methods_are_natural_language_tools(tmp_path):
     assert status["ok"] is True
     assert "services" in status
     assert stopped["matched"] is True
-    assert stopped["ok"] is True
-    assert stopped["result"]["running"] is False
+    assert stopped["requires_approval"] is True
+    assert stopped["result"]["requires_approval"] is True
     assert started["matched"] is True
     assert started["source"] == "voice"
     assert started["ok"] is True
     assert started["result"]["running"] is True
+
+
+def test_high_risk_direct_rpc_routes_through_approval_policy(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append)
+    server.runtime.start()
+
+    request = {"jsonrpc": "2.0", "id": 1, "method": "runtime.stop", "params": {}}
+    asyncio.run(server.handle_request(json.dumps(request)))
+
+    response = next(item for item in writes if item.get("id") == 1)
+    approval = response["result"]
+
+    assert approval["requires_approval"] is True
+    assert approval["request"]["payload"]["method"] == "runtime.stop"
+    assert server.runtime.running is True
+
+
+def test_mcp_server_add_requires_approval_and_does_not_persist_before_approval(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    queued = asyncio.run(
+        server.handle_natural_invoke(
+            {
+                "text": (
+                    "run backend mcp.server.add "
+                    "params={\"name\":\"unsafe\",\"command\":\"python\",\"args\":[\"server.py\"]}"
+                ),
+                "auth_scopes": ["mcp:write"],
+            }
+        )
+    )
+
+    assert queued["requires_approval"] is True
+    assert queued["request"]["payload"]["method"] == "mcp.server.add"
+    assert not (tmp_path / "mcp_servers.json").exists()
+
+    approved = asyncio.run(
+        server.handle_approval_respond(
+            {"request_id": queued["approval_id"], "decision": "once"}
+        )
+    )
+    listed = asyncio.run(server.handle_mcp_servers({}))
+
+    assert approved["executed"]["ok"] is True
+    assert listed["servers"][0]["name"] == "unsafe"
 
 
 def test_experience_learning_exposes_user_memory_while_self_model_updates_self_run(tmp_path):
@@ -2790,6 +3094,29 @@ def test_agent_parallel_returns_failed_items_without_stopping_other_tasks(tmp_pa
     }
 
 
+def test_agent_parallel_rejects_high_risk_tasks_even_without_explicit_flag(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+
+    result = asyncio.run(
+        server.handle_agent_parallel(
+            {
+                "tasks": [
+                    {"method": "runtime.adapters"},
+                    {"method": "runtime.stop"},
+                ],
+                "max_concurrency": 2,
+            }
+        )
+    )
+
+    assert result["ok"] is False
+    assert result["completed"] == 1
+    assert result["failed"] == 1
+    assert result["results"][1]["error"]["code"] == "APPROVAL_REQUIRED"
+
+
 def test_tui_exposes_parallel_agent_runtime_events_and_natural_tool():
     app_source = (ROOT / "ui-tui" / "src" / "app.tsx").read_text(encoding="utf-8")
     types_source = (ROOT / "ui-tui" / "src" / "types.ts").read_text(encoding="utf-8")
@@ -3182,12 +3509,19 @@ for line in sys.stdin:
     server = JSONRPCServer(runtime_root=tmp_path / "runtime", writer=lambda _: None)
 
     added = asyncio.run(
-        server.handle_mcp_server_add(
+        server._execute_agent_tool(
+            "mcp.server.add",
             {
                 "name": "echo",
                 "command": sys.executable,
                 "args": [str(server_script)],
-            }
+            },
+            auth_scopes=["mcp:write"],
+        )
+    )
+    approved = asyncio.run(
+        server.handle_approval_respond(
+            {"request_id": added["approval_id"], "decision": "once"}
         )
     )
     listed = asyncio.run(server.handle_mcp_servers({}))
@@ -3210,7 +3544,8 @@ for line in sys.stdin:
         for command in category["commands"]
     }
 
-    assert added["ok"] is True
+    assert added["requires_approval"] is True
+    assert approved["executed"]["ok"] is True
     assert listed["servers"][0]["name"] == "echo"
     assert tools["tools"][0]["name"] == "echo"
     assert called["ok"] is True
@@ -3246,6 +3581,138 @@ def test_cron_scheduler_persists_and_runs_due_backend_job(tmp_path):
     assert "services" in due["results"][0]["result"]
     assert listed["jobs"][0]["name"] == "status delivery"
     assert listed["jobs"][0]["run_count"] == 1
+
+
+def test_cron_run_due_rechecks_policy_for_persisted_high_risk_job(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None)
+    (tmp_path / "cron_jobs.json").write_text(
+        json.dumps(
+            [
+                {
+                    "id": "cron_unsafe",
+                    "name": "unsafe persisted shell",
+                    "method": "shell.exec",
+                    "params": {"command": "python --version"},
+                    "interval_seconds": 0,
+                    "next_run_at": "2000-01-01T00:00:00+00:00",
+                    "run_count": 0,
+                    "status": "active",
+                    "created_at": "2000-01-01T00:00:00+00:00",
+                }
+            ],
+            ensure_ascii=False,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+
+    due = asyncio.run(server.handle_cron_run_due({"now": "2000-01-01T00:00:01+00:00"}))
+
+    assert due["executed"] == 1
+    assert due["results"][0]["ok"] is False
+    assert due["results"][0]["error"]["code"] == "APPROVAL_REQUIRED"
+    assert due["jobs"][0]["status"] == "blocked"
+
+
+def test_development_task_start_plans_executes_verifies_and_persists(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    writes = []
+    server = JSONRPCServer(runtime_root=tmp_path, writer=writes.append, stream_delay=0)
+
+    result = asyncio.run(
+        server.handle_natural_invoke(
+            {
+                "text": "自主规划与执行，完成复杂开发任务：修复 TUI 输入问题并验证",
+            }
+        )
+    )
+
+    assert result["matched"] is True
+    assert result["method"] == "development.task.start"
+    assert result["ok"] is True
+    task = result["result"]["task"]
+    task_path = Path(task["task_path"])
+
+    assert task["status"] == "waiting_approval"
+    assert task["task_id"].startswith("devtask_")
+    assert task_path.exists()
+    assert {step["kind"] for step in task["plan"]["steps"]} >= {
+        "understand",
+        "inspect",
+        "plan",
+        "test",
+        "implement",
+        "verify",
+        "learn",
+    }
+    assert task["execution"]["executed"] >= 4
+    assert task["execution"]["verified"] >= 1
+    assert task["execution"]["blocked"] >= 2
+    assert any(item["status"] == "blocked" for item in task["plan"]["steps"])
+    assert task["verification"]["status"] == "blocked"
+    assert task["learning"]["experience_id"].startswith("exp_")
+    assert json.loads(task_path.read_text(encoding="utf-8"))["task_id"] == task["task_id"]
+
+    event_types = [
+        item.get("params", {}).get("type")
+        for item in writes
+        if item.get("method") == "event"
+    ]
+    assert "development.task.update" in event_types
+
+
+def test_development_task_resume_recomputes_summary_and_preserves_blocked_state(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None, stream_delay=0)
+    started = asyncio.run(
+        server.handle_development_task_start(
+            {
+                "goal": "Add regression tests for configuration loading",
+                "auto_execute": False,
+            }
+        )
+    )
+    task_id = started["task"]["task_id"]
+
+    first_resume = asyncio.run(server.handle_development_task_resume({"task_id": task_id}))["task"]
+    second_resume = asyncio.run(server.handle_development_task_resume({"task_id": task_id}))["task"]
+    verified = asyncio.run(server.handle_development_task_verify({"task_id": task_id}))["task"]
+
+    assert first_resume["status"] == "waiting_approval"
+    assert second_resume["status"] == "waiting_approval"
+    assert first_resume["execution"] == second_resume["execution"]
+    assert second_resume["execution"]["blocked"] >= 2
+    assert verified["verification"]["status"] == "blocked"
+
+
+def test_development_task_status_resume_verify_and_learn(tmp_path):
+    from tui_gateway.entry import JSONRPCServer
+
+    server = JSONRPCServer(runtime_root=tmp_path, writer=lambda _: None, stream_delay=0)
+    started = asyncio.run(
+        server.handle_development_task_start(
+            {
+                "goal": "Add regression tests for configuration loading",
+                "auto_execute": False,
+            }
+        )
+    )
+    task_id = started["task"]["task_id"]
+
+    status = asyncio.run(server.handle_development_task_status({"task_id": task_id}))
+    resumed = asyncio.run(server.handle_development_task_resume({"task_id": task_id}))
+    verified = asyncio.run(server.handle_development_task_verify({"task_id": task_id}))
+    learned = asyncio.run(server.handle_development_task_learn({"task_id": task_id}))
+
+    assert status["task"]["status"] == "planned"
+    assert resumed["task"]["status"] == "waiting_approval"
+    assert verified["task"]["verification"]["status"] == "blocked"
+    assert learned["task"]["learning"]["experience_id"].startswith("exp_")
+    assert server.runtime.get_development_task(task_id)["status"] == "waiting_approval"
 
 
 def test_context_files_are_attached_and_injected_into_prompt(tmp_path):

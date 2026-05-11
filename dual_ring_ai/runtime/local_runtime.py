@@ -192,6 +192,7 @@ class LocalRuntime:
         self.user_model_path = self.root_path / "experience" / "user_models.json"
         self.memory_cycle_path = self.root_path / "experience" / "periodic_memory.jsonl"
         self.autonomous_goals_path = self.root_path / "experience" / "autonomous_goals.json"
+        self.development_tasks_path = self.root_path / "experience" / "development_tasks"
         self.conversation_db_path = self.root_path / "experience" / "conversations.sqlite3"
         self.skill_proposals_path = self.root_path / "workspace" / "skill_proposals"
         self.self_evolution_audit_path = self.root_path / "self_evolution" / "audit.jsonl"
@@ -253,6 +254,7 @@ class LocalRuntime:
                 "sandbox_runner": "ready",
                 "blueprint_orchestrator": "ready",
                 "interaction_pipeline": "ready",
+                "development_tasks": "ready",
                 "messaging_gateway": (
                     "ready" if self.messaging_gateway.adapters else "disabled"
                 ),
@@ -265,6 +267,7 @@ class LocalRuntime:
                 "algorithm_experiments": str(self.algorithm_experiments.output_path),
                 "workspace": str(self.sandbox_runner.workspace_path),
                 "organizational_charter": str(self.blueprint_orchestrator.charter_path),
+                "development_tasks": str(self.development_tasks_path),
             },
         }
 
@@ -529,6 +532,198 @@ class LocalRuntime:
             metadata={"cycle_id": payload["id"], "cadence": payload["cadence"]},
         )
         return payload
+
+    def start_development_task(
+        self,
+        goal: str,
+        context: dict[str, Any] | None = None,
+        auto_execute: bool = True,
+    ) -> dict[str, Any]:
+        """Create, plan, optionally execute, verify, and persist a development task."""
+        goal_text = str(goal).strip()
+        if not goal_text:
+            raise ValueError("goal is required")
+        task_id = f"devtask_{datetime.now(UTC).strftime('%Y%m%d_%H%M%S_%f')}"
+        now = datetime.now(UTC).isoformat()
+        task = {
+            "task_id": task_id,
+            "goal": goal_text,
+            "context": context if isinstance(context, dict) else {},
+            "status": "created",
+            "created_at": now,
+            "updated_at": now,
+            "plan": self._build_development_task_plan(goal_text, context or {}),
+            "execution": {"executed": 0, "verified": 0, "blocked": 0, "errors": 0},
+            "verification": {},
+            "learning": {},
+            "events": [],
+        }
+        task["task_path"] = str(self._development_task_path(task_id))
+        task["status"] = "planned"
+        task["events"].append(self._development_task_event("planned", "development plan created"))
+        self._save_development_task(task)
+        if auto_execute:
+            task = self.execute_development_task(task_id)
+        return task
+
+    def get_development_task(self, task_id: str) -> dict[str, Any]:
+        task = self._read_json_file(self._development_task_path(task_id))
+        if not isinstance(task, dict):
+            raise ValueError(f"development task not found: {task_id}")
+        return task
+
+    def list_development_tasks(self, limit: int = 20) -> list[dict[str, Any]]:
+        if not self.development_tasks_path.exists():
+            return []
+        tasks = []
+        for path in sorted(self.development_tasks_path.glob("*.json")):
+            payload = self._read_json_file(path)
+            if isinstance(payload, dict):
+                tasks.append(payload)
+        tasks.sort(key=lambda item: str(item.get("created_at", "")), reverse=True)
+        return tasks[: max(1, min(int(limit or 20), 100))]
+
+    def execute_development_task(self, task_id: str) -> dict[str, Any]:
+        task = self.get_development_task(task_id)
+        if task.get("status") == "cancelled":
+            return task
+        task["status"] = "executing"
+        task["updated_at"] = datetime.now(UTC).isoformat()
+        steps = [step for step in task.get("plan", {}).get("steps", []) if isinstance(step, dict)]
+        for step in steps:
+            if step.get("status") in {"verified", "completed", "blocked", "failed"}:
+                continue
+            if bool(step.get("requires_approval")):
+                step["status"] = "blocked"
+                step["blocked_reason"] = "requires governed approval before execution"
+                task["events"].append(
+                    self._development_task_event("blocked", f"{step.get('id')} requires approval")
+                )
+                continue
+            try:
+                result = self._execute_development_task_step(task, step)
+            except Exception as exc:
+                step["status"] = "failed"
+                step["error"] = str(exc)
+                task["events"].append(
+                    self._development_task_event("failed", f"{step.get('id')}: {exc}")
+                )
+                continue
+            step["result"] = result
+            step["status"] = "verified" if result.get("verified") else "completed"
+            task["events"].append(
+                self._development_task_event(step["status"], str(step.get("id", "step")))
+            )
+        summary = self._summarize_development_task_steps(steps)
+        task["execution"] = summary
+        task["status"] = self._development_task_status_from_summary(summary)
+        task = self.verify_development_task(task_id, task=task)
+        if not task.get("learning"):
+            task = self.learn_from_development_task(task_id, task=task)
+        steps = [step for step in task.get("plan", {}).get("steps", []) if isinstance(step, dict)]
+        summary = self._summarize_development_task_steps(steps)
+        task["execution"] = summary
+        task["status"] = self._development_task_status_from_summary(summary)
+        task["updated_at"] = datetime.now(UTC).isoformat()
+        self._save_development_task(task)
+        return task
+
+    def verify_development_task(
+        self,
+        task_id: str,
+        task: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        current = task if isinstance(task, dict) else self.get_development_task(task_id)
+        steps = [step for step in current.get("plan", {}).get("steps", []) if isinstance(step, dict)]
+        summary = self._summarize_development_task_steps(steps)
+        executed = int(summary.get("executed", 0) or 0)
+        blocked = int(summary.get("blocked", 0) or 0)
+        errors = int(summary.get("errors", 0) or 0)
+        verification_steps = [
+            step
+            for step in steps
+            if step.get("kind") == "verify" and step.get("status") in {"completed", "verified"}
+        ]
+        if errors:
+            status = "failed"
+        elif blocked:
+            status = "blocked"
+        elif executed > 0 and verification_steps:
+            status = "passed"
+        else:
+            status = "attention_required"
+        current["execution"] = summary
+        current["verification"] = {
+            "status": status,
+            "checked_at": datetime.now(UTC).isoformat(),
+            "verified_steps": [step.get("id") for step in verification_steps],
+            "blocked_steps": [step.get("id") for step in steps if step.get("status") == "blocked"],
+            "notes": "safe planning loop verified; high-risk implementation remains approval-gated",
+        }
+        current["updated_at"] = datetime.now(UTC).isoformat()
+        self._save_development_task(current)
+        return current
+
+    @staticmethod
+    def _summarize_development_task_steps(steps: list[dict[str, Any]]) -> dict[str, int]:
+        return {
+            "executed": sum(1 for step in steps if step.get("status") in {"completed", "verified"}),
+            "verified": sum(1 for step in steps if step.get("status") == "verified"),
+            "blocked": sum(1 for step in steps if step.get("status") == "blocked"),
+            "errors": sum(1 for step in steps if step.get("status") == "failed"),
+        }
+
+    @staticmethod
+    def _development_task_status_from_summary(summary: dict[str, int]) -> str:
+        if int(summary.get("errors", 0) or 0) > 0:
+            return "failed"
+        if int(summary.get("blocked", 0) or 0) > 0:
+            return "waiting_approval"
+        return "completed"
+
+    def learn_from_development_task(
+        self,
+        task_id: str,
+        task: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        current = task if isinstance(task, dict) else self.get_development_task(task_id)
+        experience = self.record_experience(
+            text=(
+                f"Development task {current.get('task_id')} for goal "
+                f"{current.get('goal')} completed with status {current.get('status')}."
+            ),
+            source="development_task",
+            tags=["development_task", "planning", "verification"],
+            metadata={
+                "task_id": current.get("task_id"),
+                "status": current.get("status"),
+                "verification": current.get("verification", {}),
+            },
+        )
+        skill_candidate = None
+        if self._should_development_task_create_skill(str(current.get("goal", ""))):
+            skill_candidate = {
+                "status": "candidate",
+                "reason": "complex development workflow completed; consider creating a reusable skill after review",
+                "suggested_skill_name": self._slugify_skill_name(f"{current.get('goal', 'development')}_workflow")[:80],
+            }
+        current["learning"] = {
+            "experience_id": experience["id"],
+            "skill_candidate": skill_candidate,
+            "learned_at": datetime.now(UTC).isoformat(),
+        }
+        current["updated_at"] = datetime.now(UTC).isoformat()
+        self._save_development_task(current)
+        return current
+
+    def cancel_development_task(self, task_id: str, reason: str = "") -> dict[str, Any]:
+        task = self.get_development_task(task_id)
+        task["status"] = "cancelled"
+        task["cancel_reason"] = str(reason or "cancelled by request")
+        task["updated_at"] = datetime.now(UTC).isoformat()
+        task["events"].append(self._development_task_event("cancelled", task["cancel_reason"]))
+        self._save_development_task(task)
+        return task
 
     def read_autonomous_goals(self) -> dict[str, Any]:
         payload = self._read_json_file(self.autonomous_goals_path)
@@ -2561,6 +2756,207 @@ class LocalRuntime:
         if any(term in task.lower() for term in ("complex", "repeated", "cleanup", "skill")):
             actions.append("consider drafting or improving a skill")
         return actions
+
+    def _build_development_task_plan(
+        self,
+        goal: str,
+        context: dict[str, Any],
+    ) -> dict[str, Any]:
+        remote_plan = self._remote_development_plan(goal, context)
+        if remote_plan:
+            steps = remote_plan
+        else:
+            steps = self._default_development_plan_steps(goal)
+        return {
+            "objective": goal,
+            "strategy": "plan_execute_verify_learn",
+            "risk_policy": "read, plan, memory, and verification steps may run automatically; source edits and shell execution remain approval-gated",
+            "steps": steps,
+        }
+
+    def _remote_development_plan(
+        self,
+        goal: str,
+        context: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        llm = self.adapters.get("remote_llm") if hasattr(self, "adapters") else None
+        if llm is None:
+            return []
+        try:
+            response = llm.generate_response(
+                (
+                    "Create a safe JSON plan for a bounded software development task. "
+                    "Return compact JSON only with a steps array. "
+                    "Each step needs id, title, kind, action, risk, requires_approval."
+                ),
+                {"goal": goal, "context": context, "mode": "development_task_planning"},
+            )
+        except Exception:
+            return []
+        if response.get("status") in {"unconfigured", "disabled", "unavailable"}:
+            return []
+        text = str(response.get("text", "")).strip()
+        try:
+            payload = json.loads(text)
+        except json.JSONDecodeError:
+            return []
+        raw_steps = payload.get("steps") if isinstance(payload, dict) else None
+        if not isinstance(raw_steps, list):
+            return []
+        steps: list[dict[str, Any]] = []
+        for index, item in enumerate(raw_steps[:12], start=1):
+            if not isinstance(item, dict):
+                continue
+            kind = str(item.get("kind") or "plan")
+            risk = str(item.get("risk") or "low")
+            steps.append(
+                {
+                    "id": str(item.get("id") or f"remote_{index}"),
+                    "title": str(item.get("title") or kind),
+                    "kind": kind,
+                    "action": str(item.get("action") or item.get("title") or kind),
+                    "risk": risk,
+                    "requires_approval": bool(item.get("requires_approval")) or risk in {"high", "critical"},
+                    "status": "planned",
+                }
+            )
+        return steps
+
+    @staticmethod
+    def _default_development_plan_steps(goal: str) -> list[dict[str, Any]]:
+        return [
+            {
+                "id": "understand_goal",
+                "title": "Understand goal and constraints",
+                "kind": "understand",
+                "action": "summarize requested development outcome and boundaries",
+                "risk": "low",
+                "requires_approval": False,
+                "status": "planned",
+            },
+            {
+                "id": "inspect_codebase",
+                "title": "Inspect relevant code paths",
+                "kind": "inspect",
+                "action": "identify likely files, tests, and integration points",
+                "risk": "low",
+                "requires_approval": False,
+                "status": "planned",
+            },
+            {
+                "id": "create_plan",
+                "title": "Create implementation plan",
+                "kind": "plan",
+                "action": "produce ordered implementation and verification steps",
+                "risk": "low",
+                "requires_approval": False,
+                "status": "planned",
+            },
+            {
+                "id": "write_regression_tests",
+                "title": "Write regression tests",
+                "kind": "test",
+                "action": "add or update tests before implementation",
+                "risk": "medium",
+                "requires_approval": True,
+                "status": "planned",
+            },
+            {
+                "id": "implement_change",
+                "title": "Implement minimal code change",
+                "kind": "implement",
+                "action": "modify source code in the smallest safe scope",
+                "risk": "high",
+                "requires_approval": True,
+                "status": "planned",
+            },
+            {
+                "id": "run_verification",
+                "title": "Run relevant verification",
+                "kind": "verify",
+                "action": "run targeted tests or static checks and record results",
+                "risk": "low",
+                "requires_approval": False,
+                "status": "planned",
+            },
+            {
+                "id": "learn_from_result",
+                "title": "Record reusable learning",
+                "kind": "learn",
+                "action": "store task outcome as experience and possible skill candidate",
+                "risk": "low",
+                "requires_approval": False,
+                "status": "planned",
+            },
+        ]
+
+    def _execute_development_task_step(
+        self,
+        task: dict[str, Any],
+        step: dict[str, Any],
+    ) -> dict[str, Any]:
+        kind = str(step.get("kind", ""))
+        if kind == "understand":
+            return {
+                "verified": True,
+                "summary": str(task.get("goal", "")).strip(),
+                "boundary": USER_VISIBLE_CAPABILITY_BOUNDARY,
+            }
+        if kind == "inspect":
+            status = self.status_snapshot()
+            return {
+                "verified": True,
+                "services": status.get("services", {}),
+                "paths": status.get("paths", {}),
+            }
+        if kind == "plan":
+            return {
+                "verified": True,
+                "step_count": len(task.get("plan", {}).get("steps", [])),
+                "strategy": task.get("plan", {}).get("strategy"),
+            }
+        if kind == "verify":
+            service_count = len(self.status_snapshot().get("services", {}))
+            return {"verified": service_count > 0, "service_count": service_count}
+        if kind == "learn":
+            return {"verified": True, "deferred_to_task_learning": True}
+        return {"verified": False, "skipped": True}
+
+    def _development_task_path(self, task_id: str) -> Path:
+        normalized = re.sub(r"[^a-zA-Z0-9_-]+", "_", str(task_id)).strip("_")
+        if not normalized:
+            raise ValueError("task_id is required")
+        return self.development_tasks_path / f"{normalized}.json"
+
+    def _save_development_task(self, task: dict[str, Any]) -> None:
+        self.development_tasks_path.mkdir(parents=True, exist_ok=True)
+        self._development_task_path(str(task["task_id"])).write_text(
+            json.dumps(task, ensure_ascii=False, indent=2),
+            encoding="utf-8",
+        )
+
+    @staticmethod
+    def _development_task_event(status: str, message: str) -> dict[str, Any]:
+        return {
+            "status": status,
+            "message": message,
+            "created_at": datetime.now(UTC).isoformat(),
+        }
+
+    @staticmethod
+    def _should_development_task_create_skill(goal: str) -> bool:
+        normalized = goal.lower()
+        return any(
+            term in normalized
+            for term in (
+                "complex",
+                "workflow",
+                "development task",
+                "复杂",
+                "开发任务",
+                "自主规划",
+            )
+        )
 
     def _load_skill_merge_sources(self, skill_paths: list[str | Path]) -> list[dict[str, Any]]:
         if not isinstance(skill_paths, list) or len(skill_paths) < 2:

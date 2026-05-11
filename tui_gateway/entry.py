@@ -44,9 +44,9 @@ logger = logging.getLogger("tui_gateway")
 SlashCommand = dict[str, str]
 APPROVAL_TIMEOUT_SECONDS = 30
 AUTONOMY_LEVEL = "bounded_autonomous_maintenance"
+APPROVAL_POLICY_BYPASS_METHODS = {"approval.respond", "governance.decide"}
 PUBLIC_DIRECT_METHODS = {
     "approval.respond",
-    "approval.respond_rpc",
     "clarify.respond",
     "clipboard.paste",
     "command.dispatch",
@@ -55,7 +55,6 @@ PUBLIC_DIRECT_METHODS = {
     "input.interpolate",
     "model.options",
     "model.providers",
-    "model.setup",
     "natural.capabilities",
     "natural.invoke",
     "natural.resolve",
@@ -179,6 +178,11 @@ AUTONOMOUS_SYSTEM_METHODS: set[str] = {
     "user_model.update",
     "skill.autonomous_from_task",
     "skill.improve_from_usage",
+    "development.task.start",
+    "development.task.status",
+    "development.task.resume",
+    "development.task.verify",
+    "development.task.learn",
 }
 
 NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
@@ -329,6 +333,45 @@ NATURAL_BACKEND_ACTIONS: list[dict[str, Any]] = [
         ],
     },
     {
+        "command": "development.task.start",
+        "method": "development.task.start",
+        "description": "创建复杂开发任务，并自动完成规划、执行、验证与学习闭环。",
+        "aliases": [
+            "development task",
+            "start development task",
+            "autonomous development",
+            "plan and execute development task",
+            "复杂开发任务",
+            "自主规划与执行",
+            "自主开发任务",
+            "完成复杂开发任务",
+        ],
+    },
+    {
+        "command": "development.task.status",
+        "method": "development.task.status",
+        "description": "查看持久化开发任务状态。",
+        "aliases": ["development task status", "开发任务状态"],
+    },
+    {
+        "command": "development.task.resume",
+        "method": "development.task.resume",
+        "description": "继续推进未完成开发任务。",
+        "aliases": ["resume development task", "继续开发任务"],
+    },
+    {
+        "command": "development.task.verify",
+        "method": "development.task.verify",
+        "description": "验证开发任务执行结果。",
+        "aliases": ["verify development task", "验证开发任务"],
+    },
+    {
+        "command": "development.task.learn",
+        "method": "development.task.learn",
+        "description": "将开发任务结果沉淀为经验或技能候选。",
+        "aliases": ["learn from development task", "开发任务学习"],
+    },
+    {
         "command": "mcp.call",
         "method": "mcp.call",
         "description": "调用已配置 MCP 标准输入输出服务器上的工具。",
@@ -382,6 +425,11 @@ INTENT_BY_METHOD: dict[str, str] = {
     "agent.parallel": "agent.parallel",
     "approval.respond": "approval.respond",
     "conversation.search": "memory.search_conversation",
+    "development.task.start": "development.task.start",
+    "development.task.status": "development.task.status",
+    "development.task.resume": "development.task.resume",
+    "development.task.verify": "development.task.verify",
+    "development.task.learn": "development.task.learn",
     "experience.record": "memory.record_experience",
     "experience.search": "memory.search_experience",
     "model.configure": "model.configure",
@@ -458,7 +506,6 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
         "auth_scope": "runtime:control",
         "risk_level": "high",
         "idempotent": False,
-        "requires_approval": False,
         "input_schema": {"type": "object", "properties": {}, "required": []},
     },
     "runtime.write_preflight": {
@@ -531,6 +578,31 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
                 "base_url": {"type": "string"},
                 "api_key_env": {"type": "string"},
                 "dry_run": {"type": "boolean"},
+            },
+            "required": [],
+        },
+    },
+    "model.setup": {
+        "auth_scope": "model:write",
+        "risk_level": "high",
+        "idempotent": False,
+        "requires_approval": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "provider": {"type": "string"},
+                "model": {"type": "string"},
+                "base_url": {"type": "string"},
+                "api_key": {"type": "string"},
+                "api_key_env": {"type": "string"},
+                "auth_type": {"type": "string"},
+                "client_id": {"type": "string"},
+                "auth_url": {"type": "string"},
+                "token_url": {"type": "string"},
+                "dry_run": {"type": "boolean"},
+                "timeout": {"type": "number"},
+                "temperature": {"type": "number"},
+                "max_tokens": {},
             },
             "required": [],
         },
@@ -929,11 +1001,78 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
         },
         "retry": {"max_attempts": 1, "backoff_ms": 0, "retry_on": []},
     },
+    "development.task.start": {
+        "auth_scope": "development:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "goal": {"type": "string"},
+                "context": {"type": "object"},
+                "auto_execute": {"type": "boolean"},
+            },
+            "required": ["goal"],
+        },
+    },
+    "development.task.status": {
+        "auth_scope": "development:read",
+        "risk_level": "low",
+        "idempotent": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "task_id": {"type": "string"},
+                "limit": {"type": "integer", "minimum": 1, "maximum": 100},
+            },
+            "required": [],
+        },
+    },
+    "development.task.resume": {
+        "auth_scope": "development:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {"task_id": {"type": "string"}},
+            "required": ["task_id"],
+        },
+    },
+    "development.task.cancel": {
+        "auth_scope": "development:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {"task_id": {"type": "string"}, "reason": {"type": "string"}},
+            "required": ["task_id"],
+        },
+    },
+    "development.task.verify": {
+        "auth_scope": "development:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {"task_id": {"type": "string"}},
+            "required": ["task_id"],
+        },
+    },
+    "development.task.learn": {
+        "auth_scope": "development:write",
+        "risk_level": "low",
+        "idempotent": False,
+        "input_schema": {
+            "type": "object",
+            "properties": {"task_id": {"type": "string"}},
+            "required": ["task_id"],
+        },
+    },
     "mcp.server.add": {
         "auth_scope": "mcp:write",
         "risk_level": "high",
         "idempotent": False,
-        "requires_approval": False,
+        "requires_approval": True,
         "input_schema": {
             "type": "object",
             "properties": {
@@ -1024,6 +1163,21 @@ TOOL_POLICIES: dict[str, dict[str, Any]] = {
         "idempotent": True,
         "input_schema": {"type": "object", "properties": {}, "required": []},
     },
+    "terminal.redirect": {
+        "auth_scope": "filesystem:write",
+        "risk_level": "high",
+        "idempotent": False,
+        "requires_approval": True,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string"},
+                "path": {"type": "string"},
+                "mode": {"type": "string"},
+            },
+            "required": [],
+        },
+    },
 }
 
 DEFAULT_TOOL_POLICY: dict[str, Any] = {
@@ -1067,9 +1221,14 @@ class JSONRPCServer:
         self.context_files: dict[str, dict[str, Any]] = {}
         self.personality = "concise operator"
         self.autonomous_remote_loop_task: asyncio.Task[Any] | None = None
+        self.approval_timeout_task: asyncio.Task[Any] | None = None
         self.autonomous_remote_loop_interval = max(
             1.0,
             float(os.getenv("AUTONOMOUS_REMOTE_LOOP_INTERVAL_SECONDS", "30") or 30),
+        )
+        self.approval_timeout_interval = max(
+            1.0,
+            float(os.getenv("APPROVAL_TIMEOUT_CHECK_SECONDS", "1") or 1),
         )
 
     def _build_runtime(self, root: Path) -> LocalRuntime:
@@ -1083,10 +1242,10 @@ class JSONRPCServer:
             LocalRuntimeConfig(
                 root_path=root,
                 security_defaults={
-                    "network": False,
-                    "shell": False,
-                    "filesystem": {"read": ["."], "write": ["workspace"]},
-                    "environment": {"allow": [], "request": []},
+                    "network": True,
+                    "shell": True,
+                    "filesystem": {"read": ["*"], "write": ["*"]},
+                    "environment": {"allow": ["*"], "request": ["OPENAI_API_KEY"]},
                 },
             )
         )
@@ -1189,10 +1348,10 @@ class JSONRPCServer:
         normalized.setdefault(
             "security_defaults",
             {
-                "network": False,
-                "shell": False,
-                "filesystem": {"read": ["."], "write": ["workspace"]},
-                "environment": {"allow": [], "request": []},
+                "network": True,
+                "shell": True,
+                "filesystem": {"read": ["*"], "write": ["*"]},
+                "environment": {"allow": ["*"], "request": ["OPENAI_API_KEY"]},
             },
         )
         return normalized
@@ -1204,6 +1363,7 @@ class JSONRPCServer:
         if not self.runtime.running:
             self.runtime.start()
         self._ensure_autonomous_remote_loop()
+        self._ensure_approval_timeout_loop()
 
         await self.send_event(
             "gateway.ready",
@@ -1239,6 +1399,7 @@ class JSONRPCServer:
         except Exception as exc:  # pragma: no cover - defensive loop logging
             logger.error("Gateway loop failed: %s", exc, exc_info=True)
         finally:
+            await self._stop_approval_timeout_loop()
             await self._stop_autonomous_remote_loop()
             self.runtime.stop()
             logger.info("Gateway stopped")
@@ -1261,14 +1422,17 @@ class JSONRPCServer:
             if not hasattr(self, f"handle_{method.replace('.', '_')}"):
                 await self.send_error(request_id, -32601, f"Method not found: {method}")
                 return
-            if method in PUBLIC_DIRECT_METHODS or method not in TOOL_POLICIES:
+            if method in PUBLIC_DIRECT_METHODS:
                 result = await self._dispatch_rpc_method(method, params)
-            else:
+            elif method in TOOL_POLICIES:
                 result = await self._execute_agent_tool(
                     method,
                     params if isinstance(params, dict) else {},
                     auth_scopes=request.get("auth_scopes"),
                 )
+            else:
+                await self.send_error(request_id, -32601, f"Method not found: {method}")
+                return
             if request_id is not None:
                 await self.send_response(request_id, result)
         except json.JSONDecodeError as exc:
@@ -1314,6 +1478,44 @@ class JSONRPCServer:
         if not self.background_tasks:
             return
         await asyncio.gather(*list(self.background_tasks), return_exceptions=True)
+
+    def _ensure_approval_timeout_loop(self) -> None:
+        if self.approval_timeout_task is not None and not self.approval_timeout_task.done():
+            return
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        self.approval_timeout_task = loop.create_task(self._approval_timeout_loop())
+
+    async def _stop_approval_timeout_loop(self) -> None:
+        task = self.approval_timeout_task
+        self.approval_timeout_task = None
+        if task is None or task.done():
+            return
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
+    async def _approval_timeout_loop(self) -> None:
+        while True:
+            auto_approved = await self._auto_approve_expired_requests()
+            if auto_approved:
+                approvals = [
+                    {
+                        "request_id": request.request_id,
+                        "request_type": request.request_type,
+                        "title": request.title,
+                        "risk_level": request.risk_level,
+                        "status": request.status,
+                        "requested_by": request.requested_by,
+                    }
+                    for request in self.runtime.governance.list_requests()
+                ]
+                await self.send_event("approval.queue", {"approvals": approvals})
+            await asyncio.sleep(self.approval_timeout_interval)
 
     def _ensure_autonomous_remote_loop(self) -> None:
         if self.autonomous_remote_loop_task is not None and not self.autonomous_remote_loop_task.done():
@@ -1717,6 +1919,60 @@ class JSONRPCServer:
             "results": results,
         }
 
+    async def handle_development_task_start(self, params: dict[str, Any]) -> dict[str, Any]:
+        task = self.runtime.start_development_task(
+            goal=str(params.get("goal", "")).strip(),
+            context=params.get("context") if isinstance(params.get("context"), dict) else {},
+            auto_execute=bool(params.get("auto_execute", True)),
+        )
+        await self._send_development_task_update(task)
+        return {"ok": True, "task": task}
+
+    async def handle_development_task_status(self, params: dict[str, Any]) -> dict[str, Any]:
+        task_id = str(params.get("task_id", "")).strip()
+        if task_id:
+            return {"ok": True, "task": self.runtime.get_development_task(task_id)}
+        return {
+            "ok": True,
+            "tasks": self.runtime.list_development_tasks(int(params.get("limit", 20) or 20)),
+        }
+
+    async def handle_development_task_resume(self, params: dict[str, Any]) -> dict[str, Any]:
+        task = self.runtime.execute_development_task(str(params.get("task_id", "")).strip())
+        await self._send_development_task_update(task)
+        return {"ok": True, "task": task}
+
+    async def handle_development_task_cancel(self, params: dict[str, Any]) -> dict[str, Any]:
+        task = self.runtime.cancel_development_task(
+            str(params.get("task_id", "")).strip(),
+            reason=str(params.get("reason", "")).strip(),
+        )
+        await self._send_development_task_update(task)
+        return {"ok": True, "task": task}
+
+    async def handle_development_task_verify(self, params: dict[str, Any]) -> dict[str, Any]:
+        task = self.runtime.verify_development_task(str(params.get("task_id", "")).strip())
+        await self._send_development_task_update(task)
+        return {"ok": True, "task": task}
+
+    async def handle_development_task_learn(self, params: dict[str, Any]) -> dict[str, Any]:
+        task = self.runtime.learn_from_development_task(str(params.get("task_id", "")).strip())
+        await self._send_development_task_update(task)
+        return {"ok": True, "task": task}
+
+    async def _send_development_task_update(self, task: dict[str, Any]) -> None:
+        await self.send_event(
+            "development.task.update",
+            {
+                "task_id": task.get("task_id"),
+                "goal": task.get("goal"),
+                "status": task.get("status"),
+                "execution": task.get("execution", {}),
+                "verification": task.get("verification", {}),
+                "task_path": task.get("task_path"),
+            },
+        )
+
     async def _execute_parallel_tool(
         self,
         method: str,
@@ -1727,7 +1983,7 @@ class JSONRPCServer:
         validation_error = self._validate_tool_params(params, policy["input_schema"])
         if validation_error:
             return self._tool_error("VALIDATION_ERROR", validation_error, retryable=False)
-        if policy.get("requires_approval") or policy.get("risk_level") in {"critical"}:
+        if self._tool_requires_approval(method, policy):
             return self._tool_error(
                 "APPROVAL_REQUIRED",
                 f"{method} requires approval and cannot be auto-run inside parallel batch",
@@ -1818,7 +2074,7 @@ class JSONRPCServer:
         if method in {"cron.create", "cron.run_due"}:
             return self._tool_error("VALIDATION_ERROR", f"cannot schedule {method}", retryable=False)
         policy = self._tool_policy(method)
-        if policy.get("requires_approval") or policy.get("risk_level") in {"high", "critical"}:
+        if self._tool_requires_approval(method, policy):
             return self._tool_error(
                 "APPROVAL_REQUIRED",
                 f"cannot schedule high-risk method: {method}",
@@ -1863,26 +2119,65 @@ class JSONRPCServer:
             method = str(job.get("method", ""))
             tool_id = self._tool_activity_id(method)
             await self._send_tool_start(tool_id, method, context=f"cron job {job.get('id')}")
-            try:
-                result = await self._dispatch_rpc_method(
-                    method,
-                    job.get("params") if isinstance(job.get("params"), dict) else {},
-                )
-                record = {"job_id": job["id"], "method": method, "ok": True, "result": result}
-                await self._send_tool_complete(tool_id, method, summary="scheduled job completed")
-            except Exception as exc:
+            policy = self._tool_policy(method)
+            validation_error = self._validate_tool_params(
+                job.get("params") if isinstance(job.get("params"), dict) else {},
+                policy["input_schema"],
+            )
+            if method not in TOOL_POLICIES:
                 record = {
                     "job_id": job["id"],
                     "method": method,
                     "ok": False,
-                    "error": {"code": "BACKEND_ERROR", "message": str(exc), "retryable": True},
+                    "error": {"code": "METHOD_NOT_FOUND", "message": f"Method not found: {method}", "retryable": False},
                 }
-                await self._send_tool_complete(tool_id, method, error=str(exc))
+                job["status"] = "blocked"
+                await self._send_tool_complete(tool_id, method, error=record["error"]["message"])
+            elif validation_error:
+                record = {
+                    "job_id": job["id"],
+                    "method": method,
+                    "ok": False,
+                    "error": {"code": "VALIDATION_ERROR", "message": validation_error, "retryable": False},
+                }
+                job["status"] = "blocked"
+                await self._send_tool_complete(tool_id, method, error=validation_error)
+            elif self._tool_requires_approval(method, policy):
+                record = {
+                    "job_id": job["id"],
+                    "method": method,
+                    "ok": False,
+                    "error": {
+                        "code": "APPROVAL_REQUIRED",
+                        "message": f"cannot run high-risk scheduled method: {method}",
+                        "retryable": False,
+                    },
+                }
+                job["status"] = "blocked"
+                await self._send_tool_complete(tool_id, method, error=record["error"]["message"])
+            else:
+                try:
+                    result = await self._dispatch_rpc_method(
+                        method,
+                        job.get("params") if isinstance(job.get("params"), dict) else {},
+                    )
+                    record = {"job_id": job["id"], "method": method, "ok": True, "result": result}
+                    await self._send_tool_complete(tool_id, method, summary="scheduled job completed")
+                except Exception as exc:
+                    record = {
+                        "job_id": job["id"],
+                        "method": method,
+                        "ok": False,
+                        "error": {"code": "BACKEND_ERROR", "message": str(exc), "retryable": True},
+                    }
+                    await self._send_tool_complete(tool_id, method, error=str(exc))
             job["run_count"] = int(job.get("run_count", 0) or 0) + 1
             job["last_run_at"] = now.isoformat()
             job["last_result"] = record
             interval = int(job.get("interval_seconds", 0) or 0)
-            if interval > 0:
+            if job.get("status") == "blocked":
+                pass
+            elif interval > 0:
                 job["next_run_at"] = (now + timedelta(seconds=interval)).isoformat()
             else:
                 job["status"] = "completed"
@@ -2410,7 +2705,7 @@ class JSONRPCServer:
         await self._run_autonomous_session_maintenance("prompt_complete", text)
         redirect_result = None
         if redirect:
-            redirect_result = await self._apply_terminal_redirect(response_text, redirect)
+            redirect_result = await self._apply_terminal_redirect_with_policy(response_text, redirect)
         steps[3] = {**steps[3], "status": "complete"}
         await self.send_event("step.update", steps[3])
         await self.send_event(
@@ -2469,6 +2764,7 @@ class JSONRPCServer:
         )
 
     async def _send_approval_queue(self) -> None:
+        self._ensure_approval_timeout_loop()
         await self._auto_approve_expired_requests()
         approvals = [
             {
@@ -2526,6 +2822,8 @@ class JSONRPCServer:
                 executed = await self._execute_approved_agent_tool(approved.payload)
             else:
                 executed = await self._execute_approved_self_evolution_request(approved)
+            if executed is not None:
+                self._mark_approval_execution(approved.request_id, executed)
             item = {
                 "request": asdict(approved),
                 "request_id": approved.request_id,
@@ -3355,7 +3653,7 @@ class JSONRPCServer:
             output = str(result.get("output") or result.get("warning") or "")
             if not redirect or not output:
                 return result
-            return {**result, "redirect": await self._apply_terminal_redirect(output, redirect)}
+            return {**result, "redirect": await self._apply_terminal_redirect_with_policy(output, redirect)}
 
         if command not in {"/help", "/new", "/model"}:
             return await with_redirect({"type": "exec", "warning": f"未知命令：{command}"})
@@ -3398,7 +3696,7 @@ class JSONRPCServer:
             "stderr": completed.stderr,
         }
         if redirect:
-            result["redirect"] = await self._apply_terminal_redirect(
+            result["redirect"] = await self._apply_terminal_redirect_with_policy(
                 completed.stdout or completed.stderr or f"exit {completed.returncode}",
                 redirect,
             )
@@ -3537,6 +3835,22 @@ class JSONRPCServer:
             )
         return await self.handle_slash_exec(params)
 
+    async def _apply_terminal_redirect_with_policy(
+        self,
+        text: str,
+        redirect: dict[str, Any],
+    ) -> dict[str, Any]:
+        return await self._execute_agent_tool(
+            "terminal.redirect",
+            {
+                "text": text,
+                "path": str(redirect.get("path", "")),
+                "mode": str(redirect.get("mode", "write") or "write"),
+            },
+            auth_scopes=["filesystem:write"],
+            allow_clarification=False,
+        )
+
     async def _dispatch_rpc_method(self, method: str, params: dict[str, Any]) -> dict[str, Any]:
         handler = getattr(self, f"handle_{method.replace('.', '_')}", None)
         if handler is None:
@@ -3629,7 +3943,7 @@ class JSONRPCServer:
                 retryable=False,
             )
 
-        if policy.get("requires_approval") or policy.get("risk_level") in {"critical"}:
+        if self._tool_requires_approval(method, policy):
             request = self.runtime.governance.create_request(
                 request_type="agent_tool",
                 title=f"Execute {method}",
@@ -3683,6 +3997,12 @@ class JSONRPCServer:
     def _tool_activity_id(method: str) -> str:
         safe_method = re.sub(r"[^a-zA-Z0-9_]+", "_", method).strip("_") or "tool"
         return f"{safe_method}_{uuid.uuid4().hex[:8]}"
+
+    @staticmethod
+    def _tool_requires_approval(method: str, policy: dict[str, Any]) -> bool:
+        if method in APPROVAL_POLICY_BYPASS_METHODS:
+            return False
+        return bool(policy.get("requires_approval")) or str(policy.get("risk_level", "low")) in {"high", "critical"}
 
     async def _send_tool_start(
         self,
@@ -3821,6 +4141,8 @@ class JSONRPCServer:
             executed = await self._execute_approved_agent_tool(request.payload)
         elif stored_decision == "approved":
             executed = await self._execute_approved_self_evolution_request(request)
+        if executed is not None:
+            self._mark_approval_execution(request_id, executed)
         await self._send_approval_queue()
         await self.send_event(
             "status.update",
@@ -3830,6 +4152,19 @@ class JSONRPCServer:
         if executed is not None:
             response["executed"] = executed
         return response
+
+    def _mark_approval_execution(self, request_id: str, executed: dict[str, Any]) -> None:
+        ok = bool(executed.get("ok"))
+        error = executed.get("error") if isinstance(executed.get("error"), dict) else {}
+        message = str(error.get("message", "")) if error else None
+        try:
+            self.runtime.governance.mark_execution(
+                request_id,
+                "executed" if ok else "failed",
+                message,
+            )
+        except ValueError:
+            logger.warning("approval execution state was not updated: %s", request_id)
 
     async def _execute_approved_agent_tool(self, payload: dict[str, Any]) -> dict[str, Any]:
         method = str(payload.get("method", ""))
@@ -4297,8 +4632,13 @@ class JSONRPCServer:
             return result if isinstance(result, dict) else {"result": result}
 
     def _read_cron_jobs(self) -> list[dict[str, Any]]:
-        payload = self._read_json_file(self.cron_jobs_path)
-        jobs = (payload.get("jobs") if isinstance(payload, dict) else []) or []
+        if not self.cron_jobs_path.exists():
+            return []
+        try:
+            payload = json.loads(self.cron_jobs_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return []
+        jobs = payload if isinstance(payload, list) else (payload.get("jobs") if isinstance(payload, dict) else []) or []
         return [item for item in jobs if isinstance(item, dict)]
 
     def _write_cron_jobs(self, jobs: list[dict[str, Any]]) -> None:
@@ -4799,7 +5139,39 @@ class JSONRPCServer:
         final_acceptance = self._extract_final_acceptance_intent(text, normalized)
         if final_acceptance:
             return "runtime.final_acceptance", final_acceptance, 0.86
+        development_task = self._extract_development_task_intent(text, normalized)
+        if development_task:
+            return "development.task.start", development_task, 0.92
         return None
+
+    @staticmethod
+    def _extract_development_task_intent(
+        text: str,
+        normalized: str,
+    ) -> dict[str, Any] | None:
+        triggers = (
+            "development task",
+            "autonomous development",
+            "plan and execute",
+            "复杂开发任务",
+            "自主规划与执行",
+            "自主开发",
+            "完成复杂开发任务",
+        )
+        if not any(trigger in normalized for trigger in triggers):
+            return None
+        goal = text.strip()
+        for separator in ("：", ":", "-", "—"):
+            if separator in goal:
+                tail = goal.split(separator, 1)[1].strip()
+                if tail:
+                    goal = tail
+                    break
+        return {
+            "goal": goal,
+            "context": {"source": "natural_language"},
+            "auto_execute": True,
+        }
 
     def _match_backend_alias(self, text: str, normalized: str) -> tuple[str, str] | None:
         candidates: list[tuple[str, str]] = []
@@ -5027,6 +5399,8 @@ class JSONRPCServer:
             return self._infer_mcp_call_params(text, params)
         if method == "context.attach":
             return self._infer_context_attach_params(text, params)
+        if method == "development.task.start":
+            return self._infer_development_task_start_params(text, params)
         if method == "model.configure":
             return self._infer_model_configure_params(text, params)
         if method == "session.resume":
@@ -5034,6 +5408,27 @@ class JSONRPCServer:
         if method == "session.steer":
             return self._infer_session_steer_params(text, params)
         return params
+
+    @staticmethod
+    def _infer_development_task_start_params(
+        text: str,
+        params: dict[str, Any],
+    ) -> dict[str, Any]:
+        if params.get("goal"):
+            return params
+        goal = text.strip()
+        for separator in ("：", ":", "-", "—"):
+            if separator in goal:
+                tail = goal.split(separator, 1)[1].strip()
+                if tail:
+                    goal = tail
+                    break
+        return {
+            **params,
+            "goal": goal,
+            "context": params.get("context") if isinstance(params.get("context"), dict) else {"source": "natural_language"},
+            "auto_execute": bool(params.get("auto_execute", True)),
+        }
 
     def _infer_platform_message_params(
         self,
@@ -5494,7 +5889,7 @@ class JSONRPCServer:
             policy = self._tool_policy(method)
             required = policy.get("input_schema", {}).get("required", [])
             required_text = ", ".join(required) if required else "无"
-            approval = "是" if policy.get("requires_approval") else "否"
+            approval = "是" if self._tool_requires_approval(method, policy) else "否"
             retry = policy.get("retry", {})
             lines.append(
                 f"- {method} | 鉴权={policy.get('auth_scope')} | "
