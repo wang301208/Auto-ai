@@ -72,12 +72,27 @@ function formatNaturalResult(natural: { method?: string; command?: string; resul
   return `${label}: ${String(result)}`;
 }
 
+function looksCorruptDisplayText(value?: string) {
+  const text = String(value ?? '').trim();
+  if (!text) return true;
+  const visible = [...text].filter(char => !/\s/.test(char));
+  if (!visible.length) return true;
+  if (text.includes('�')) return true;
+  const questionMarks = visible.filter(char => char === '?').length;
+  return questionMarks >= 3 && questionMarks / visible.length >= 0.5;
+}
+
+function cleanDisplayText(value: unknown, fallback: string) {
+  const text = String(value ?? '').trim();
+  return looksCorruptDisplayText(text) ? fallback : text;
+}
+
 function formatMaintenanceSummary(maintenance: AutonomyMaintenance) {
   const completed = maintenance.actions?.filter(item => item.status === 'completed').length ?? 0;
   const failed = maintenance.actions?.filter(item => item.status === 'error').length ?? 0;
   const actionText = `完成 ${completed} 项自检${failed ? `，${failed} 项异常` : ''}`;
-  const goal = maintenance.self_state?.active_goal || maintenance.trigger;
-  const nextAction = maintenance.next_actions?.[0];
+  const goal = cleanDisplayText(maintenance.self_state?.active_goal || maintenance.trigger, '等待用户目标');
+  const nextAction = cleanDisplayText(maintenance.next_actions?.[0], '');
   const title = maintenance.trigger === 'session_start' ? '自主自我已启动' : '自主自我维护完成';
   return `${title}：${actionText}。当前目标：${goal}${nextAction ? `。下一步：${nextAction}` : ''}`;
 }

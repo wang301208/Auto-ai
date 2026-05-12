@@ -49,6 +49,26 @@ DEFAULT_LONG_TERM_DOCTRINE = [
 ]
 
 
+def _looks_corrupt_display_text(value: Any) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return True
+    visible = [char for char in text if not char.isspace()]
+    if not visible:
+        return True
+    if "\ufffd" in text:
+        return True
+    question_marks = sum(1 for char in visible if char == "?")
+    return question_marks >= 3 and question_marks / max(len(visible), 1) >= 0.5
+
+
+def _clean_display_text(value: Any, fallback: str) -> str:
+    text = str(value or "").strip()
+    if _looks_corrupt_display_text(text):
+        return fallback
+    return text
+
+
 def asyncio_run(awaitable):
     """Run a coroutine from sync runtime methods."""
     try:
@@ -742,9 +762,13 @@ class LocalRuntime:
         trigger: str,
         next_actions: list[str] | None = None,
     ) -> dict[str, Any]:
-        title = str(goal_text or trigger).strip() or "autonomous self-maintenance"
+        title = _clean_display_text(goal_text or trigger, "等待用户目标")
         goals_payload = self.read_autonomous_goals()
-        goals = list(goals_payload.get("goals", []))
+        goals = [
+            goal
+            for goal in list(goals_payload.get("goals", []))
+            if not _looks_corrupt_display_text(goal.get("title", ""))
+        ]
         active = self._select_active_goal(goals, title)
         now = datetime.now(UTC).isoformat()
         preserve_active_identity = (
@@ -773,10 +797,21 @@ class LocalRuntime:
         active["priority"] = max(int(active.get("priority", 1) or 1), self._goal_priority(trigger))
         active["updated_at"] = now
         progress = list(active.get("progress", [])) if isinstance(active.get("progress"), list) else []
+        progress = [
+            item
+            for item in progress
+            if not _looks_corrupt_display_text(
+                item.get("summary", "") if isinstance(item, dict) else item
+            )
+        ]
         progress.append({"trigger": trigger, "created_at": now, "summary": title})
         active["progress"] = progress[-50:]
         if not preserve_active_identity:
-            active["next_actions"] = [str(item) for item in (next_actions or []) if str(item).strip()][:8]
+            active["next_actions"] = [
+                _clean_display_text(item, "等待下一轮自主维护")
+                for item in (next_actions or [])
+                if str(item).strip() and not _looks_corrupt_display_text(item)
+            ][:8]
         for goal in goals:
             if goal is not active and goal.get("status") == "active" and goal.get("source") == trigger:
                 goal["status"] = "watching"
@@ -804,10 +839,19 @@ class LocalRuntime:
     @staticmethod
     def _select_active_goal(goals: list[dict[str, Any]], title: str) -> dict[str, Any] | None:
         normalized = title.casefold()
-        for goal in goals:
+        valid_goals = [
+            goal for goal in goals if not _looks_corrupt_display_text(goal.get("title", ""))
+        ]
+        for goal in valid_goals:
             if str(goal.get("title", "")).casefold() == normalized:
                 return goal
-        for goal in goals:
+        for goal in valid_goals:
+            if (
+                goal.get("status") == "active"
+                and goal.get("source") == "long_term_agi_evolution_goal"
+            ):
+                return goal
+        for goal in valid_goals:
             if goal.get("status") == "active":
                 return goal
         return None

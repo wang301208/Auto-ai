@@ -66,6 +66,26 @@ PUBLIC_DIRECT_METHODS = {
     "slash.exec",
 }
 
+
+def looks_corrupt_display_text(value: Any) -> bool:
+    text = str(value or "").strip()
+    if not text:
+        return True
+    visible = [char for char in text if not char.isspace()]
+    if not visible:
+        return True
+    if "\ufffd" in text:
+        return True
+    question_marks = sum(1 for char in visible if char == "?")
+    return question_marks >= 3 and question_marks / max(len(visible), 1) >= 0.5
+
+
+def clean_display_text(value: Any, fallback: str) -> str:
+    text = str(value or "").strip()
+    if looks_corrupt_display_text(text):
+        return fallback
+    return text
+
 MODEL_PROVIDER_PRESETS: dict[str, dict[str, Any]] = {
     "openai": {
         "name": "OpenAI",
@@ -3101,19 +3121,28 @@ class JSONRPCServer:
         ]
         goals = self.runtime.read_autonomous_goals()
         goal_items = list(goals.get("goals", [])) if isinstance(goals.get("goals"), list) else []
+        valid_goal_items = [
+            goal
+            for goal in goal_items
+            if not looks_corrupt_display_text(goal.get("title", ""))
+        ]
         active_goal = next(
             (
                 goal
-                for goal in goal_items
+                for goal in valid_goal_items
                 if goal.get("id") == goals.get("active_goal_id")
             ),
-            goal_items[0] if goal_items else {},
+            valid_goal_items[0] if valid_goal_items else {},
+        )
+        active_goal_title = clean_display_text(
+            active_goal.get("title") or task_text or trigger,
+            "等待用户目标",
         )
         return {
             "identity": "local_autonomous_agent",
             "autonomy_level": AUTONOMY_LEVEL,
             "active_goal_id": active_goal.get("id", ""),
-            "active_goal": active_goal.get("title") or task_text or trigger,
+            "active_goal": active_goal_title,
             "session_id": self.session_id,
             "updated_at": datetime.now(UTC).isoformat(),
             "principles": [
@@ -3144,10 +3173,14 @@ class JSONRPCServer:
                 "failed": failed,
             },
             "goal_pool": {
-                "total": len(goal_items),
+                "total": len(valid_goal_items),
                 "active": active_goal,
             },
-            "next_actions": next_actions,
+            "next_actions": [
+                clean_display_text(item, "等待下一轮自主维护")
+                for item in next_actions
+                if not looks_corrupt_display_text(item)
+            ],
         }
 
     @staticmethod
@@ -3334,13 +3367,13 @@ class JSONRPCServer:
         failed = [item["name"] for item in actions if item.get("status") == "error"]
         if failed:
             return [
-                "review failed autonomous maintenance actions",
-                "retry recoverable maintenance on the next cycle",
+                "检查失败的自主维护动作",
+                "在下一轮重试可恢复的维护动作",
             ]
         if trigger == "session_start":
             return [
-                "monitor the next user goal",
-                "keep memory and approvals synchronized in the background",
+                "等待并跟踪下一项用户目标",
+                "在后台保持记忆与审批队列同步",
             ]
         return [
             "沉淀已完成工作为可复用记忆",
@@ -3349,10 +3382,14 @@ class JSONRPCServer:
 
     @staticmethod
     def _merge_autonomous_next_actions(primary: list[str], remote: Any) -> list[str]:
-        merged = [str(item) for item in primary if str(item).strip()]
+        merged = [
+            clean_display_text(item, "等待下一轮自主维护")
+            for item in primary
+            if str(item).strip() and not looks_corrupt_display_text(item)
+        ]
         if isinstance(remote, list):
             for item in remote:
-                text = str(item).strip()
+                text = clean_display_text(item, "")
                 if text and text not in merged:
                     merged.append(text)
         return merged[:8]

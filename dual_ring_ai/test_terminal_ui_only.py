@@ -964,6 +964,78 @@ def test_long_term_goal_remains_active_and_is_not_overwritten_by_remote_ticks(tm
     ]
 
 
+def test_autonomous_goal_selection_ignores_corrupt_question_mark_titles(tmp_path):
+    from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
+
+    runtime = LocalRuntime(LocalRuntimeConfig(root_path=tmp_path))
+    goals_path = tmp_path / "experience" / "autonomous_goals.json"
+    goals_path.parent.mkdir(parents=True, exist_ok=True)
+    goals_path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "active_goal_id": "bad",
+                "updated_at": "",
+                "goals": [
+                    {
+                        "id": "bad",
+                        "title": "????????????????????????",
+                        "status": "active",
+                        "priority": 99,
+                        "source": "remote_loop",
+                        "created_at": "",
+                        "updated_at": "",
+                        "progress": [],
+                        "next_actions": [],
+                    },
+                    {
+                        "id": "good",
+                        "title": "长期目标：朝向强人工智能能力体系持续演进",
+                        "status": "active",
+                        "priority": 5,
+                        "source": "long_term_agi_evolution_goal",
+                        "created_at": "",
+                        "updated_at": "",
+                        "progress": [],
+                        "next_actions": ["建立能力基线"],
+                    },
+                ],
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    updated = runtime.update_autonomous_goals(
+        goal_text="远程自主反思第 2 次",
+        trigger="remote_loop",
+        next_actions=["沉淀已完成工作为可复用记忆"],
+    )
+    active = next(goal for goal in updated["goals"] if goal["id"] == updated["active_goal_id"])
+
+    assert active["id"] == "good"
+    assert active["title"] == "长期目标：朝向强人工智能能力体系持续演进"
+    assert all(goal["title"] != "????????????????????????" for goal in updated["goals"])
+
+
+def test_autonomous_maintenance_defaults_are_chinese():
+    from tui_gateway.entry import JSONRPCServer
+
+    session_start_actions = JSONRPCServer._autonomous_next_actions("session_start", [])
+    failed_actions = JSONRPCServer._autonomous_next_actions(
+        "prompt_complete",
+        [{"name": "autonomous.plan", "status": "error"}],
+    )
+    combined = "\n".join(session_start_actions + failed_actions)
+
+    assert "等待并跟踪下一项用户目标" in combined
+    assert "在后台保持记忆与审批队列同步" in combined
+    assert "检查失败的自主维护动作" in combined
+    assert "在下一轮重试可恢复的维护动作" in combined
+    assert "monitor the next user goal" not in combined
+    assert "review failed autonomous maintenance actions" not in combined
+
+
 def test_long_term_capability_baseline_tracks_execution_doctrine(tmp_path):
     from dual_ring_ai.runtime.local_runtime import LocalRuntime, LocalRuntimeConfig
 
