@@ -73,6 +73,9 @@ def run_auto_gpt(
     ai_name: Optional[str] = None,
     ai_role: Optional[str] = None,
     ai_goals: tuple[str, ...] = tuple(),
+    async_mode: bool = False,
+    autonomous: bool = False,
+    multi_agent: bool = False,
 ) -> None:
     # Configure logging before we do anything else.
     logger.set_level(logging.DEBUG if debug else logging.INFO)
@@ -82,6 +85,7 @@ def run_auto_gpt(
     workspace_directory = workspace_directory.resolve() if workspace_directory else None
 
     config = ConfigBuilder.build_config_from_env(workdir=working_directory)
+    config.async_mode = async_mode
 
     # HACK: This is a hack to allow the config into the logger without having to pass it around everywhere
     # or import it directly.
@@ -221,7 +225,88 @@ def run_auto_gpt(
     )
 
     try:
-        run_interaction_loop(agent)
+        if getattr(config, "async_mode", False):
+            from autogpt.agents.async_agent import AsyncAgent
+            from autogpt.agents.subsystem_injection import inject_v1_subsystems
+            from autogpt.app.async_loop import run_sync_interaction_loop
+
+            async_agent = AsyncAgent(
+                memory=memory,
+                command_registry=command_registry,
+                triggering_prompt=DEFAULT_TRIGGERING_PROMPT,
+                ai_config=ai_config,
+                config=config,
+                plugin_queue=plugin_queue,
+                message_queue=message_queue,
+                db=db,
+            )
+
+            if async_agent._ability_registry is not None:
+                sdm = None
+                if config.self_develop_enabled:
+                    sdm = SelfDevelopManager(
+                        plugin_queue=plugin_queue,
+                        patch_agent=_patch_agent,
+                        db=db,
+                        message_queue=message_queue,
+                        workspace=config.workspace_path,
+                        interval=config.self_develop_interval,
+                    )
+                inject_v1_subsystems(
+                    async_agent._ability_registry,
+                    self_develop_manager=sdm,
+                    message_queue=message_queue,
+                )
+
+            if autonomous:
+                async_agent.enable_autonomous_mode()
+
+            ma_system = None
+
+            if multi_agent:
+                from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+                ma_config = SystemConfig(
+                    autonomous=autonomous,
+                    enable_tui=True,
+                    enable_health_monitor=True,
+                    enable_agent_pool=True,
+                    enable_policy_evolver=autonomous,
+                    enable_checkpoint=True,
+                )
+                ma_system = MultiAgentSystem(
+                    workspace_path=config.workspace_path,
+                    config=ma_config,
+                    message_queue=message_queue,
+                )
+                ma_system.setup()
+                ma_system.attach_to_agent(async_agent)
+                ma_system.start()
+                logger.typewriter_log(
+                    "Multi-Agent",
+                    Fore.GREEN,
+                    f"协调模式已启动: {len(ma_system.agent_factory.created_agents)} agents, "
+                    f"autonomous={autonomous}",
+                )
+
+            comm_bus = ma_system.comm_bus if ma_system else None
+            multi_tui = ma_system.multi_tui if ma_system else None
+
+            cycle_budget = _get_cycle_budget(
+                config.continuous_mode, config.continuous_limit
+            )
+            try:
+                run_sync_interaction_loop(
+                    async_agent,
+                    config,
+                    cycle_budget,
+                    comm_bus=comm_bus,
+                    multi_tui=multi_tui,
+                )
+            finally:
+                if ma_system is not None:
+                    ma_system.stop()
+        else:
+            run_interaction_loop(agent)
     finally:
         if self_develop_stop is not None and self_develop_thread is not None:
             self_develop_stop.set()
@@ -330,14 +415,10 @@ def run_interaction_loop(
 
             if user_feedback == UserFeedback.AUTHORIZE:
                 if new_cycles_remaining is not None:
-                    # Case 1: User is altering the cycle budget.
                     if cycle_budget > 1:
-                        cycle_budget = new_cycles_remaining + 1
-                    # Case 2: User is running iteratively and
-                    #   has initiated a one-time continuous cycle
-                    cycles_remaining = new_cycles_remaining + 1
+                        cycle_budget = new_cycles_remaining
+                    cycles_remaining = new_cycles_remaining
                 else:
-                    # Case 1: Continuous iteration was interrupted -> resume
                     if cycle_budget > 1:
                         logger.typewriter_log(
                             _("RESUMING CONTINUOUS EXECUTION: "),
@@ -346,8 +427,7 @@ def run_interaction_loop(
                                 cycle_budget=cycle_budget
                             ),
                         )
-                    # Case 2: The agent used up its cycle budget -> reset
-                    cycles_remaining = cycle_budget + 1
+                    cycles_remaining = cycle_budget
                 logger.typewriter_log(
                     _("-=-=-=-=-=-=-= COMMAND AUTHORISED BY USER -=-=-=-=-=-=-="),
                     Fore.MAGENTA,
@@ -533,9 +613,8 @@ def construct_main_ai_config(
     if goals:
         ai_config.ai_goals = list(goals)
 
-    if (
-        all([name, role, goals])
-        or config.skip_reprompt
+    if all([name, role, goals]) or (
+        config.skip_reprompt
         and all([ai_config.ai_name, ai_config.ai_role, ai_config.ai_goals])
     ):
         logger.typewriter_log("Name :", Fore.GREEN, ai_config.ai_name)

@@ -4,6 +4,7 @@ COMMAND_CATEGORY = "execute_code"
 COMMAND_CATEGORY_TITLE = "Execute Code"
 
 import os
+import re
 import subprocess
 from pathlib import Path
 
@@ -16,6 +17,8 @@ from .decorators import sanitize_path_arg
 
 ALLOWLIST_CONTROL = "allowlist"
 DENYLIST_CONTROL = "denylist"
+
+SHELL_META_CHARS = re.compile(r"[;|&`$\(\)\{\}<>!\n\r]")
 
 
 @command(
@@ -101,6 +104,16 @@ def execute_python_file(filename: str, agent: Agent) -> str:
         return (
             f"python: can't open file '{filename}': [Errno 2] No such file or directory"
         )
+
+    try:
+        resolved = file_path.resolve()
+        if hasattr(agent, "workspace") and not resolved.is_relative_to(
+            agent.workspace.root
+        ):
+            return "Error: File is outside of workspace."
+    except Exception:
+        pass
+
     try:
         result = subprocess.run(
             ["python", str(file_path)],
@@ -127,6 +140,9 @@ def validate_command(command: str, config: Config) -> bool:
         bool: True if the command is allowed, False otherwise
     """
     if not command:
+        return False
+
+    if SHELL_META_CHARS.search(command):
         return False
 
     command_name = command.split()[0]
@@ -214,7 +230,7 @@ def execute_shell_popen(command_line, agent: Agent) -> str:
 
     current_dir = os.getcwd()
     # Change dir into workspace if necessary
-    if agent.config.workspace_path not in current_dir:
+    if not Path(current_dir).is_relative_to(agent.config.workspace_path):
         os.chdir(agent.config.workspace_path)
 
     logger.info(

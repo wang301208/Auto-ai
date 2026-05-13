@@ -58,6 +58,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     debug_mode: bool = False
     plain_output: bool = False
     chat_messages_enabled: bool = True
+    language: str = DEFAULT_LANGUAGE
     # TTS configuration
     speak_mode: bool = False
     text_to_speech_provider: str = "gtts"

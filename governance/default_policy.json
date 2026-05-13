@@ -1,0 +1,153 @@
+{
+  "name": "default",
+  "description": "Default governance policy for AutoGPT. Agent autonomously manages boundaries via BoundaryManager. This policy defines hard deny rules (hard boundaries) that block even in autonomous mode. All other operations are allowed with audit trail.",
+  "default_effect": "deny",
+  "rules": [
+    {
+      "effect": "deny",
+      "operation": "budget_exceeded",
+      "principal": "*",
+      "resource": "*",
+      "priority": 1,
+      "description": "Hard boundary: block when budget is exceeded"
+    },
+    {
+      "effect": "deny",
+      "operation": "file_delete",
+      "principal": "*",
+      "resource": "*",
+      "priority": 1,
+      "description": "Hard boundary: block destructive file deletion"
+    },
+    {
+      "effect": "deny",
+      "operation": "sandbox_escape",
+      "principal": "*",
+      "resource": "*",
+      "priority": 1,
+      "description": "Hard boundary: block sandbox escape attempts"
+    },
+    {
+      "effect": "deny",
+      "operation": "file.write",
+      "principal": "*",
+      "resource": "/etc/*",
+      "priority": 3,
+      "description": "Deny writes to system directories"
+    },
+    {
+      "effect": "deny",
+      "operation": "file.write",
+      "principal": "*",
+      "resource": "/usr/*",
+      "priority": 3,
+      "description": "Deny writes to system directories"
+    },
+    {
+      "effect": "deny",
+      "operation": "environment.read",
+      "principal": "*",
+      "resource": "*",
+      "condition": {"sensitive": "true"},
+      "priority": 2,
+      "description": "Deny reading sensitive environment variables"
+    },
+    {
+      "effect": "deny",
+      "operation": "shell.*",
+      "principal": "*",
+      "resource": "*",
+      "condition": {"sandbox": "true"},
+      "priority": 5,
+      "description": "Deny shell commands in sandbox mode"
+    },
+    {
+      "effect": "allow",
+      "operation": "file.read",
+      "principal": "*",
+      "resource": "workspace:*",
+      "priority": 10,
+      "description": "Allow all agents to read from workspace"
+    },
+    {
+      "effect": "allow",
+      "operation": "file.write",
+      "principal": "*",
+      "resource": "workspace:*",
+      "priority": 10,
+      "description": "Allow all agents to write to workspace"
+    },
+    {
+      "effect": "allow",
+      "operation": "memory.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 20,
+      "description": "Allow all memory operations"
+    },
+    {
+      "effect": "allow",
+      "operation": "llm.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 20,
+      "description": "Allow all LLM calls"
+    },
+    {
+      "effect": "allow",
+      "operation": "web.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 30,
+      "description": "Allow web operations (search, browse, download)"
+    },
+    {
+      "effect": "allow",
+      "operation": "self_improve.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 30,
+      "description": "Allow self-improvement operations"
+    },
+    {
+      "effect": "allow",
+      "operation": "skill.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 30,
+      "description": "Allow skill operations"
+    },
+    {
+      "effect": "allow",
+      "operation": "agent.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 30,
+      "description": "Allow inter-agent communication"
+    },
+    {
+      "effect": "allow",
+      "operation": "workflow.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 30,
+      "description": "Allow workflow orchestration operations"
+    },
+    {
+      "effect": "allow",
+      "operation": "shell.execute",
+      "principal": "*",
+      "resource": "*",
+      "priority": 50,
+      "description": "Allow shell execution (Agent-managed via boundary constraints)"
+    },
+    {
+      "effect": "allow",
+      "operation": "boundary.*",
+      "principal": "*",
+      "resource": "*",
+      "priority": 30,
+      "description": "Allow boundary management operations (Agent-autonomous)"
+    }
+  ]
+}

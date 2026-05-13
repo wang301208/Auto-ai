@@ -100,6 +100,8 @@ class SelfDevelopManager:
         # Event log failures
         if self.message_queue:
             events = list(self.message_queue.get_events())
+            if len(events) < self._events_processed:
+                self._events_processed = 0
             new_events = events[self._events_processed :]
             self._events_processed = len(events)
             for event in new_events:

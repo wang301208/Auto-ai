@@ -18,7 +18,7 @@ class DatabaseManager:
     ) -> None:
         self.db_path = Path(db_path)
         self.message_queue = message_queue
-        self.connection = sqlite3.connect(self.db_path)
+        self.connection = sqlite3.connect(self.db_path, check_same_thread=False)
         self.init_db()
 
     def init_db(self) -> None:

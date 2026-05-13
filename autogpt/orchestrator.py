@@ -194,7 +194,10 @@ class Orchestrator:
                     if not alive or stale:
                         if alive:
                             info.process.terminate()
-                            info.process.join(timeout=1)
+                            info.process.join(timeout=5)
+                            if info.process.is_alive():
+                                info.process.kill()
+                                info.process.join()
                         if name == "dashboard":
                             self._start_dashboard()
                         else:

@@ -76,7 +76,7 @@ def file_operations_state(log_path: str | Path) -> dict[str, str]:
         if operation in ("write", "append"):
             state[path] = checksum
         elif operation == "delete":
-            del state[path]
+            state.pop(path, None)
     return state
 
 

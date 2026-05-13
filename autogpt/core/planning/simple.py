@@ -10,12 +10,20 @@ from autogpt.core.configuration import (
     SystemSettings,
     UserConfigurable,
 )
-from autogpt.core.planning import strategies
 from autogpt.core.planning.base import PromptStrategy
 from autogpt.core.planning.schema import (
     LanguageModelClassification,
+    LanguageModelConfiguration,
     LanguageModelResponse,
     Task,
+)
+from autogpt.core.planning.strategies import (
+    InitialPlan,
+    InitialPlanConfiguration,
+    NameAndGoals,
+    NameAndGoalsConfiguration,
+    NextAbility,
+    NextAbilityConfiguration,
 )
 from autogpt.core.resource.model_providers import (
     LanguageModelProvider,
@@ -25,18 +33,10 @@ from autogpt.core.resource.model_providers import (
 from autogpt.core.workspace import Workspace
 
 
-class LanguageModelConfiguration(SystemConfiguration):
-    """Struct for model configuration."""
-
-    model_name: str = UserConfigurable()
-    provider_name: ModelProviderName = UserConfigurable()
-    temperature: float = UserConfigurable()
-
-
 class PromptStrategiesConfiguration(SystemConfiguration):
-    name_and_goals: strategies.NameAndGoalsConfiguration
-    initial_plan: strategies.InitialPlanConfiguration
-    next_ability: strategies.NextAbilityConfiguration
+    name_and_goals: NameAndGoalsConfiguration
+    initial_plan: InitialPlanConfiguration
+    next_ability: NextAbilityConfiguration
 
 
 class PlannerConfiguration(SystemConfiguration):
@@ -72,9 +72,9 @@ class SimplePlanner(Configurable):
                 ),
             },
             prompt_strategies=PromptStrategiesConfiguration(
-                name_and_goals=strategies.NameAndGoals.default_configuration,
-                initial_plan=strategies.InitialPlan.default_configuration,
-                next_ability=strategies.NextAbility.default_configuration,
+                name_and_goals=NameAndGoals.default_configuration,
+                initial_plan=InitialPlan.default_configuration,
+                next_ability=NextAbility.default_configuration,
             ),
         ),
     )
@@ -95,13 +95,13 @@ class SimplePlanner(Configurable):
             self._providers[model] = model_providers[model_config.provider_name]
 
         self._prompt_strategies = {
-            "name_and_goals": strategies.NameAndGoals(
+            "name_and_goals": NameAndGoals(
                 **self._configuration.prompt_strategies.name_and_goals.dict()
             ),
-            "initial_plan": strategies.InitialPlan(
+            "initial_plan": InitialPlan(
                 **self._configuration.prompt_strategies.initial_plan.dict()
             ),
-            "next_ability": strategies.NextAbility(
+            "next_ability": NextAbility(
                 **self._configuration.prompt_strategies.next_ability.dict()
             ),
         }

@@ -43,11 +43,13 @@ class Executor:
         librarian: LibrarianAgent | None = None,
         message_queue: MessageQueue | None = None,
         confidence_threshold: float = 0.7,
+        skill_wait_timeout: float = 120.0,
     ) -> None:
         self.config = config or Config()
         self.librarian = librarian or LibrarianAgent(self.config)
         self.message_queue = message_queue or MessageQueue()
         self.confidence_threshold = confidence_threshold
+        self.skill_wait_timeout = skill_wait_timeout
 
         # Event used to resume execution once a new skill becomes available
         self._skill_created_event = threading.Event()
@@ -170,7 +172,15 @@ class Executor:
                         )
                     )
                     # Wait until a new skill is registered before retrying
-                    self._skill_created_event.wait()
+                    if not self._skill_created_event.wait(
+                        timeout=self.skill_wait_timeout
+                    ):
+                        logger.warning(
+                            "Timeout waiting for skill creation for '%s'",
+                            step.description,
+                        )
+                        results.append(None)
+                        break
                     self._skill_created_event.clear()
                     continue
 

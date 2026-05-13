@@ -151,6 +151,9 @@ Latest Development:
         # Create a copy of the new_events list to prevent modifying the original list
         new_events = copy.deepcopy(new_events)
 
+        # Remove user messages first to avoid mutating list during iteration
+        new_events = [e for e in new_events if e.role.lower() != "user"]
+
         # Replace "assistant" with "you". This produces much better first person past tense results.
         for event in new_events:
             if event.role.lower() == "assistant":
@@ -169,10 +172,6 @@ Latest Development:
 
             elif event.role.lower() == "system":
                 event.role = "your computer"
-
-            # Delete all user messages
-            elif event.role == "user":
-                new_events.remove(event)
 
         summ_model = OPEN_AI_CHAT_MODELS[config.fast_llm]
 

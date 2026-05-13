@@ -36,6 +36,12 @@ class LongTermMemory:
             return
         if len(history) >= self.threshold:
             self.add(history.summary)
+            recent_count = min(3, len(history.messages))
+            kept = list(history.messages[-recent_count:]) if recent_count else []
             history.messages.clear()
+            history.messages.extend(kept)
             history.last_trimmed_index = 0
-            history.summary = "I was created"
+            history.summary = (
+                f"Recent context transferred to long-term memory. "
+                f"Prior summary: {history.summary[:200]}"
+            )

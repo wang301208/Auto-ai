@@ -243,8 +243,10 @@ class Agent(BaseAgent):
                 command_name, command_args = plugin.pre_command(
                     command_name, command_args
                 )
-            assert command_name is not None
-            assert command_args is not None
+            if command_name is None:
+                raise ValueError("Plugin pre_command returned None for command_name")
+            if command_args is None:
+                raise ValueError("Plugin pre_command returned None for command_args")
             command_result = execute_command(
                 command_name=command_name,
                 arguments=command_args,
@@ -361,7 +363,8 @@ class Agent(BaseAgent):
                 )
                 response = command_name, arguments, assistant_reply_dict
             except Exception as e:
-                logger.error("Error: \n", str(e))
+                logger.error(f"Error extracting command: {e}")
+                response = f"Error: {e}", {}, assistant_reply_dict
 
         self.log_cycle_handler.log_cycle(
             self.ai_config.ai_name,

@@ -1,12 +1,15 @@
+from __future__ import annotations
+
 import enum
 
 from pydantic import BaseModel, Field, validator
 
-from autogpt.core.ability.schema import AbilityResult
+from autogpt.core.configuration import SystemConfiguration, UserConfigurable
 from autogpt.core.resource.model_providers.schema import (
     LanguageModelFunction,
     LanguageModelMessage,
     LanguageModelProviderModelResponse,
+    ModelProviderName,
 )
 
 
@@ -21,6 +24,14 @@ class LanguageModelClassification(str, enum.Enum):
 
     FAST_MODEL: str = "fast_model"
     SMART_MODEL: str = "smart_model"
+
+
+class LanguageModelConfiguration(SystemConfiguration):
+    """Struct for model configuration."""
+
+    model_name: str = UserConfigurable()
+    provider_name: ModelProviderName = UserConfigurable()
+    temperature: float = UserConfigurable()
 
 
 class LanguageModelPrompt(BaseModel):
@@ -56,7 +67,7 @@ class TaskContext(BaseModel):
     cycle_count: int = 0
     status: TaskStatus = TaskStatus.BACKLOG
     parent: "Task" = None
-    prior_actions: list[AbilityResult] = Field(default_factory=list)
+    prior_actions: list = Field(default_factory=list)
     memories: list = Field(default_factory=list)
     user_input: list[str] = Field(default_factory=list)
     supplementary_info: list[str] = Field(default_factory=list)

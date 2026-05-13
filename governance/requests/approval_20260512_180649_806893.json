@@ -1,0 +1,16 @@
+{
+  "request_id": "approval_20260512_180649_806893",
+  "request_type": "governance_gate",
+  "title": "shell.execute on *",
+  "payload": {},
+  "requested_by": "test_agent",
+  "risk_level": "high",
+  "status": "pending",
+  "created_at": "2026-05-12T18:06:49.806893",
+  "expires_at": null,
+  "decided_at": null,
+  "decided_by": null,
+  "comments": null,
+  "execution_status": null,
+  "execution_error": null
+}

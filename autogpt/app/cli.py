@@ -113,6 +113,31 @@ def _require_packages(packages: tuple[str, ...]) -> None:
     multiple=True,
     help=_("AI goal override; may be used multiple times to pass multiple goals"),
 )
+@click.option(
+    "--lang",
+    "language",
+    type=str,
+    default=None,
+    help=_("Set terminal language (e.g. zh, en)"),
+)
+@click.option(
+    "--async-mode",
+    "async_mode",
+    is_flag=True,
+    help=_("Enable async execution mode (merged V1+V2 architecture)"),
+)
+@click.option(
+    "--autonomous",
+    "autonomous",
+    is_flag=True,
+    help=_("Enable fully autonomous self-improvement mode (no human approval needed)"),
+)
+@click.option(
+    "--multi-agent",
+    "multi_agent",
+    is_flag=True,
+    help=_("Enable multi-agent coordination mode with workflow orchestration"),
+)
 @click.pass_context
 def main(
     ctx: click.Context,
@@ -135,6 +160,10 @@ def main(
     ai_name: Optional[str],
     ai_role: Optional[str],
     ai_goal: tuple[str],
+    language: Optional[str],
+    async_mode: bool,
+    autonomous: bool,
+    multi_agent: bool,
 ) -> None:
     """
     Welcome to AutoGPT an experimental open-source application showcasing the capabilities of the GPT-4 pushing the boundaries of AI.
@@ -143,6 +172,9 @@ def main(
     """
     _check_python_version()
     _require_packages(("openai",))
+
+    from autogpt.app.i18n import init_locale
+    init_locale(language)
 
     # Put imports inside function to avoid importing everything when starting the CLI
     from autogpt.app.main import run_auto_gpt
@@ -168,7 +200,76 @@ def main(
             ai_name=ai_name,
             ai_role=ai_role,
             ai_goals=ai_goal,
+            async_mode=async_mode,
+            autonomous=autonomous,
+            multi_agent=multi_agent,
         )
+
+
+# ======================================================================
+# Register unified command groups from autogpt.app.commands
+# ======================================================================
+
+from .commands import (  # noqa: E402
+    skill,
+    orchestrate,
+    evolve,
+    ingest,
+    tui,
+    plugin,
+    governance,
+    model,
+    dashboard,
+    doctor,
+)
+
+main.add_command(skill)
+main.add_command(orchestrate)
+main.add_command(evolve)
+main.add_command(ingest)
+main.add_command(tui)
+main.add_command(plugin)
+main.add_command(governance)
+main.add_command(model)
+main.add_command(dashboard)
+main.add_command(doctor)
+
+
+@main.command("stop", help=_("Stop running Agent process. Human can only stop, not intervene in boundaries."))
+@click.option("--pid", "pid", default=None, type=int, help=_("Process ID to stop"))
+@click.option("--force", is_flag=True, help=_("Force kill (SIGKILL)"))
+def stop(pid: int | None, force: bool) -> None:
+    """Stop a running Agent. This is the ONLY human runtime intervention allowed.
+
+    Humans cannot adjust boundaries, approve operations, or change autonomy levels.
+    They can only terminate the process and re-issue a new goal.
+    """
+    import os
+    import signal
+
+    pid_file = Path("autogpt.pid")
+    if pid is None:
+        if pid_file.exists():
+            try:
+                pid = int(pid_file.read_text().strip())
+            except (ValueError, OSError):
+                pass
+
+    if pid is None:
+        raise click.ClickException(_("No Agent process found. Use --pid to specify."))
+
+    try:
+        sig = signal.SIGKILL if force else signal.SIGTERM
+        os.kill(pid, sig)
+        click.echo(f"Sent {'SIGKILL' if force else 'SIGTERM'} to process {pid}")
+        if pid_file.exists():
+            pid_file.unlink()
+    except ProcessLookupError:
+        click.echo(f"Process {pid} not found (already terminated)")
+        if pid_file.exists():
+            pid_file.unlink()
+    except PermissionError:
+        raise click.ClickException(f"Permission denied to stop process {pid}")
 
 
 @main.command(

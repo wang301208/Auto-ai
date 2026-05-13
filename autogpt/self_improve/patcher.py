@@ -39,6 +39,7 @@ class PatchAgent:
         if self.is_paused():
             raise RuntimeError("Self-improvement paused")
 
+        workspace_root = cwd.resolve() if cwd else Path().resolve()
         files: set[Path] = set()
         old: str | None = None
         for line in diff.splitlines():
@@ -48,7 +49,12 @@ class PatchAgent:
                 new = line[4:].split("\t", 1)[0]
                 target = new if new != "/dev/null" else old
                 if target and target != "/dev/null":
-                    files.add(Path(cwd or Path()) / target)
+                    target_path = (cwd or Path()) / target
+                    if not target_path.resolve().is_relative_to(workspace_root):
+                        raise ValueError(
+                            f"Patch target outside workspace: {target}"
+                        )
+                    files.add(target_path)
 
         backups = {f: f.read_bytes() for f in files if f.exists()}
 

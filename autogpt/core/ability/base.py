@@ -7,7 +7,7 @@ from pydantic import Field
 
 from autogpt.core.ability.schema import AbilityResult
 from autogpt.core.configuration import SystemConfiguration
-from autogpt.core.planning.simple import LanguageModelConfiguration
+from autogpt.core.planning.schema import LanguageModelConfiguration
 
 
 class AbilityConfiguration(SystemConfiguration):

@@ -1,7 +1,11 @@
 import abc
 import enum
 
-from pydantic import SecretBytes, SecretField, SecretStr
+try:
+    from pydantic import SecretBytes, SecretField, SecretStr
+except ImportError:
+    from pydantic import SecretBytes, SecretStr
+    SecretField = SecretStr
 
 from autogpt.core.configuration import (
     SystemConfiguration,

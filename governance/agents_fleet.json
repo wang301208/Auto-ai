@@ -1,0 +1,52 @@
+{
+  "fleet_name": "default_autogpt",
+  "agents": [
+    {
+      "agent_id": "primary",
+      "name": "Primary Agent",
+      "role": "primary",
+      "roles": ["primary", "coder", "thinker"],
+      "capabilities": ["plan", "execute", "self_improve", "debug", "write_code"],
+      "max_concurrent_tasks": 3,
+      "reliability_score": 1.0,
+      "permanent": true
+    },
+    {
+      "agent_id": "reviewer",
+      "name": "Code Reviewer",
+      "role": "reviewer",
+      "roles": ["reviewer"],
+      "capabilities": ["review", "approve", "test"],
+      "max_concurrent_tasks": 5,
+      "reliability_score": 0.95,
+      "permanent": true
+    },
+    {
+      "agent_id": "tester",
+      "name": "Test Runner",
+      "role": "tester",
+      "roles": ["tester"],
+      "capabilities": ["test", "debug", "verify"],
+      "max_concurrent_tasks": 3,
+      "reliability_score": 0.9,
+      "permanent": true
+    },
+    {
+      "agent_id": "architect",
+      "name": "System Architect",
+      "role": "architect",
+      "roles": ["architect"],
+      "capabilities": ["design", "refactor", "plan"],
+      "max_concurrent_tasks": 2,
+      "reliability_score": 1.0,
+      "permanent": true
+    }
+  ],
+  "pool_config": {
+    "min_agents": {"coder": 1, "reviewer": 1, "tester": 0},
+    "max_agents": {"coder": 5, "reviewer": 3, "tester": 3},
+    "scale_up_threshold": 0.8,
+    "scale_down_threshold": 0.2,
+    "idle_timeout_seconds": 300
+  }
+}
