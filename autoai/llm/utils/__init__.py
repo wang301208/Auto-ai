@@ -46,9 +46,9 @@ def call_ai_function(
     """
     if model is None:
         model = config.smart_llm
-    # For each arg, if any are None, convert to "None":
+    # For each arg, if any are None, 转换 to "None":
     args = [str(arg) if arg is not None else "None" for arg in args]
-    # parse args to comma separated string
+    # 解析 args to comma separated string
     arg_str: str = ", ".join(args)
 
     prompt = ChatSequence.for_model(
@@ -91,7 +91,7 @@ def create_text_completion(
     return response.choices[0].text
 
 
-# Overly simple abstraction until we create something better
+# Overly simple abstraction until we 创建 something better
 def create_chat_completion(
     prompt: ChatSequence,
     config: Config,
@@ -155,7 +155,7 @@ def create_chat_completion(
             function.schema for function in functions
         ]
 
-    # Print full prompt to debug log
+    # 打印 满 prompt to 调试 日志
     logger.debug(prompt.dump())
 
     response = iopenai.create_chat_completion(
@@ -175,7 +175,7 @@ def create_chat_completion(
     for plugin in config.plugins:
         if not plugin.can_handle_on_response():
             continue
-        # TODO: function call support in plugin.on_response()
+        # 待办: function call support in 插件.on_response()
         content = plugin.on_response(content)
 
     return ChatModelResponse(

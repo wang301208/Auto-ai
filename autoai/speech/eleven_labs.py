@@ -72,7 +72,7 @@ class ElevenLabsSpeech(VoiceBase):
         Returns:
             None: None
         """
-        # Placeholder values that should be treated as empty
+        # 占位符 values that should be treated as 空
         if voice and voice not in PLACEHOLDERS:
             self._voices[voice_index] = voice
 

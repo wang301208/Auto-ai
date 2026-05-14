@@ -40,7 +40,7 @@ try:
 except Exception:  # pragma: no cover
     OpenAPIConfig = None  # type: ignore
 
-# A registry mapping plugin identifiers (path or URL) to instantiated plugins
+# A registry mapping 插件 identifiers (路径 or URL) to instantiated plugins
 plugin_registry: dict[str, AutoAIPluginTemplate] = {}
 PLUGIN_REGISTRY_FILE = Path(__file__).resolve().parents[1] / "plugin_registry.json"
 
@@ -164,7 +164,7 @@ def fetch_openai_plugins_manifest_and_spec(config: Config) -> dict:
     Returns:
         dict: per url dictionary of manifest and spec.
     """
-    # TODO add directory scan
+    # 待办 add directory scan
     manifests = {}
     for url in config.plugins_openai:
         openai_plugin_client_dir = f"{config.plugins_dir}/openai/{urlparse(url).netloc}"
@@ -322,7 +322,7 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTempla
     plugins_config = config.plugins_config
     # Directory-based plugins
     for plugin_path in [f.path for f in os.scandir(config.plugins_dir) if f.is_dir()]:
-        # Avoid going into __pycache__ or other hidden directories
+        # Avoid going into __pycache__ or other 隐藏 directories
         if plugin_path.startswith("__"):
             continue
 

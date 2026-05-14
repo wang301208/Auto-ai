@@ -166,7 +166,7 @@ class InitialPlan(PromptStrategy):
         return LanguageModelPrompt(
             messages=[system_prompt, user_prompt],
             functions=[create_plan_function],
-            # TODO:
+            # 待办:
             tokens_used=0,
         )
 

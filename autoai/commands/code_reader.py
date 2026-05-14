@@ -16,7 +16,7 @@ from autoai.llm.utils import create_chat_completion
 logger = logging.getLogger(__name__)
 CALL_COUNT = 0
 
-# Template used to prompt the model for code analysis
+# 模板 used to prompt the 模型 for code analysis
 PROMPT_TEMPLATE = (
     "You are an expert Python developer. Given the following files, provide a "
     "concise explanation of their purpose and how they work.\n\n{code}\n"

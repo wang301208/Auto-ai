@@ -35,7 +35,7 @@ class SimplePluginService(PluginService):
             )
 
     ####################################
-    # Low-level storage format loaders #
+    # Low-level 存储 格式化 loaders #
     ####################################
     @staticmethod
     def load_from_file_path(plugin_route: PluginStorageRoute) -> "PluginType":
@@ -121,7 +121,7 @@ class SimplePluginService(PluginService):
         raise ValueError(f"Unknown path type: {path_type}")
 
     #####################################
-    # High-level storage format loaders #
+    # High-level 存储 格式化 loaders #
     #####################################
 
     @staticmethod

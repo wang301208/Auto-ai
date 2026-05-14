@@ -13,7 +13,7 @@ from autoai.skills.vector_db import ChromaVectorDB, MemoryVectorDB, VectorDBProv
 
 
 # ---------------------------------------------------------------------------
-# Data models
+# 数据模型s
 
 
 Embedding = List[float]

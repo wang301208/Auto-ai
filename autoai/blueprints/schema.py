@@ -68,7 +68,7 @@ def load_blueprints(directory: str | Path) -> list[AgentBlueprint]:
         try:
             blueprints.append(AgentBlueprint.load_from_file(yaml_file))
         except Exception:
-            # Skip invalid blueprint files
+            # 跳过 invalid blueprint files
             continue
     return blueprints
 

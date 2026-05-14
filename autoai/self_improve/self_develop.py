@@ -55,7 +55,7 @@ class SelfDevelopManager:
         self._thread: Thread | None = None
         self._events_processed = 0
 
-    # --- Thread control -------------------------------------------------
+    # --- 线程 control -------------------------------------------------
     def start(self) -> tuple[Thread, Event]:
         """Start the self development loop."""
 
@@ -79,7 +79,7 @@ class SelfDevelopManager:
         if self._thread is not None:
             self._thread.join()
 
-    # --- Core logic -----------------------------------------------------
+    # --- 核心 logic -----------------------------------------------------
     def review_repository(self) -> None:
         """Collect issues and attempt to resolve them."""
 
@@ -90,14 +90,14 @@ class SelfDevelopManager:
     def _collect_issues(self) -> List[Issue]:
         issues: List[Issue] = []
 
-        # Plugin TODOs
+        # 插件 TODOs
         while True:
             todo = self.plugin_queue.pop()
             if todo is None:
                 break
             issues.append(Issue(f"Plugin TODO {todo.gap}", todo.context))
 
-        # Event log failures
+        # 事件 日志 失败s
         if self.message_queue:
             events = list(self.message_queue.get_events())
             if len(events) < self._events_processed:
@@ -113,7 +113,7 @@ class SelfDevelopManager:
                         )
                     )
 
-        # Coverage report
+        # Coverage 报告
         coverage_file = self.workspace / "coverage.json"
         if coverage_file.exists():
             try:
@@ -140,7 +140,7 @@ class SelfDevelopManager:
                 )
             )
 
-        # Linter / test failures
+        # Linter / 测试 失败s
         checks = (
             ["black", "--check", str(self.workspace)],
             ["ruff", "check", str(self.workspace)],

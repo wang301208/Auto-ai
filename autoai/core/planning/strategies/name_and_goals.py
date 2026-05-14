@@ -117,7 +117,7 @@ class NameAndGoals(PromptStrategy):
         prompt = LanguageModelPrompt(
             messages=[system_message, user_message],
             functions=[create_agent_function],
-            # TODO
+            # 待办
             tokens_used=0,
         )
         return prompt

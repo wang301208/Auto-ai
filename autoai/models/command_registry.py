@@ -121,7 +121,7 @@ class CommandRegistry:
         for command_module in enabled_command_modules:
             new_registry.import_command_module(command_module)
 
-        # Unregister commands that are incompatible with the current config
+        # 注销 commands that are incompatible with the current config
         incompatible_commands: list[Command] = []
         for command in new_registry.commands.values():
             if callable(command.enabled) and not command.enabled(config):
@@ -159,11 +159,11 @@ class CommandRegistry:
 
             command = None
 
-            # Register decorated functions
+            # 注册 decorated functions
             if getattr(attr, AUTO_GPT_COMMAND_IDENTIFIER, False):
                 command = attr.command
 
-            # Register command classes
+            # 注册 command classes
             elif (
                 inspect.isclass(attr) and issubclass(attr, Command) and attr != Command
             ):

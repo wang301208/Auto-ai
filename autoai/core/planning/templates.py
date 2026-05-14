@@ -1,6 +1,6 @@
 # Rules of thumb:
 # - Templates don't add new lines at the end of the string.  This is the
-#   responsibility of the or a consuming template.
+#   responsibility of the or a consuming 模板.
 
 ####################
 # Planner defaults #
@@ -30,7 +30,7 @@ ABILITIES = (
 )
 
 
-# Plan Prompt
+# 计划 Prompt
 # -----------
 
 

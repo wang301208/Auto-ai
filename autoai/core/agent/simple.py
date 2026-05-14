@@ -122,7 +122,7 @@ class SimpleAgent(Agent, Configurable):
         self._logger = logger
         self._ability_registry = ability_registry
         self._memory = memory
-        # FIXME: Need some work to make this work as a dict of providers
+        # 修复: Need some work to make this work as a dict of providers
         #  Getting the construction of the config to work is a bit tricky
         self._openai_provider = openai_provider
         self._planning = planning
@@ -191,8 +191,8 @@ class SimpleAgent(Agent, Configurable):
             for task in plan.content["task_list"]
         ]
 
-        # TODO: Should probably do a step to evaluate the quality of the generated tasks,
-        #  and ensure that they have actionable ready and acceptance criteria
+        # 待办: Should probably do a 步骤 to evaluate the quality of the generated tasks,
+        #  and ensure that they have actionable 就绪 and acceptance criteria
 
         self._task_queue.extend(tasks)
         self._task_queue.sort(key=lambda t: t.priority, reverse=True)
@@ -239,7 +239,7 @@ class SimpleAgent(Agent, Configurable):
                 success=False,
                 message="User cancelled ability execution.",
             )
-            # Re-queue the task for future execution
+            # Re-队列 the 任务 for future execution
             self._task_queue.append(self._current_task)
             self._current_task = None
             self._next_ability = None
@@ -254,8 +254,8 @@ class SimpleAgent(Agent, Configurable):
             return task
         else:
             self._logger.debug(f"Evaluating task {task} and adding relevant context.")
-            # TODO: Look up relevant memories (need working memory system)
-            # TODO: Evaluate whether there is enough information to start the task (language model call).
+            # 待办: Look up relevant memories (need working 内存 system)
+            # 待办: Evaluate whether there is enough 信息rmation to 启动 the 任务 (language 模型 call).
             task.context.enough_info = True
             task.context.status = TaskStatus.IN_PROGRESS
             return task
@@ -264,12 +264,12 @@ class SimpleAgent(Agent, Configurable):
         """Choose the next ability to use for the task."""
         self._logger.debug(f"Choosing next ability for task {task}.")
         if task.context.cycle_count > self._configuration.max_task_cycle_count:
-            # Don't hit the LLM, just set the next action as "breakdown_task" with an appropriate reason
+            # Don't hit the LLM, just 集合 the next action as "breakdown_task" with an appropriate 原因
             raise RuntimeError(
                 "Task exceeded maximum cycle count; consider breaking it down or revising."
             )
         elif not task.context.enough_info:
-            # Don't ask the LLM, just set the next action as "breakdown_task" with an appropriate reason
+            # Don't ask the LLM, just 集合 the next action as "breakdown_task" with an appropriate 原因
             raise RuntimeError(
                 "Not enough information to proceed with the task; provide more context or break it down."
             )
@@ -282,15 +282,15 @@ class SimpleAgent(Agent, Configurable):
     async def _update_tasks_and_memory(self, ability_result: AbilityResult):
         self._current_task.context.cycle_count += 1
         self._current_task.context.prior_actions.append(ability_result)
-        # TODO: Summarize new knowledge
-        # TODO: store knowledge and summaries in memory and in relevant tasks
-        # TODO: evaluate whether the task is complete
+        # 待办: Summarize new 知识
+        # 待办: store 知识 and summaries in 内存 and in relevant tasks
+        # 待办: evaluate whether the 任务 is 完整
 
     def __repr__(self):
         return "SimpleAgent()"
 
     ################################################################
-    # Factory interface for agent bootstrapping and initialization #
+    # 工厂 interface for 代理 bootstrapping and initialization #
     ################################################################
 
     @classmethod
@@ -321,7 +321,7 @@ class SimpleAgent(Agent, Configurable):
 
         system_locations = configuration_dict["agent"]["configuration"]["systems"]
 
-        # Build up default configuration
+        # 构建 up default configuration
         for system_name, system_location in system_locations.items():
             logger.debug(f"Compiling configuration for system {system_name}")
             system_class = SimplePluginService.get_plugin(system_location)

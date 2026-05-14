@@ -56,7 +56,7 @@ def execute_python_code(code: str, name: str, agent: Agent) -> str:
         name = name + ".py"
 
     # The `name` arg is not covered by @sanitize_path_arg,
-    # so sanitization must be done here to prevent path traversal.
+    # so sanitization must be done here to prevent 路径 traversal.
     file_path = agent.workspace.get_path(code_dir / name)
     if not file_path.is_relative_to(code_dir):
         return "Error: 'name' argument resulted in path traversal, operation aborted"
@@ -100,7 +100,7 @@ def execute_python_file(filename: str, agent: Agent) -> str:
 
     file_path = Path(filename)
     if not file_path.is_file():
-        # Mimic the response that you get from the command line so that it's easier to identify
+        # Mimic the 响应 that you 获取 from the command line so that it's easier to identify
         return (
             f"python: can't open file '{filename}': [Errno 2] No such file or directory"
         )
@@ -182,7 +182,7 @@ def execute_shell(command_line: str, agent: Agent) -> str:
         return "Error: This Shell Command is not allowed."
 
     current_dir = Path.cwd()
-    # Change dir into workspace if necessary
+    # 变更 dir into workspace if necessary
     if not current_dir.is_relative_to(agent.config.workspace_path):
         os.chdir(agent.config.workspace_path)
 
@@ -193,7 +193,7 @@ def execute_shell(command_line: str, agent: Agent) -> str:
     result = subprocess.run(command_line, capture_output=True, shell=True)
     output = f"STDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"
 
-    # Change back to whatever the prior working dir was
+    # 变更 back to whatever the prior working dir was
 
     os.chdir(current_dir)
     return output
@@ -229,7 +229,7 @@ def execute_shell_popen(command_line, agent: Agent) -> str:
         return "Error: This Shell Command is not allowed."
 
     current_dir = os.getcwd()
-    # Change dir into workspace if necessary
+    # 变更 dir into workspace if necessary
     if not Path(current_dir).is_relative_to(agent.config.workspace_path):
         os.chdir(agent.config.workspace_path)
 
@@ -242,7 +242,7 @@ def execute_shell_popen(command_line, agent: Agent) -> str:
         command_line, shell=True, stdout=do_not_show_output, stderr=do_not_show_output
     )
 
-    # Change back to whatever the prior working dir was
+    # 变更 back to whatever the prior working dir was
 
     os.chdir(current_dir)
 

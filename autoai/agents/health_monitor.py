@@ -80,7 +80,7 @@ class AgentHealthMonitor:
         # Agents call heartbeat periodically:
         monitor.heartbeat("agent1")
 
-        # To stop monitoring:
+        # To 停止 monitoring:
         monitor.stop()
     """
 

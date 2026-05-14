@@ -57,18 +57,18 @@ class BlueprintOrchestrator:
             try:
                 self.repo.git.checkout("main")
             except Exception:
-                # If main doesn't exist yet, keep current branch
+                # If main doesn't exist yet, keep current 分支
                 pass
             try:
                 before = self.repo.head.commit.hexsha
             except Exception:
                 before = ""
-            # Pull if origin exists
+            # 拉取 if 来源 exists
             try:
                 if any(r.name == "origin" for r in self.repo.remotes):
                     self.repo.remotes.origin.pull("main")
             except Exception:
-                # No remote or pull failed; continue using local
+                # No remote or 拉取 failed; continue using local
                 pass
             try:
                 after = self.repo.head.commit.hexsha
@@ -94,19 +94,19 @@ class BlueprintOrchestrator:
     # ------------------------------------------------------------------
     def _agent_entrypoint(self, blueprint: AgentBlueprint, workdir: str) -> Callable:
         def _run(db_path: str, heartbeat: Queue, stop_event: Event, workdir_path: str) -> None:
-            # Instantiate the agent based on blueprint. We pass minimal args and
-            # expect the agent class to accept message queue / event bus / config.
+            # Instantiate the 代理 based on blueprint. We pass minimal args and
+            # expect the 代理 class to 接受 消息 队列 / 事件 bus / config.
             agent = instantiate_agent(
                 blueprint,
-                # Prefer dual_ring_ai genesis agent signature (event_bus, librarian?, config)
-                # If class signature differs, users can adapt wrapper classes.
+                # Prefer dual_ring_ai genesis 代理 signature (event_bus, librarian?, config)
+                # If class signature differs, users can adapt 包装器 classes.
                 self.event_bus,  # type: ignore[arg-type]
                 None,
                 blueprint.config | {"workspace_path": workdir_path},
             )
             if hasattr(agent, "start"):
                 agent.start()
-            # Basic heartbeat loop to keep process alive
+            # Basic heartbeat 循环 to keep 进程 alive
             while not stop_event.is_set():
                 try:
                     heartbeat.put(time.time(), block=False)
@@ -137,14 +137,14 @@ class BlueprintOrchestrator:
                     args=(self.events_db, queue, self.stop_event, str(self.local_path / "workspaces" / name)),
                     daemon=True,
                 )
-                # Ensure workspace path exists
+                # Ensure workspace 路径 exists
                 Path(self.local_path / "workspaces" / name).mkdir(parents=True, exist_ok=True)
                 proc.start()
                 self.processes[name] = RunningProcess(
                     process=proc, queue=queue, target=entry, last_heartbeat=time.time()
                 )
             except Exception as e:
-                # Skip problematic blueprint and continue starting others
+                # 跳过 problematic blueprint and continue starting others
                 print(f"[orchestrator] Failed to start agent '{name}': {e}")
 
     # ------------------------------------------------------------------

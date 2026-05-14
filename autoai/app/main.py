@@ -77,7 +77,7 @@ def run_auto_ai(
     autonomous: bool = False,
     multi_agent: bool = False,
 ) -> None:
-    # Configure logging before we do anything else.
+    # 配置 logging before we do anything else.
     logger.set_level(logging.DEBUG if debug else logging.INFO)
 
     # Resolve paths early to prevent surprises later on.
@@ -87,11 +87,11 @@ def run_auto_ai(
     config = ConfigBuilder.build_config_from_env(workdir=working_directory)
     config.async_mode = async_mode
 
-    # HACK: This is a hack to allow the config into the logger without having to pass it around everywhere
-    # or import it directly.
+    # 临时方案: This is a 临时方案 to 允许 the config into the logger without having to pass it around everywhere
+    # or 导入 it directly.
     logger.config = config
 
-    # TODO: fill in llm values here
+    # 待办: fill in llm values here
     check_openai_api_key(config)
 
     create_config(
@@ -141,17 +141,17 @@ def run_auto_ai(
     if install_plugin_deps:
         install_plugin_dependencies()
 
-    # TODO: have this directory live outside the repository (e.g. in a user's
-    #   home directory) and have it come in as a command line argument or part of
+    # 待办: have this directory live outside the repository (e.g. in a user's
+    #   home directory) and have it come in as a command line 参数 or part of
     #   the env file.
     config.workspace_path = Workspace.init_workspace_directory(
         config, workspace_directory
     )
 
-    # HACK: doing this here to collect some globals that depend on the workspace.
+    # 临时方案: doing this here to collect some globals that depend on the workspace.
     config.file_logger_path = Workspace.build_file_logger_path(config.workspace_path)
 
-    # Set up self-improvement infrastructure
+    # 集合 up self-改进 infrastructure
     event_bus = EventBus(config.workspace_path / "events.db")
     message_queue = MessageQueue(event_bus)
     db = DatabaseManager(config.workspace_path / "improvement.db", message_queue)
@@ -184,7 +184,7 @@ def run_auto_ai(
     scan_plugins(config, config.debug_mode)
     config.plugins = list(plugin_registry.values())
 
-    # Create a CommandRegistry instance and scan default folder
+    # 创建 a CommandRegistry instance and scan default folder
     command_registry = CommandRegistry.with_command_modules(COMMAND_CATEGORIES, config)
     load_plugin_commands(command_registry)
 
@@ -195,17 +195,17 @@ def run_auto_ai(
         goals=ai_goals,
     )
     ai_config.command_registry = command_registry
-    # print(prompt)
+    # 打印(prompt)
 
-    # add chat plugins capable of report to logger
+    # add chat plugins capable of 报告 to logger
     if config.chat_messages_enabled:
         for plugin in config.plugins:
             if hasattr(plugin, "can_handle_report") and plugin.can_handle_report():
                 logger.info(f"Loaded plugin into logger: {plugin.__class__.__name__}")
                 logger.chat_plugins.append(plugin)
 
-    # Initialize memory and make sure it is empty.
-    # this is particularly important for indexing and referencing pinecone memory
+    # 初始化 内存 and make sure it is 空.
+    # this is particularly important for indexing and referencing pinecone 内存
     memory = get_memory(config)
     memory.clear()
     logger.typewriter_log(
@@ -318,8 +318,8 @@ def run_auto_ai(
 
 def _get_cycle_budget(continuous_mode: bool, continuous_limit: int | None) -> float:
     # Translate from the continuous_mode/continuous_limit config
-    # to a cycle_budget (maximum number of cycles to run without checking in with the
-    # user) and a count of cycles_remaining before we check in..
+    # to a cycle_budget (maximum number of cycles to 运行 without checking in with the
+    # user) and a count of cycles_remaining before we 检查 in..
     if continuous_mode:
         return float(continuous_limit) if continuous_limit else math.inf
     return 1.0
@@ -344,7 +344,7 @@ def run_interaction_loop(
     Returns:
         None
     """
-    # These contain both application config and agent config, so grab them here.
+    # These contain both application config and 代理 config, so grab them here.
     config = agent.config
     ai_config = agent.ai_config
     logger.debug(f"{ai_config.ai_name} System Prompt: {agent.system_prompt}")
@@ -377,20 +377,20 @@ def run_interaction_loop(
             if restart_spinner:
                 spinner.start()
 
-    # Set up an interrupt signal for the agent.
+    # 集合 up an interrupt 信号 for the 代理.
     signal.signal(signal.SIGINT, graceful_agent_interrupt)
 
     #########################
-    # Application Main Loop #
+    # Application Main 循环 #
     #########################
 
     while cycles_remaining > 0:
         logger.debug(f"Cycle budget: {cycle_budget}; remaining: {cycles_remaining}")
 
         ########
-        # Plan #
+        # 计划 #
         ########
-        # Have the agent determine the next action to take.
+        # Have the 代理 determine the next action to take.
         with spinner:
             if agent.db:
                 with Profiler(agent.db, "think"):
@@ -399,13 +399,13 @@ def run_interaction_loop(
                 command_name, command_args, assistant_reply_dict = agent.think()
 
         ###############
-        # Update User #
+        # 更新 User #
         ###############
-        # Print the assistant's thoughts and the next command to the user.
+        # 打印 the assistant's thoughts and the next command to the user.
         update_user(config, ai_config, command_name, command_args, assistant_reply_dict)
 
         ##################
-        # Get user input #
+        # 获取 user 输入 #
         ##################
         if cycles_remaining == 1:  # Last cycle
             user_feedback, user_input, new_cycles_remaining = get_user_feedback(
@@ -440,10 +440,10 @@ def run_interaction_loop(
                 command_name = "human_feedback"
         else:
             user_input = None
-            # First log new-line so user can differentiate sections better in console
+            # First 日志 new-line so user can differentiate sections better in console
             logger.typewriter_log("\n")
             if cycles_remaining != math.inf:
-                # Print authorized commands left value
+                # 打印 authorized commands left 值
                 authorized_commands_left = cycles_remaining
                 logger.typewriter_log(
                     _("AUTHORISED COMMANDS LEFT: "),
@@ -452,11 +452,11 @@ def run_interaction_loop(
                 )
 
         ###################
-        # Execute Command #
+        # 执行 Command #
         ###################
-        # Decrement the cycle counter first to reduce the likelihood of a SIGINT
+        # Decrement the 循环 counter first to reduce the likelihood of a SIGINT
         # happening during command execution, setting the cycles remaining to 1,
-        # and then having the decrement set it to 0, exiting the application.
+        # and then having the decrement 集合 it to 0, exiting the application.
         if command_name != "human_feedback":
             cycles_remaining -= 1
         try:
@@ -505,7 +505,7 @@ def update_user(
             if config.speak_mode:
                 say_text(f"I want to execute {command_name}", config)
 
-            # First log new-line so user can differentiate sections better in console
+            # First 日志 new-line so user can differentiate sections better in console
             logger.typewriter_log("\n")
             logger.typewriter_log(
                 "NEXT ACTION: ",
@@ -535,8 +535,8 @@ def get_user_feedback(
         A tuple of the user's feedback, the user's input, and the number of
         cycles remaining if the user has initiated a continuous cycle.
     """
-    # ### GET USER AUTHORIZATION TO EXECUTE COMMAND ###
-    # Get key press: Prompt the user to press enter to continue or escape
+    # ### 获取 USER AUTHORIZATION TO 执行 COMMAND ###
+    # 获取 键 press: Prompt the user to press enter to continue or escape
     # to exit
     logger.info(
         _(
@@ -553,7 +553,7 @@ def get_user_feedback(
     new_cycles_remaining = None
 
     while user_feedback is None:
-        # Get input from user
+        # 获取 输入 from user
         if config.chat_messages_enabled:
             console_input = clean_input(config, _("Waiting for your response..."))
         else:
@@ -561,7 +561,7 @@ def get_user_feedback(
                 config, Fore.MAGENTA + _("Input:") + Style.RESET_ALL
             )
 
-        # Parse user input
+        # 解析 user 输入
         if console_input.lower().strip() == config.authorise_key:
             user_feedback = UserFeedback.AUTHORIZE
         elif console_input.lower().strip() == "":
@@ -603,7 +603,7 @@ def construct_main_ai_config(
     else:
         ai_config = AIConfig.load(config.workdir / config.ai_settings_file)
 
-    # Apply overrides
+    # 应用 overrides
     if name:
         ai_config.ai_name = name
     if role:
@@ -663,11 +663,11 @@ Continue ({authorise}/{exit}): """
             Fore.YELLOW,
             f"{config.workspace_path}",
         )
-    # set the total api budget
+    # 集合 the total api 预算
     api_manager = ApiManager()
     api_manager.set_total_budget(ai_config.api_budget)
 
-    # Agent Created, print message
+    # 代理 Created, 打印 消息
     logger.typewriter_log(
         ai_config.ai_name,
         Fore.LIGHTBLUE_EX,
@@ -675,7 +675,7 @@ Continue ({authorise}/{exit}): """
         speak_text=True,
     )
 
-    # Print the ai_config details
+    # 打印 the ai_config details
     # Name
     logger.typewriter_log("Name:", Fore.GREEN, ai_config.ai_name, speak_text=False)
     # Role
@@ -719,13 +719,13 @@ def print_assistant_thoughts(
     logger.typewriter_log("REASONING:", Fore.YELLOW, str(assistant_thoughts_reasoning))
     if assistant_thoughts_plan:
         logger.typewriter_log("PLAN:", Fore.YELLOW, "")
-        # If it's a list, join it into a string
+        # If it's a 列表, 连接 it into a string
         if isinstance(assistant_thoughts_plan, list):
             assistant_thoughts_plan = "\n".join(assistant_thoughts_plan)
         elif isinstance(assistant_thoughts_plan, dict):
             assistant_thoughts_plan = str(assistant_thoughts_plan)
 
-        # Split the input_string using the newline character and dashes
+        # 分割 the input_string using the newline character and dashes
         lines = assistant_thoughts_plan.split("\n")
         for line in lines:
             line = line.lstrip("- ")

@@ -26,8 +26,8 @@ class Logger(metaclass=Singleton):
     """
 
     def __init__(self):
-        # create log directory if it doesn't exist
-        # TODO: use workdir from config
+        # 创建 日志 directory if it doesn't exist
+        # 待办: use workdir from config
         self.log_dir = Path(__file__).parent.parent.parent / "logs"
         if not self.log_dir.exists():
             self.log_dir.mkdir()
@@ -37,17 +37,17 @@ class Logger(metaclass=Singleton):
 
         console_formatter = AutoGptFormatter("%(title_color)s %(message)s")
 
-        # Create a handler for console which simulate typing
+        # 创建 a 处理器 for console which simulate typing
         self.typing_console_handler = TypingConsoleHandler()
         self.typing_console_handler.setLevel(logging.INFO)
         self.typing_console_handler.setFormatter(console_formatter)
 
-        # Create a handler for console without typing simulation
+        # 创建 a 处理器 for console without typing simulation
         self.console_handler = ConsoleHandler()
         self.console_handler.setLevel(logging.DEBUG)
         self.console_handler.setFormatter(console_formatter)
 
-        # Info handler in activity.log
+        # Info 处理器 in activity.日志
         self.file_handler = logging.FileHandler(self.log_dir / log_file, "a", "utf-8")
         self.file_handler.setLevel(logging.DEBUG)
         info_formatter = AutoGptFormatter(
@@ -55,7 +55,7 @@ class Logger(metaclass=Singleton):
         )
         self.file_handler.setFormatter(info_formatter)
 
-        # Error handler error.log
+        # 错误 处理器 错误.日志
         error_handler = logging.FileHandler(self.log_dir / error_file, "a", "utf-8")
         error_handler.setLevel(logging.ERROR)
         error_formatter = AutoGptFormatter(
@@ -182,12 +182,12 @@ class Logger(metaclass=Singleton):
         self.typewriter_log("DOUBLE CHECK CONFIGURATION", Fore.YELLOW, additionalText)
 
     def log_json(self, data: Any, file_name: str | Path) -> None:
-        # Create a handler for JSON files
+        # 创建 a 处理器 for JSON files
         json_file_path = self.log_dir / file_name
         json_data_handler = JsonFileHandler(json_file_path)
         json_data_handler.setFormatter(JsonFormatter())
 
-        # Log the JSON data using the custom file handler
+        # 日志 the JSON data using the custom file 处理器
         self.json_logger.addHandler(json_data_handler)
         self.json_logger.debug(data)
         self.json_logger.removeHandler(json_data_handler)

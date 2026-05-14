@@ -1,4 +1,4 @@
-# Module to apply strategy YAML to AIConfig
+# 模块 to 应用 策略 YAML to AIConfig
 from __future__ import annotations
 
 from pathlib import Path
@@ -32,7 +32,7 @@ def apply_strategy(yaml_path: str) -> AIConfig:
     toolset = data.get("toolset", [])
     step_sequence = data.get("step_sequence", [])
 
-    # Ensure goals are list of strings
+    # Ensure goals are 列表 of strings
     if not isinstance(ai_goals, list):
         ai_goals = list(ai_goals) if ai_goals is not None else []
     ai_goals = [str(goal) for goal in ai_goals]

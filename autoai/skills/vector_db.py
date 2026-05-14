@@ -93,7 +93,7 @@ class ChromaVectorDB(VectorDBProvider):
         self._collection = self._client.get_or_create_collection(collection_name)
 
     def add(self, key: str, embedding: Embedding, metadata: Dict | None = None) -> None:
-        # chromadb doesn't overwrite existing ids on add, so delete first
+        # chromadb doesn't overwrite existing ids on add, so 删除 first
         try:
             self._collection.delete(ids=[key])
         except Exception:

@@ -78,13 +78,13 @@ def browse_website(url: str, question: str, agent: Agent) -> str:
 
         links = scrape_links_with_selenium(driver, url)
 
-        # Limit links to LINKS_TO_RETURN
+        # 限制 links to LINKS_TO_RETURN
         if len(links) > LINKS_TO_RETURN:
             links = links[:LINKS_TO_RETURN]
 
         return f"Answer gathered from website: {text}\n\nLinks: {links}"
     except WebDriverException as e:
-        # These errors are often quite long and include lots of context.
+        # These 错误s are often quite long and include lots of 上下文.
         # Just grab the first line.
         msg = e.msg.split("\n")[0]
         return f"Error: {msg}"
@@ -129,7 +129,7 @@ def scrape_text_with_selenium(url: str, agent: Agent) -> tuple[WebDriver, str]:
         )
     elif agent.config.selenium_web_browser == "safari":
         # Requires a bit more setup on the users end
-        # See https://developer.apple.com/documentation/webkit/testing_with_webdriver_in_safari
+        # See https://developer.apple.com/documentation/webkit/测试_with_webdriver_in_safari
         driver = SafariDriver(options=options)
     else:
         if platform == "linux" or platform == "linux2":
@@ -154,7 +154,7 @@ def scrape_text_with_selenium(url: str, agent: Agent) -> tuple[WebDriver, str]:
         EC.presence_of_element_located((By.TAG_NAME, "body"))
     )
 
-    # Get the HTML content directly from the browser's DOM
+    # 获取 the HTML content directly from the browser's DOM
     page_source = driver.execute_script("return document.body.outerHTML;")
     soup = BeautifulSoup(page_source, "html.parser")
 

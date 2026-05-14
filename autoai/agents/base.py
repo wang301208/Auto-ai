@@ -175,8 +175,8 @@ class BaseAgent(metaclass=ABCMeta):
         if append_messages:
             reserve_tokens += count_message_tokens(append_messages, self.llm.name)
 
-        # Fill message history, up to a margin of reserved_tokens.
-        # Trim remaining historical messages and add them to the running summary.
+        # Fill 消息 history, up to a margin of reserved_tokens.
+        # Trim remaining historical messages and add them to the 运行中 摘要.
         history_start_index = len(prompt)
         trimmed_history = add_history_upto_token_limit(
             prompt, self.history, self.send_token_limit - reserve_tokens
@@ -235,12 +235,12 @@ class BaseAgent(metaclass=ABCMeta):
             reserve_tokens=cycle_instruction_tlength,
         )
 
-        # ADD user input message ("triggering prompt")
+        # ADD user 输入 消息 ("triggering prompt")
         prompt.append(cycle_instruction_msg)
 
         return prompt
 
-    # This can be expanded to support multiple types of (inter)actions within an agent
+    # This can be expanded to support multiple types of (inter)actions within an 代理
     def response_format_instruction(self, thought_process_id: ThoughtProcessID) -> str:
         if thought_process_id != "one-shot":
             raise NotImplementedError(f"Unknown thought process '{thought_process_id}'")
@@ -359,7 +359,7 @@ class BaseAgent(metaclass=ABCMeta):
             The parsed command name and command args, if any, and the agent thoughts.
         """
 
-        # Save assistant reply to message history
+        # 保存 assistant reply to 消息 history
         self.history.append(prompt[-1])
         self.history.add(
             "assistant", llm_response.content, "ai_response"
@@ -371,7 +371,7 @@ class BaseAgent(metaclass=ABCMeta):
             )
         except SyntaxError as e:
             logger.error(f"Response could not be parsed: {e}")
-            # TODO: tune this message
+            # 待办: tune this 消息
             self.history.add(
                 "system",
                 f"Your response could not be parsed: {e}"
@@ -379,7 +379,7 @@ class BaseAgent(metaclass=ABCMeta):
             )
             return None, None, {}
 
-        # TODO: update memory/context
+        # 待办: 更新 内存/上下文
 
     @abstractmethod
     def parse_and_process_response(
@@ -419,7 +419,7 @@ def add_history_upto_token_limit(
             limit_reached = True
 
         if not limit_reached:
-            # Add the most recent message to the start of the chain,
+            # Add the most recent 消息 to the 启动 of the chain,
             #  after the system prompts.
             prompt.insert(insertion_index, *messages_to_add)
             current_prompt_length += tokens_to_add

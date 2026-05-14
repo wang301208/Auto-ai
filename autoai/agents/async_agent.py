@@ -214,7 +214,7 @@ class AsyncAgent(BaseAgent):
         self._streaming_chat = StreamingChat()
 
     # ==================================================================
-    # V2 Task-Driven Planning Interface
+    # V2 任务-Driven Planning Interface
     # ==================================================================
 
     async def build_plan(self) -> list[Task]:
@@ -408,7 +408,7 @@ class AsyncAgent(BaseAgent):
         return self._current_task
 
     # ==================================================================
-    # Async think — task-driven > skill check > LLM completion
+    # 异步 think — 任务-driven > 技能 检查 > LLM 完成
     # ==================================================================
 
     async def async_think(
@@ -514,7 +514,7 @@ class AsyncAgent(BaseAgent):
         return self.on_response(raw_response, thought_process_id, prompt, query)
 
     # ==================================================================
-    # Async execute — plugin hooks + command dispatch + memory + events
+    # 异步 执行 — 插件 hooks + command 分发 + 内存 + events
     # ==================================================================
 
     async def async_execute(
@@ -567,7 +567,7 @@ class AsyncAgent(BaseAgent):
         return result
 
     # ==================================================================
-    # Sync implementations (backward compatible)
+    # 同步实现（向后兼容）
     # ==================================================================
 
     def construct_base_prompt(self, *args: Any, **kwargs: Any) -> ChatSequence:
@@ -869,7 +869,7 @@ class AsyncAgent(BaseAgent):
         return response
 
     # ==================================================================
-    # Unified Model Router Integration
+    # Unified 模型 Router Integration
     # ==================================================================
 
     async def _routed_chat_completion(self, prompt: ChatSequence) -> Any:

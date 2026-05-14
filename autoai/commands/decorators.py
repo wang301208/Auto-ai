@@ -8,7 +8,7 @@ from autoai.logs import logger
 
 def sanitize_path_arg(arg_name: str):
     def decorator(func: Callable):
-        # Get position of path parameter, in case it is passed as a positional argument
+        # 获取 position of 路径 参数, in case it is passed as a positional 参数
         try:
             arg_index = list(func.__annotations__.keys()).index(arg_name)
         except ValueError:
@@ -16,7 +16,7 @@ def sanitize_path_arg(arg_name: str):
                 f"Sanitized parameter '{arg_name}' absent or not annotated on function '{func.__name__}'"
             )
 
-        # Get position of agent parameter, in case it is passed as a positional argument
+        # 获取 position of 代理 参数, in case it is passed as a positional 参数
         try:
             agent_arg_index = list(func.__annotations__.keys()).index("agent")
         except ValueError:
@@ -29,7 +29,7 @@ def sanitize_path_arg(arg_name: str):
             logger.debug(f"Sanitizing arg '{arg_name}' on function '{func.__name__}'")
             logger.debug(f"Function annotations: {func.__annotations__}")
 
-            # Get Agent from the called function's arguments
+            # 获取 代理 from the called function's arguments
             agent = kwargs.get(
                 "agent", len(args) > agent_arg_index and args[agent_arg_index]
             )
@@ -39,7 +39,7 @@ def sanitize_path_arg(arg_name: str):
             if not isinstance(agent, Agent):
                 raise RuntimeError("Could not get Agent from decorated command's args")
 
-            # Sanitize the specified path argument, if one is given
+            # Sanitize the specified 路径 参数, if one is given
             given_path: str | Path | None = kwargs.get(
                 arg_name, len(args) > arg_index and args[arg_index] or None
             )
@@ -52,7 +52,7 @@ def sanitize_path_arg(arg_name: str):
                 if arg_name in kwargs:
                     kwargs[arg_name] = sanitized_path
                 else:
-                    # args is an immutable tuple; must be converted to a list to update
+                    # args is an immutable tuple; must be converted to a 列表 to 更新
                     arg_list = list(args)
                     arg_list[arg_index] = sanitized_path
                     args = tuple(arg_list)

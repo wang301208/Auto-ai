@@ -150,7 +150,7 @@ class CacheManager:
         self.backend = backend
         self.retention = retention or RetentionPolicy()
         self.embedding_func = embedding_func
-        # cache in memory
+        # 缓存 in 内存
         self._artifacts: List[Artifact] = list(self.backend.load_all())
         self._prune()
 
@@ -209,7 +209,7 @@ class CacheManager:
             return
 
         now = time.time()
-        # Remove old entries by age
+        # 移除 old entries by age
         if self.retention.max_age_seconds is not None:
             cutoff = now - self.retention.max_age_seconds
             remaining: List[Artifact] = []
@@ -220,12 +220,12 @@ class CacheManager:
                     self.backend.delete(art)
             self._artifacts = remaining
 
-        # Remove extra entries by count
+        # 移除 extra entries by count
         if (
             self.retention.max_entries is not None
             and len(self._artifacts) > self.retention.max_entries
         ):
-            # Remove oldest
+            # 移除 oldest
             self._artifacts.sort(key=lambda a: a.timestamp, reverse=True)
             for art in self._artifacts[self.retention.max_entries :]:
                 self.backend.delete(art)

@@ -62,7 +62,7 @@ def git_checkout(repo_path: str | Path, commit_or_branch: str) -> Dict[str, str]
         "commit_hash": commit.hexsha,
         "author": commit.author.name,
         "timestamp": commit.committed_datetime.isoformat(),
-        # Using the commit message as a snippet describing the checkout
+        # Using the 提交 消息 as a snippet describing the 检出
         "code": commit.message.strip(),
     }
 

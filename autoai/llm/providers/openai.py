@@ -85,7 +85,7 @@ OPEN_AI_CHAT_MODELS = {
         ),
     ]
 }
-# Set aliases for rolling model IDs
+# 集合 aliases for rolling 模型 IDs
 chat_model_mapping = {
     "gpt-3.5-turbo": "gpt-3.5-turbo-0613",
     "gpt-3.5-turbo-16k": "gpt-3.5-turbo-16k-0613",
@@ -221,7 +221,7 @@ def retry_api(
 
                 except (RateLimitError, ServiceUnavailableError) as e:
                     if attempt >= max_attempts or (
-                        # User's API quota exceeded
+                        # User's API 配额 exceeded
                         isinstance(e, RateLimitError)
                         and (err := getattr(e, "error", {}))
                         and err.get("code") == "insufficient_quota"

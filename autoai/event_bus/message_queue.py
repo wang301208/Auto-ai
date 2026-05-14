@@ -42,7 +42,7 @@ class MessageQueue:
                 "Redis not configured; using in-process message queue."
             )
 
-    # -- Core API -----------------------------------------------------
+    # -- 核心 API -----------------------------------------------------
     def publish(self, event: EventMessage) -> None:
         """Publish ``event`` to subscribers and the optional :class:`EventBus`."""
 

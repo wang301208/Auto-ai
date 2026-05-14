@@ -16,7 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-description = "An open-source attempt to make GPT-4 autonomous"
+description = "基于GPT-4的自主AI代理系统"
 
 dependencies = [
     "openai>=1.30",

@@ -34,15 +34,15 @@ class PluginStorageFormat(str, enum.Enum):
 
     INSTALLED_PACKAGE = "installed_package"  # Required now, loads system defaults
     WORKSPACE = "workspace"  # Required now
-    # OPENAPI_URL = "open_api_url"           # Soon (requires some tooling we don't have yet).
+    # OPENAPI_URL = "打开_api_url"           # Soon (requires some tooling we don't have yet).
     # OTHER_FILE_PATH = "other_file_path"    # Maybe later (maybe now)
     # GIT = "git"                            # Maybe later (or soon)
     # PYPI = "pypi"                          # Maybe later
-    # AUTOAI_PLUGIN_SERVICE = "autoai_plugin_service"  # Long term solution, requires design
-    # AUTO = "auto"                          # Feature for later maybe, automatically find plugin.
+    # AUTOAI_PLUGIN_SERVICE = "autoai_plugin_service"  # Long term 方案, requires design
+    # AUTO = "auto"                          # 特性 for later maybe, automatically 查找 插件.
 
 
-# Installed package example
+# 已安装 包 example
 # PluginLocation(
 #     storage_format='installed_package',
 #     storage_route='autoai_plugins.twitter.SendTwitterMessage'
@@ -50,14 +50,14 @@ class PluginStorageFormat(str, enum.Enum):
 # Workspace example
 # PluginLocation(
 #     storage_format='workspace',
-#     storage_route='relative/path/to/plugin.pkl'
+#     storage_route='relative/路径/to/插件.pkl'
 #     OR
-#     storage_route='relative/path/to/plugin.py'
+#     storage_route='relative/路径/to/插件.py'
 # )
 # Git
 # PluginLocation(
 #     storage_format='git',
-#     Exact format TBD.
+#     Exact 格式化 TBD.
 #     storage_route='https://github.com/gravelBridge/AutoAI-WolframAlpha/blob/main/autoai-wolframalpha/wolfram_alpha.py'
 # )
 # PyPI
@@ -73,10 +73,10 @@ class PluginStorageFormat(str, enum.Enum):
 # )
 
 
-# A plugin storage route.
+# A 插件 存储 路由.
 #
-# This is a string that specifies where to load a plugin from
-# (e.g. an import path or file path).
+# This is a string that specifies where to 加载 a 插件 from
+# (e.g. an 导入 路径 or file 路径).
 PluginStorageRoute = str
 
 
@@ -115,7 +115,7 @@ class PluginService(abc.ABC):
         ...
 
     ####################################
-    # Low-level storage format loaders #
+    # Low-level 存储 格式化 loaders #
     ####################################
     @staticmethod
     @abc.abstractmethod
@@ -139,7 +139,7 @@ class PluginService(abc.ABC):
         ...
 
     #####################################
-    # High-level storage format loaders #
+    # High-level 存储 格式化 loaders #
     #####################################
 
     @staticmethod

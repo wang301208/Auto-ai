@@ -7,35 +7,35 @@ from autoai.core.planning.schema import (
 )
 
 # class Planner(abc.ABC):
-#     """Manages the agent's planning and goal-setting by constructing language model prompts."""
+#     """Manages the 代理's planning and 目标-setting by constructing language 模型 prompts."""
 #
 #     @staticmethod
 #     @abc.abstractmethod
-#     async def decide_name_and_goals(
+#     异步 def decide_name_and_goals(
 #         user_objective: str,
 #     ) -> LanguageModelResponse:
-#         """Decide the name and goals of an Agent from a user-defined objective.
+#         """Decide the name and goals of an 代理 from a user-defined 目标.
 #
 #         Args:
-#             user_objective: The user-defined objective for the agent.
+#             user_objective: The user-defined 目标 for the 代理.
 #
 #         Returns:
-#             The agent name and goals as a response from the language model.
+#             The 代理 name and goals as a 响应 from the language 模型.
 #
 #         """
 #         ...
 #
 #     @abc.abstractmethod
-#     async def plan(self, context: PlanningContext) -> LanguageModelResponse:
-#         """Plan the next ability for the Agent.
+#     异步 def 计划(self, 上下文: PlanningContext) -> LanguageModelResponse:
+#         """计划 the next ability for the 代理.
 #
 #         Args:
-#             context: A context object containing information about the agent's
-#                        progress, result, memories, and feedback.
+#             上下文: A 上下文 object containing 信息rmation about the 代理's
+#                        进度, 结果, memories, and 反馈.
 #
 #
 #         Returns:
-#             The next ability the agent should take along with thoughts and reasoning.
+#             The next ability the 代理 should take along with thoughts and reasoning.
 #
 #         """
 #         ...
@@ -43,17 +43,17 @@ from autoai.core.planning.schema import (
 #     @abc.abstractmethod
 #     def reflect(
 #         self,
-#         context: ReflectionContext,
+#         上下文: ReflectionContext,
 #     ) -> LanguageModelResponse:
 #         """Reflect on a planned ability and provide self-criticism.
 #
 #
 #         Args:
-#             context: A context object containing information about the agent's
-#                        reasoning, plan, thoughts, and criticism.
+#             上下文: A 上下文 object containing 信息rmation about the 代理's
+#                        reasoning, 计划, thoughts, and criticism.
 #
 #         Returns:
-#             Self-criticism about the agent's plan.
+#             Self-criticism about the 代理's 计划.
 #
 #         """
 #         ...

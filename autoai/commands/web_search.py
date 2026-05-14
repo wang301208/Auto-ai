@@ -94,31 +94,31 @@ def google(query: str, agent: Agent, num_results: int = 8) -> str | list[str]:
     from googleapiclient.errors import HttpError
 
     try:
-        # Get the Google API key and Custom Search Engine ID from the config file
+        # 获取 the Google API 键 and Custom 搜索 引擎 ID from the config file
         api_key = agent.config.google_api_key
         custom_search_engine_id = agent.config.google_custom_search_engine_id
 
-        # Initialize the Custom Search API service
+        # 初始化 the Custom 搜索 API 服务
         service = build("customsearch", "v1", developerKey=api_key)
 
-        # Send the search query and retrieve the results
+        # 发送 the 搜索 query and retrieve the results
         result = (
             service.cse()
             .list(q=query, cx=custom_search_engine_id, num=num_results)
             .execute()
         )
 
-        # Extract the search result items from the response
+        # Extract the 搜索 结果 items from the 响应
         search_results = result.get("items", [])
 
-        # Create a list of only the URLs from the search results
+        # 创建 a 列表 of only the URLs from the 搜索 results
         search_results_links = [item["link"] for item in search_results]
 
     except HttpError as e:
-        # Handle errors in the API call
+        # 处理 错误s in the API call
         error_details = json.loads(e.content.decode())
 
-        # Check if the error is related to an invalid or missing API key
+        # 检查 if the 错误 is related to an invalid or missing API 键
         if error_details.get("error", {}).get(
             "code"
         ) == 403 and "invalid API key" in error_details.get("error", {}).get(
@@ -127,9 +127,9 @@ def google(query: str, agent: Agent, num_results: int = 8) -> str | list[str]:
             return "Error: The provided Google API key is invalid or missing."
         else:
             return f"Error: {e}"
-    # google_result can be a list or a string depending on the search results
+    # google_result can be a 列表 or a string de待处理 on the 搜索 results
 
-    # Return the list of search result URLs
+    # Return the 列表 of 搜索 结果 URLs
     return safe_google_results(search_results_links)
 
 

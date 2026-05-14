@@ -1,4 +1,4 @@
-# sourcery skip: do-not-use-staticmethod
+# sourcery 跳过: do-not-use-staticmethod
 """
 A module that contains the PromptConfig class object that contains the configuration
 """
@@ -32,7 +32,7 @@ class PromptConfig:
         Returns:
             None
         """
-        # Validate file
+        # 验证 file
         (validated, message) = utils.validate_yaml_file(prompt_settings_file)
         if not validated:
             logger.typewriter_log("FAILED FILE VALIDATION", Fore.RED, message)

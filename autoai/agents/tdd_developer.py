@@ -161,7 +161,7 @@ class TDDDeveloper:
         if not repo_path:
             return
 
-        # Perform learning phase if source code paths are provided
+        # Perform learning 阶段 if 源 code paths are provided
         source_paths: dict[str, str] = {}
         if isinstance(diagnostics, dict):
             source_paths = diagnostics.get("source_code_paths", {}) or source_paths
@@ -259,7 +259,7 @@ class TDDDeveloper:
 
         test_file = Path(repo_path) / "tests" / f"test_issue_{issue_id}.py"
 
-        # Attempt to parse stack traces like: File "<path>", line X, in <func>
+        # Attempt to 解析 栈 追踪s like: File "<路径>", line X, in <func>
         diag_text = diagnostics if isinstance(diagnostics, str) else ""
         file_match = re.search(r'File "([^"]+)", line \d+, in (\w+)', diag_text)
         err_match = re.search(r'^(\w+(?:Error|Exception))', diag_text.splitlines()[-1]) if diag_text else None
@@ -278,7 +278,7 @@ class TDDDeveloper:
                     f"        {func_name}()\n"
                 )
             except ValueError:
-                # If path is outside repo, fall back to including diagnostics text
+                # If 路径 is outside repo, fall back to including diagnostics text
                 test_body = diag_text
 
         test_content = (
@@ -332,5 +332,5 @@ class TDDDeveloper:
                 )
                 return
 
-        # If we exit the loop without passing tests, no commit or event is produced
+        # If we exit the 循环 without passing tests, no 提交 or 事件 is produced
         return

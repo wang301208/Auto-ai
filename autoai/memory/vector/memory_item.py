@@ -47,7 +47,7 @@ class MemoryItem:
     ):
         logger.debug(f"Memorizing text:\n{'-'*32}\n{text}\n{'-'*32}\n")
 
-        # Fix encoding, e.g. removing unicode surrogates (see issue #778)
+        # 修复 encoding, e.g. removing unicode surrogates (see issue #778)
         if ftfy is not None:
             text = ftfy.fix_text(text)
 
@@ -89,7 +89,7 @@ class MemoryItem:
         )
         logger.debug("Total summary: " + summary)
 
-        # TODO: investigate search performance of weighted average vs summary
+        # 待办: investigate 搜索 performance of weighted average vs 摘要
         # e_average = np.average(e_chunks, axis=0, weights=[len(c) for c in chunks])
         e_summary = get_embedding(summary, config)
 
@@ -122,15 +122,15 @@ class MemoryItem:
             MemoryItem representing the code file.
         """
 
-        # TODO: implement tailored code memories
+        # 待办: implement tailored code memories
         return MemoryItem.from_text(
             content, "code_file", config, {"location": path}
         )
 
     @staticmethod
     def from_ai_action(ai_message: Message, result_message: Message):
-        # The result_message contains either user feedback
-        # or the result of the command specified in ai_message
+        # The result_message contains either user 反馈
+        # or the 结果 of the command specified in ai_message
 
         if ai_message.role != "assistant":
             raise ValueError(f"Invalid role on 'ai_message': {ai_message.role}")
@@ -192,7 +192,7 @@ Metadata: {json.dumps(self.metadata, indent=2)}
             self.raw_content == other.raw_content
             and self.chunks == other.chunks
             and self.chunk_summaries == other.chunk_summaries
-            # Embeddings can either be list[float] or np.ndarray[float32],
+            # Embeddings can either be 列表[float] or np.ndarray[float32],
             # and for comparison they must be of the same type
             and np.array_equal(
                 self.e_summary

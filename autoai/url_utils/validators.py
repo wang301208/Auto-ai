@@ -21,7 +21,7 @@ def validate_url(func: Callable[..., Any]) -> Any:
         Raises:
             ValueError if the url fails any of the validation tests
         """
-        # Most basic check if the URL is valid:
+        # Most basic 检查 if the URL is valid:
         if not re.match(r"^https?://", url):
             raise ValueError("Invalid URL format")
         if not is_valid_url(url):
@@ -29,7 +29,7 @@ def validate_url(func: Callable[..., Any]) -> Any:
         # Restrict access to local files
         if check_local_file_access(url):
             raise ValueError("Access to local files is restricted")
-        # Check URL length
+        # 检查 URL 长度
         if len(url) > 2000:
             raise ValueError("URL is too long")
 

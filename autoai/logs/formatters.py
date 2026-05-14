@@ -21,7 +21,7 @@ class AutoGptFormatter(logging.Formatter):
         else:
             record.title_color = getattr(record, "title", "")
 
-        # Add this line to set 'title' to an empty string if it doesn't exist
+        # Add this line to 集合 'title' to an 空 string if it doesn't exist
         record.title = getattr(record, "title", "")
 
         if hasattr(record, "msg"):

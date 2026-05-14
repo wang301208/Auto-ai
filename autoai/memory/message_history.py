@@ -62,12 +62,12 @@ Latest Development:
             Message: A message with the new running summary after adding the trimmed messages.
             list[Message]: A list of messages that are in full_message_history with an index higher than last_trimmed_index and absent from current_message_chain.
         """
-        # Select messages in full_message_history with an index higher than last_trimmed_index
+        # Select messages in 满_message_history with an 索引 higher than last_trimmed_index
         new_messages = [
             msg for i, msg in enumerate(self) if i > self.last_trimmed_index
         ]
 
-        # Remove messages that are already present in current_message_chain
+        # 移除 messages that are already present in current_message_chain
         new_messages_not_in_chain = [
             msg for msg in new_messages if msg not in current_message_chain
         ]
@@ -79,7 +79,7 @@ Latest Development:
             new_events=new_messages_not_in_chain, config=config
         )
 
-        # Find the index of the last message processed
+        # 查找 the 索引 of the last 消息 processed
         last_message = new_messages_not_in_chain[-1]
         self.last_trimmed_index = self.messages.index(last_message)
 
@@ -140,7 +140,7 @@ Latest Development:
             ```py
             new_events = [{"event": "entered the kitchen."}, {"event": "found a scrawled note with the number 7"}]
             update_running_summary(new_events)
-            # Returns: "This reminds you of these events from your past: \nI entered the kitchen and found a scrawled note saying 7."
+            # Returns: "This reminds you of these events from your past: \nI entered the kitchen and found a scrawled 注意 saying 7."
             ```
         """
         if not new_events:
@@ -148,18 +148,18 @@ Latest Development:
         if not max_summary_length:
             max_summary_length = self.max_summary_tlength
 
-        # Create a copy of the new_events list to prevent modifying the original list
+        # 创建 a 复制 of the new_events 列表 to prevent modifying the original 列表
         new_events = copy.deepcopy(new_events)
 
-        # Remove user messages first to avoid mutating list during iteration
+        # 移除 user messages first to avoid mutating 列表 during 迭代
         new_events = [e for e in new_events if e.role.lower() != "user"]
 
-        # Replace "assistant" with "you". This produces much better first person past tense results.
+        # 替换 "assistant" with "you". This produces much better first person past tense results.
         for event in new_events:
             if event.role.lower() == "assistant":
                 event.role = "you"
 
-                # Remove "thoughts" dictionary from "content"
+                # 移除 "thoughts" dictionary from "content"
                 try:
                     content_dict = extract_dict_from_response(event.content)
                     if "thoughts" in content_dict:
@@ -184,8 +184,8 @@ Latest Development:
         batch: list[Message] = []
         batch_tlength = 0
 
-        # TODO: Put a cap on length of total new events and drop some previous events to
-        # save API cost. Need to think thru more how to do it without losing the context.
+        # 待办: Put a cap on 长度 of total new events and drop some previous events to
+        # 保存 API 成本. Need to think thru more how to do it without losing the 上下文.
         for event in new_events:
             event_tlength = count_message_tokens(event, summ_model.name)
 
@@ -193,7 +193,7 @@ Latest Development:
                 batch_tlength + event_tlength
                 > max_input_tokens - prompt_template_length - summary_tlength
             ):
-                # The batch is full. Summarize it and start a new one.
+                # The batch is 满. Summarize it and 启动 a new one.
                 self._update_summary_with_batch(batch, config, max_summary_length)
                 summary_tlength = count_string_tokens(self.summary, summ_model.name)
                 batch = [event]

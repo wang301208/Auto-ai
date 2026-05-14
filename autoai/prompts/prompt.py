@@ -18,10 +18,10 @@ def build_default_prompt_generator(config: Config) -> PromptGenerator:
         str: The generated prompt string.
     """
 
-    # Initialize the PromptGenerator object
+    # 初始化 the PromptGenerator object
     prompt_generator = PromptGenerator()
 
-    # Initialize the PromptConfig object and load the file set in the main config (default: prompts_settings.yaml)
+    # 初始化 the PromptConfig object and 加载 the file 集合 in the main config (default: prompts_settings.yaml)
     prompt_config = PromptConfig(config.prompt_settings_file)
 
     # Add constraints to the PromptGenerator object

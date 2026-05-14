@@ -85,19 +85,19 @@ class Agent(BaseAgent):
         self.message_queue = message_queue
         self.db = db
 
-        # Track recently executed commands to detect loops
+        # 跟踪最近执行的命令以检测循环
         self._recent_commands: deque[tuple[str, float]] = deque()
 
     def construct_base_prompt(self, *args: Any, **kwargs: Any) -> ChatSequence:
         if kwargs.get("prepend_messages") is None:
             kwargs["prepend_messages"] = []
 
-        # Clock
+        # 时钟
         kwargs["prepend_messages"].append(
             Message("system", f"The current time and date is {time.strftime('%c')}"),
         )
 
-        # Add budget information (if any) to prompt
+        # Add 预算 信息rmation (if any) to prompt
         api_manager = ApiManager()
         if api_manager.get_total_budget() > 0.0:
             remaining_budget = (
@@ -204,7 +204,7 @@ class Agent(BaseAgent):
         """Record a command execution and return the count in the recent window."""
         now = time.time()
         self._recent_commands.append((signature, now))
-        # Discard commands outside the repeat window
+        # 丢弃重复窗口外的命令
         while (
             self._recent_commands
             and now - self._recent_commands[0][1] > self.config.repeat_window
@@ -218,7 +218,7 @@ class Agent(BaseAgent):
         command_args: dict[str, str] | None,
         user_input: str | None,
     ) -> str:
-        # Execute command
+        # 执行 command
         if command_name is not None and command_name.lower().startswith("error"):
             result = f"Could not execute command: {command_name}{command_args}"
         elif command_name == "human_feedback":
@@ -272,7 +272,7 @@ class Agent(BaseAgent):
                 if not plugin.can_handle_post_command():
                     continue
                 result = plugin.post_command(command_name, result)
-        # Check if there's a result from the command append it to the message
+        # 检查 if there's a 结果 from the command append it to the 消息
         if result is None:
             self.history.add("system", "Unable to execute command", "action_result")
         else:
@@ -354,9 +354,9 @@ class Agent(BaseAgent):
             assistant_reply_dict,
         )
 
-        # Print Assistant thoughts
+        # 打印 Assistant thoughts
         if assistant_reply_dict != {}:
-            # Get command name and arguments
+            # 获取 command name and arguments
             try:
                 command_name, arguments = extract_command(
                     assistant_reply_dict, llm_response, self.config
@@ -422,13 +422,13 @@ def extract_command(
 
         command_name = command["name"]
 
-        # Use an empty dictionary if 'args' field is not present in 'command' object
+        # Use an 空 dictionary if 'args' 字段 is not present in 'command' object
         arguments = command.get("args", {})
 
         return command_name, arguments
     except json.decoder.JSONDecodeError:
         return "Error:", {"message": "Invalid JSON"}
-    # All other errors, return "Error: + error message"
+    # All other 错误s, return "错误: + 错误 消息"
     except Exception as e:
         return "Error:", {"message": str(e)}
 
@@ -449,11 +449,11 @@ def execute_command(
         str: The result of the command
     """
     try:
-        # Execute a native command with the same name or alias, if it exists
+        # 执行 a native command with the same name or alias, if it exists
         if command := agent.command_registry.get_command(command_name):
             return command(**arguments, agent=agent)
 
-        # Handle non-native commands (e.g. from plugins)
+        # 处理 non-native commands (e.g. from plugins)
         for command in agent.ai_config.prompt_generator.commands:
             if (
                 command_name == command.label.lower()

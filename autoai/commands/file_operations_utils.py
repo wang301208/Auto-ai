@@ -40,7 +40,7 @@ class TXTParser(ParserStrategy):
         return str(charset_match)
 
 
-# Reading text from binary file using pdf parser
+# Reading text from binary file using pdf 解析器
 class PDFParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         if PyPDF2 is None:
@@ -52,7 +52,7 @@ class PDFParser(ParserStrategy):
         return text
 
 
-# Reading text from binary file using docs parser
+# Reading text from binary file using docs 解析器
 class DOCXParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         if docx is None:
@@ -64,7 +64,7 @@ class DOCXParser(ParserStrategy):
         return text
 
 
-# Reading as dictionary and returning string format
+# Reading as dictionary and returning string 格式化
 class JSONParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         with open(file_path, "r") as f:
@@ -83,7 +83,7 @@ class XMLParser(ParserStrategy):
         return text
 
 
-# Reading as dictionary and returning string format
+# Reading as dictionary and returning string 格式化
 class YAMLParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         with open(file_path, "r") as f:
@@ -185,7 +185,7 @@ def read_textual_file(file_path: str, logger: logs.Logger) -> str:
     if not parser:
         if is_binary:
             raise ValueError(f"Unsupported binary file format: {file_extension}")
-        # fallback to txt file parser (to support script and code files loading)
+        # fallback to txt file 解析器 (to support script and code files loading)
         parser = TXTParser()
     file_context = FileContext(parser, logger)
     return file_context.read_file(file_path)

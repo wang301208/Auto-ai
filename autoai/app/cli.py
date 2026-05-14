@@ -207,7 +207,7 @@ def main(
 
 
 # ======================================================================
-# Register unified command groups from autoai.app.commands
+# 注册 unified command groups from autoai.app.commands
 # ======================================================================
 
 from .commands import (  # noqa: E402
@@ -284,7 +284,7 @@ def alphaevolve(ctx: click.Context) -> None:
     _require_packages(("flask",))
     from openevolve import cli as oe_cli
 
-    # Forward remaining arguments to the original AlphaEvolve CLI
+    # 转发 remaining arguments to the original AlphaEvolve CLI
     sys.argv = ["alphaevolve", *ctx.args]
     exit_code = oe_cli.main()
     if exit_code:

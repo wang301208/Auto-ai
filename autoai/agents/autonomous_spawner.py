@@ -106,7 +106,7 @@ class AutonomousSpawner:
             factory=agent_factory,
         )
         child_id = spawner.evaluate_and_spawn(task_queue, current_roles)
-        # If overloaded and L4+, automatically creates a sub-agent
+        # If overloaded and L4+, automatically creates a sub-代理
     """
 
     def __init__(

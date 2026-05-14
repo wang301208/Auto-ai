@@ -135,7 +135,7 @@ def generate_image_with_dalle(
         str: The filename of the image
     """
 
-    # Check for supported image sizes
+    # 检查 for supported image sizes
     if size not in [256, 512, 1024]:
         closest = min([256, 512, 1024], key=lambda x: abs(x - size))
         logger.info(
@@ -181,13 +181,13 @@ def generate_image_with_sd_webui(
     """
     if requests is None or Image is None:
         raise ImportError("requests and/or Pillow is not installed")
-    # Create a session and set the basic auth if needed
+    # 创建 a session and 集合 the basic auth if needed
     s = requests.Session()
     if agent.config.sd_webui_auth:
         username, password = agent.config.sd_webui_auth.split(":")
         s.auth = (username, password or "")
 
-    # Generate the images
+    # 生成 the images
     response = requests.post(
         f"{agent.config.sd_webui_url}/sdapi/v1/txt2img",
         json={
@@ -205,7 +205,7 @@ def generate_image_with_sd_webui(
 
     logger.info(f"Image Generated for prompt:{prompt}")
 
-    # Save the image to disk
+    # 保存 the image to disk
     response = response.json()
     b64 = b64decode(response["images"][0].split(",", 1)[0])
     image = Image.open(io.BytesIO(b64))

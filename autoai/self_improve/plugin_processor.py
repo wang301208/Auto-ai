@@ -21,7 +21,7 @@ def generate_diff(context: str) -> str:
     diff can be applied with ``patch -p0``.
     """
 
-    # Import lazily so heavy LLM dependencies are only loaded when required and
+    # 导入 lazily so heavy LLM dependencies are only loaded when required and
     # can easily be monkeypatched in tests.
     from autoai.config import Config
     from autoai.llm.base import ChatSequence, Message
@@ -47,7 +47,7 @@ def generate_diff(context: str) -> str:
     result = create_chat_completion(prompt=prompt, temperature=0, config=cfg)
     diff = (result.content or "").strip()
 
-    # Drop optional code fences from the model output
+    # Drop optional code fences from the 模型 输出
     if diff.startswith("```"):
         lines = diff.splitlines()
         if lines and lines[0].startswith("```"):
@@ -56,7 +56,7 @@ def generate_diff(context: str) -> str:
             lines = lines[:-1]
         diff = "\n".join(lines)
 
-    # Normalise paths so the diff can be applied with patch -p0
+    # Normalise paths so the diff can be applied with 补丁 -p0
     cleaned: list[str] = []
     for line in diff.splitlines():
         if line.startswith("--- ") or line.startswith("+++ "):
@@ -124,7 +124,7 @@ def start_plugin_queue_processor(
         while not stop_event.is_set():
             todo = plugin_queue.pop()
             if todo is None:
-                # Use the event to allow a graceful shutdown during waiting
+                # Use the 事件 to 允许 a graceful 关闭 during 等待中
                 stop_event.wait(interval)
                 continue
             handle_plugin_todo(todo, patch_agent, db, workspace)

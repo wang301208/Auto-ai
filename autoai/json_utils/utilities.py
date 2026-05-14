@@ -16,12 +16,12 @@ LLM_DEFAULT_RESPONSE_FORMAT = "llm_response_format_1"
 
 
 def extract_dict_from_response(response_content: str) -> dict[str, Any]:
-    # Sometimes the response includes the JSON in a code block with ```
+    # Sometimes the 响应 includes the JSON in a code 阻断 with ```
     if response_content.startswith("```") and response_content.endswith("```"):
-        # Discard the first and last ```, then re-join in case the response naturally included ```
+        # Discard the first and last ```, then re-连接 in case the 响应 naturally included ```
         response_content = "```".join(response_content.split("```")[1:-1])
 
-    # response content comes from OpenAI as a Python `str(content_dict)`, literal_eval reverses this
+    # 响应 content comes from OpenAI as a Python `str(content_dict)`, literal_eval reverses this
     try:
         return ast.literal_eval(response_content)
     except BaseException as e:

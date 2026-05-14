@@ -31,7 +31,7 @@ class LibrarianAgent:
                 "No existing skill index found at %s; starting with empty library",
                 storage,
             )
-        # Cache search results to avoid redundant library queries for repeated
+        # 缓存 搜索 results to avoid redundant 库 queries for repeated
         # requests. This keeps ``find_skill`` simple and synchronous while
         # still improving performance for common lookups.
         self._search_cache: Dict[Tuple[str, int], List[dict]] = {}
@@ -137,7 +137,7 @@ class LibrarianAgent:
             logger.error(f"Skill code path is not a file: {source}")
             raise FileNotFoundError(f"Skill code path is not a file: {source}")
 
-        # Copy the code into the skill library directory
+        # 复制 the code into the 技能 库 directory
         dest_dir = (
             self.skill_library.storage_path
             / f"{metadata.skill_name}_{metadata.version}"

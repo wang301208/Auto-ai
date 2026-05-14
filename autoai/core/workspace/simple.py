@@ -14,7 +14,7 @@ from autoai.core.configuration import (
 from autoai.core.workspace.base import Workspace
 
 if typing.TYPE_CHECKING:
-    # Cyclic import
+    # Cyclic 导入
     from autoai.core.agent.simple import AgentSettings
 
 
@@ -121,7 +121,7 @@ class SimpleWorkspace(Configurable, Workspace):
         """
 
         # Posix systems disallow null bytes in paths. Windows is agnostic about it.
-        # Do an explicit check here for all sorts of null byte representations.
+        # Do an explicit 检查 here for all sorts of null byte representations.
 
         for null_byte in self.NULL_BYTES:
             if null_byte in str(relative_path) or null_byte in str(root):
@@ -150,7 +150,7 @@ class SimpleWorkspace(Configurable, Workspace):
         return full_path
 
     ###################################
-    # Factory methods for agent setup #
+    # 工厂 methods for 代理 setup #
     ###################################
 
     @staticmethod
@@ -174,7 +174,7 @@ class SimpleWorkspace(Configurable, Workspace):
             )
             f.write(settings_json)
 
-        # TODO: What are all the kinds of logs we want here?
+        # 待办: What are all the kinds of logs we want here?
         log_path = workspace_root / "logs"
         log_path.mkdir(parents=True, exist_ok=True)
         (log_path / "debug.log").touch()
@@ -184,7 +184,7 @@ class SimpleWorkspace(Configurable, Workspace):
 
     @staticmethod
     def load_agent_settings(workspace_root: Path) -> "AgentSettings":
-        # Cyclic import
+        # Cyclic 导入
         from autoai.core.agent.simple import AgentSettings
 
         with (workspace_root / "agent_settings.json").open("r") as f:

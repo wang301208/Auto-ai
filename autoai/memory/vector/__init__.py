@@ -10,33 +10,33 @@ except ImportError:
 from .providers.json_file import JSONFileMemory
 from .providers.no_memory import NoMemory
 
-# List of supported memory backends
-# Add a backend to this list if the import attempt is successful
+# 列表 of supported 内存 backends
+# Add a backend to this 列表 if the 导入 attempt is 成功ful
 supported_memory = ["json_file", "no_memory", "chroma"]
 
 # try:
-#     from .providers.redis import RedisMemory
+#     from .providers.redis 导入 RedisMemory
 
 #     supported_memory.append("redis")
 # except ImportError:
 #     RedisMemory = None
 
 # try:
-#     from .providers.pinecone import PineconeMemory
+#     from .providers.pinecone 导入 PineconeMemory
 
 #     supported_memory.append("pinecone")
 # except ImportError:
 #     PineconeMemory = None
 
 # try:
-#     from .providers.weaviate import WeaviateMemory
+#     from .providers.weaviate 导入 WeaviateMemory
 
 #     supported_memory.append("weaviate")
 # except ImportError:
 #     WeaviateMemory = None
 
 # try:
-#     from .providers.milvus import MilvusMemory
+#     from .providers.milvus 导入 MilvusMemory
 
 #     supported_memory.append("milvus")
 # except ImportError:
@@ -76,14 +76,14 @@ def get_memory(config: Config) -> VectorMemory:
                 "https://github.com/Significant-Gravitas/Auto-AI/discussions/4280"
             )
             # if not PineconeMemory:
-            #     logger.warn(
-            #         "Error: Pinecone is not installed. Please install pinecone"
-            #         " to use Pinecone as a memory backend."
+            #     logger.警告(
+            #         "错误: Pinecone is 未安装. Please 安装 pinecone"
+            #         " to use Pinecone as a 内存 backend."
             #     )
             # else:
-            #     memory = PineconeMemory(config)
-            #     if clear:
-            #         memory.clear()
+            #     内存 = PineconeMemory(config)
+            #     if 清空:
+            #         内存.清空()
 
         case "redis":
             raise NotImplementedError(
@@ -91,12 +91,12 @@ def get_memory(config: Config) -> VectorMemory:
                 "the memory system, and has been removed temporarily."
             )
             # if not RedisMemory:
-            #     logger.warn(
-            #         "Error: Redis is not installed. Please install redis-py to"
-            #         " use Redis as a memory backend."
+            #     logger.警告(
+            #         "错误: Redis is 未安装. Please 安装 redis-py to"
+            #         " use Redis as a 内存 backend."
             #     )
             # else:
-            #     memory = RedisMemory(config)
+            #     内存 = RedisMemory(config)
 
         case "weaviate":
             raise NotImplementedError(
@@ -106,12 +106,12 @@ def get_memory(config: Config) -> VectorMemory:
                 "https://github.com/Significant-Gravitas/Auto-AI/discussions/4280"
             )
             # if not WeaviateMemory:
-            #     logger.warn(
-            #         "Error: Weaviate is not installed. Please install weaviate-client to"
-            #         " use Weaviate as a memory backend."
+            #     logger.警告(
+            #         "错误: Weaviate is 未安装. Please 安装 weaviate-客户端 to"
+            #         " use Weaviate as a 内存 backend."
             #     )
             # else:
-            #     memory = WeaviateMemory(config)
+            #     内存 = WeaviateMemory(config)
 
         case "milvus":
             raise NotImplementedError(
@@ -121,12 +121,12 @@ def get_memory(config: Config) -> VectorMemory:
                 "https://github.com/Significant-Gravitas/Auto-AI/discussions/4280"
             )
             # if not MilvusMemory:
-            #     logger.warn(
-            #         "Error: pymilvus sdk is not installed."
-            #         "Please install pymilvus to use Milvus or Zilliz Cloud as memory backend."
+            #     logger.警告(
+            #         "错误: pymilvus sdk is 未安装."
+            #         "Please 安装 pymilvus to use Milvus or Zilliz Cloud as 内存 backend."
             #     )
             # else:
-            #     memory = MilvusMemory(config)
+            #     内存 = MilvusMemory(config)
 
         case "no_memory":
             memory = NoMemory()

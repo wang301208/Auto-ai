@@ -31,7 +31,7 @@ def _check_python_version() -> None:
 
 
 # ======================================================================
-# Skill command group
+# 技能 command group
 # ======================================================================
 
 @click.group(help=_("Skill library management."))
@@ -353,7 +353,7 @@ def tui(dev: bool) -> None:
 
 
 # ======================================================================
-# Plugin command group
+# 插件 command group
 # ======================================================================
 
 @click.group(help=_("Plugin management."))
@@ -412,7 +412,7 @@ def plugin_init_kb(plugin_repo: str, persist_dir: str) -> None:
 
 
 # ======================================================================
-# Governance command group
+# 治理 command group
 # ======================================================================
 
 @click.group(help=_("Governance operations."))
@@ -677,7 +677,7 @@ def dependency_audit(unused_only: bool, as_json: bool) -> None:
 
 
 # ======================================================================
-# Model command group
+# 模型 command group
 # ======================================================================
 
 @click.group(help=_("Unified model routing and management."))
@@ -762,7 +762,7 @@ def model_providers() -> None:
 
 
 # ======================================================================
-# Dashboard command
+# 仪表盘 command
 # ======================================================================
 
 @click.command(help=_("Launch terminal system dashboard (pure TUI, no browser)."))

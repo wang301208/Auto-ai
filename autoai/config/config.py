@@ -66,7 +66,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     elevenlabs_voice_id: Optional[str] = None
 
     ##########################
-    # Agent Control Settings #
+    # 代理 Control Settings #
     ##########################
     # Paths
     ai_settings_file: str = AI_SETTINGS_FILE
@@ -74,24 +74,24 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     workdir: Path = None
     workspace_path: Optional[Path] = None
     file_logger_path: Optional[Path] = None
-    # Model configuration
+    # 模型 configuration
     fast_llm: str = "gpt-3.5-turbo"
     smart_llm: str = "gpt-4-0314"
     temperature: float = 0
     openai_functions: bool = False
     embedding_model: str = "text-embedding-ada-002"
     browse_spacy_language_model: str = f"{DEFAULT_LANGUAGE}_core_web_sm"
-    # Run loop configuration
+    # 运行 循环 configuration
     continuous_mode: bool = False
     continuous_limit: int = 0
     max_repeated_commands: int = 3
     repeat_window: float = 30.0
-    # Self development loop
+    # Self 开发 循环
     self_develop_enabled: bool = False
     self_develop_interval: float = 300.0
 
     ##########
-    # Memory #
+    # 内存 #
     ##########
     memory_backend: str = "json_file"
     memory_index: str = "auto-ai-memory"
@@ -103,7 +103,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     wipe_redis_on_start: bool = True
 
     ####################
-    # Skill Library DB #
+    # 技能 库 DB #
     ####################
     skill_db_provider: str = "memory"
     use_librarian: bool = True
@@ -135,7 +135,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     user_agent: str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
 
     ###################
-    # Plugin Settings #
+    # 插件 Settings #
     ###################
     plugins_dir: str = "plugins"
     plugins_config_file: str = PLUGINS_CONFIG_FILE
@@ -211,7 +211,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
         language = language or DEFAULT_LANGUAGE
         """Get the kwargs for the Azure API."""
 
-        # Fix --gpt3only and --gpt4only in combination with Azure
+        # 修复 --gpt3only and --gpt4only in combination with Azure
         fast_llm = (
             self.fast_llm
             if not (
@@ -402,7 +402,7 @@ class ConfigBuilder(Configurable[Config]):
 
         config = cls.build_agent_configuration(config_dict_without_none_values)
 
-        # Set secondary config variables (that depend on other config variables)
+        # 集合 secondary config variables (that depend on other config variables)
 
         config.plugins_config = PluginsConfig.load_config(
             config.workdir / config.plugins_config_file,

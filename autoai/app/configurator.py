@@ -72,7 +72,7 @@ def create_config(
             )
             config.continuous_limit = continuous_limit
 
-    # Check if continuous limit is used without continuous mode
+    # 检查 if continuous 限制 is used without continuous mode
     if continuous_limit and not continuous:
         raise click.UsageError("--continuous-limit can only be used with --continuous")
 
@@ -80,7 +80,7 @@ def create_config(
         logger.typewriter_log("Speak Mode: ", Fore.GREEN, "ENABLED")
         config.speak_mode = True
 
-    # Set the default LLM models
+    # 集合 the default LLM models
     if gpt3only:
         logger.typewriter_log("GPT3.5 Only Mode: ", Fore.GREEN, "ENABLED")
         # --gpt3only should always use gpt-3.5-turbo, despite user's FAST_LLM config
@@ -119,7 +119,7 @@ def create_config(
     if ai_settings_file:
         file = ai_settings_file
 
-        # Validate file
+        # 验证 file
         (validated, message) = utils.validate_yaml_file(file)
         if not validated:
             logger.typewriter_log("FAILED FILE VALIDATION", Fore.RED, message)
@@ -133,7 +133,7 @@ def create_config(
     if prompt_settings_file:
         file = prompt_settings_file
 
-        # Validate file
+        # 验证 file
         (validated, message) = utils.validate_yaml_file(file)
         if not validated:
             logger.typewriter_log("FAILED FILE VALIDATION", Fore.RED, message)

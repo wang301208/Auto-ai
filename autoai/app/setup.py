@@ -50,7 +50,7 @@ def prompt_user(
 
     user_desire = ""
     if not ai_config_template_provided:
-        # Get user desire if command line overrides have not been passed in
+        # 获取 user desire if command line overrides have not been passed in
         logger.typewriter_log(
             _("Create an AI-Assistant:"),
             Fore.GREEN,
@@ -122,7 +122,7 @@ def generate_aiconfig_manual(
         ai_name = ai_config_template.ai_name
     else:
         ai_name = ""
-        # Get AI Name from User
+        # 获取 AI Name from User
         logger.typewriter_log(
             "Name your AI: ", Fore.GREEN, "For example, 'Entrepreneur-GPT'"
         )
@@ -137,7 +137,7 @@ def generate_aiconfig_manual(
     if ai_config_template and ai_config_template.ai_role:
         ai_role = ai_config_template.ai_role
     else:
-        # Get AI Role from User
+        # 获取 AI Role from User
         logger.typewriter_log(
             "Describe your AI's role: ",
             Fore.GREEN,
@@ -175,7 +175,7 @@ def generate_aiconfig_manual(
             "Develop and manage multiple businesses autonomously",
         ]
 
-    # Get API Budget from User
+    # 获取 API 预算 from User
     logger.typewriter_log(
         "Enter your budget for API calls: ",
         Fore.GREEN,
@@ -210,7 +210,7 @@ def generate_aiconfig_automatic(user_prompt: str, config: Config) -> AIConfig:
     prompt_ai_config_automatic = Template(
         DEFAULT_TASK_PROMPT_AICONFIG_AUTOMATIC
     ).render(user_prompt=user_prompt)
-    # Call LLM with the string as user input
+    # Call LLM with the string as user 输入
     output = create_chat_completion(
         ChatSequence.for_model(
             config.fast_llm,
@@ -222,10 +222,10 @@ def generate_aiconfig_automatic(user_prompt: str, config: Config) -> AIConfig:
         config,
     ).content
 
-    # Debug LLM Output
+    # 调试 LLM 输出
     logger.debug(f"AI Config Generator Raw Output: {output}")
 
-    # Parse the output
+    # 解析 the 输出
     ai_name = re.search(r"Name(?:\s*):(?:\s*)(.*)", output, re.IGNORECASE).group(1)
     ai_role = (
         re.search(

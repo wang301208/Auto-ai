@@ -95,7 +95,7 @@ def is_duplicate_operation(
     Returns:
         True if the operation has already been performed on the file
     """
-    # Make the filename into a relative path if possible
+    # Make the filename into a relative 路径 if possible
     with contextlib.suppress(ValueError):
         filename = str(Path(filename).relative_to(agent.workspace.root))
 
@@ -118,7 +118,7 @@ def log_operation(
         filename: The name of the file the operation was performed on
         checksum: The checksum of the contents to be written
     """
-    # Make the filename into a relative path if possible
+    # Make the filename into a relative 路径 if possible
     with contextlib.suppress(ValueError):
         filename = str(Path(filename).relative_to(agent.workspace.root))
 
@@ -157,14 +157,14 @@ def read_file(filename: str, agent: Agent) -> str:
 
         file_memory = MemoryItem.from_text_file(content, filename, agent.config)
 
-        # Check existing memories for this file
+        # 检查 existing memories for this file
         existing_items = [
             item
             for item in list(agent.memory)
             if item.metadata.get("location") == str(filename)
         ]
 
-        # Refresh memory if content changed
+        # 刷新 内存 if content changed
         if not existing_items or any(
             item.raw_content != content for item in existing_items
         ):
@@ -221,7 +221,7 @@ def ingest_file(
         else:
             file_memory = MemoryItem.from_text_file(content, filename, config)
 
-        # Remove existing memory entries for this file
+        # 移除 existing 内存 entries for this file
         for item in [
             m for m in memory if m.metadata.get("location") == str(filename)
         ]:

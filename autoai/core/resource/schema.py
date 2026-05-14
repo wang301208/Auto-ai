@@ -58,5 +58,5 @@ class ProviderSettings(SystemSettings):
     budget: ProviderBudget | None = None
 
 
-# Used both by model providers and memory providers
+# Used both by 模型 providers and 内存 providers
 Embedding = list[float]

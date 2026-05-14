@@ -51,7 +51,7 @@ class Executor:
         self.confidence_threshold = confidence_threshold
         self.skill_wait_timeout = skill_wait_timeout
 
-        # Event used to resume execution once a new skill becomes available
+        # 事件 used to 恢复 execution once a new 技能 becomes 可用
         self._skill_created_event = threading.Event()
         self.message_queue.subscribe(SKILL_CREATED, self._on_skill_created)
 
@@ -85,7 +85,7 @@ class Executor:
             if not isinstance(tasks, list):
                 raise ValueError
         except Exception:
-            # Fallback: split by lines
+            # Fallback: 分割 by lines
             tasks = [line.strip("- ") for line in content.splitlines() if line.strip()]
 
         return [PlannedStep(description=str(t)) for t in tasks]
@@ -171,7 +171,7 @@ class Executor:
                             source_agent="executor",
                         )
                     )
-                    # Wait until a new skill is registered before retrying
+                    # 等待 until a new 技能 is registered before retrying
                     if not self._skill_created_event.wait(
                         timeout=self.skill_wait_timeout
                     ):

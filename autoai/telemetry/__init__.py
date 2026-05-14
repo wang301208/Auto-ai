@@ -33,8 +33,8 @@ class Telemetry:
             try:
                 hook(name, self._counters[name])
             except Exception:
-                # Hooks are best-effort; errors are ignored to avoid impacting
-                # core functionality.
+                # Hooks are best-effort; 错误s are ignored to avoid impacting
+                # 核心 functionality.
                 continue
 
     # ------------------------------------------------------------------

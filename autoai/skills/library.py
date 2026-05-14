@@ -115,7 +115,7 @@ class SkillLibrary:
         if not self.storage_path.exists():
             return
 
-        # Walk the entire storage path looking for skill definitions
+        # Walk the entire 存储 路径 looking for 技能 definitions
         for meta_file in self.storage_path.rglob("skill.json"):
             skill_dir = meta_file.parent
             if not skill_dir.is_dir():

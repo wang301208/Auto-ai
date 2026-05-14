@@ -47,7 +47,7 @@ class Plugin_SystemAnalytics:
         self.events_db_path = str(events_db_path)
 
     def get_event_frequency(self, event_type: str, time_window_sec: int) -> float:
-        # Placeholder heuristic; real implementation would query metrics store
+        # 占位符 heuristic; real implementation would query metrics store
         return 0.0
 
     def calculate_task_success_rate(self, task_category: str) -> float:
@@ -114,7 +114,7 @@ class FounderAgent:
 
     # ------------------------------------------------------------------
     def _collect_stats(self) -> Dict[str, Any]:
-        # Placeholder metrics; wire to real analytics later
+        # 占位符 metrics; wire to real analytics later
         return {
             "event_rates": {
                 "DIAGNOSIS_COMPLETE": self.analytics.get_event_frequency("DIAGNOSIS_COMPLETE", 24 * 3600),
@@ -147,7 +147,7 @@ class FounderAgent:
                 self._repo.git.add(str(file_path.relative_to(self._repo_path)))
         self._repo.index.commit(diagnosis or "Organization change proposal")
         self._repo.git.push("--set-upstream", "origin", branch)
-        # Branch URL discovery depends on remote; we cannot reliably compute here
+        # 分支 URL discovery depends on remote; we cannot reliably 计算 here
         return branch, None
 
     # ------------------------------------------------------------------
@@ -164,7 +164,7 @@ class FounderAgent:
                     messages=[Message("system", prompt)],
                 )
                 llm_resp = create_chat_completion(prompt=seq, config=config)
-                # Expect model to return JSON; be defensive
+                # Expect 模型 to return JSON; be defensive
                 try:
                     parsed = json.loads(llm_resp.content) if hasattr(llm_resp, "content") else json.loads(str(llm_resp))
                 except Exception:

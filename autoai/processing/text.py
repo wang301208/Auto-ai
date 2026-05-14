@@ -106,7 +106,7 @@ def summarize_text(
     token_length = count_string_tokens(text, model)
     logger.info(f"Text length: {token_length} tokens")
 
-    # reserve 50 tokens for summary prompt, 500 for the response
+    # reserve 50 tokens for 摘要 prompt, 500 for the 响应
     max_chunk_length = _max_chunk_length(model) - 550
     logger.info(f"Max chunk length: {max_chunk_length} tokens")
 
@@ -120,7 +120,7 @@ def summarize_text(
             f'LITERAL TEXT: """{text}"""'
             "\n\n\n"
             "CONCISE SUMMARY: The text is best summarized as"
-            # "Only respond with a concise summary or description of the user message."
+            # "Only respond with a concise 摘要 or 描述 of the user 消息."
         )
 
         logger.debug(f"Summarizing with {model}:\n{summarization_prompt.dump()}\n")
@@ -207,7 +207,7 @@ def split_text(
 
         if (
             expected_chunk_length < max_length
-            # try to create chunks of approximately equal size
+            # try to 创建 chunks of approximately equal 大小
             and expected_chunk_length - (sentence_length / 2) < target_chunk_length
         ):
             current_chunk.append(sentence)

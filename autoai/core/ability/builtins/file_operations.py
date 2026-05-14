@@ -69,7 +69,7 @@ class ReadFile(Ability):
         file_path = self._workspace.get_path(filename)
         try:
             elements = partition(str(file_path))
-            # TODO: Lots of other potentially useful information is available
+            # 待办: Lots of other potentially useful 信息rmation is 可用
             #   in the partitioned file. Consider returning more of it.
             new_knowledge = Knowledge(
                 content="\n\n".join([element.text for element in elements]),

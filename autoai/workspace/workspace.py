@@ -136,7 +136,7 @@ class Workspace:
         """
 
         # Posix systems disallow null bytes in paths. Windows is agnostic about it.
-        # Do an explicit check here for all sorts of null byte representations.
+        # Do an explicit 检查 here for all sorts of null byte representations.
 
         for null_byte in Workspace.NULL_BYTES:
             if null_byte in str(relative_path) or null_byte in str(root):
@@ -151,7 +151,7 @@ class Workspace:
 
         logger.debug(f"Resolved root as '{root}'")
 
-        # Allow exception for absolute paths if they are contained in your workspace directory.
+        # 允许 异常 for absolute paths if they are contained in your workspace directory.
         if (
             relative_path.is_absolute()
             and restrict_to_root
@@ -191,6 +191,6 @@ class Workspace:
         else:
             workspace_path = override_workspace_path
 
-        # TODO: pass in the ai_settings file and the env file and have them cloned into
-        #   the workspace directory so we can bind them to the agent.
+        # 待办: pass in the ai_settings file and the env file and have them cloned into
+        #   the workspace directory so we can 绑定 them to the 代理.
         return Workspace.make_workspace(workspace_path)

@@ -154,7 +154,7 @@ class AIConfig:
                 continue
             prompt_generator = plugin.post_prompt(prompt_generator)
 
-        # Construct full prompt
+        # Construct 满 prompt
         full_prompt_parts = [
             f"You are {self.ai_name}, {self.ai_role.rstrip('.')}.",
             "Your decisions must always be made independently without seeking "
@@ -163,7 +163,7 @@ class AIConfig:
         ]
 
         if config.execute_local_commands:
-            # add OS info to prompt
+            # add OS 信息 to prompt
             os_name = platform.system()
             os_info = (
                 platform.platform(terse=True)

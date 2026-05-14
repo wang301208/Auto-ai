@@ -64,7 +64,7 @@ class SimpleAbilityRegistry(AbilityRegistry, Configurable):
             "configuration": ability_configuration,
         }
         if ability_configuration.packages_required:
-            # TODO: Check packages are installed and maybe install them.
+            # 待办: 检查 packages are installed and maybe 安装 them.
             pass
         if ability_configuration.memory_provider_required:
             ability_args["memory"] = self._memory

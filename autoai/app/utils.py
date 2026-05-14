@@ -59,10 +59,10 @@ def clean_input(config: Config, prompt: str = "", talk: bool = False) -> str:
                     return config.exit_key
                 return plugin_response
 
-        # ask for input, default when just pressing Enter is y
+        # ask for 输入, default when just pressing Enter is y
         logger.info(_("Asking user via keyboard..."))
 
-        # handle_sigint must be set to False, so the signal handler in the
+        # handle_sigint must be 集合 to False, so the 信号 处理器 in the
         # autoai/main.py could be employed properly. This referes to
         # https://github.com/Significant-Gravitas/Auto-AI/pull/4799/files/3966cdfd694c2a80c0333823c3bc3da090f85ed3#r1264278776
         answer = session.prompt(ANSI(prompt), handle_sigint=False) if _HAS_PROMPT_TOOLKIT else input(prompt)
@@ -135,9 +135,9 @@ def markdown_to_ansi_style(markdown: str) -> str:
 def get_legal_warning() -> str:
     legal_text = """
 ## DISCLAIMER AND INDEMNIFICATION AGREEMENT
-### PLEASE READ THIS DISCLAIMER AND INDEMNIFICATION AGREEMENT CAREFULLY BEFORE USING THE AUTOAI SYSTEM. BY USING THE AUTOAI SYSTEM, YOU AGREE TO BE BOUND BY THIS AGREEMENT.
+### PLEASE 读取 THIS DISCLAIMER AND INDEMNIFICATION AGREEMENT CAREFULLY BEFORE USING THE AUTOAI SYSTEM. BY USING THE AUTOAI SYSTEM, YOU AGREE TO BE BOUND BY THIS AGREEMENT.
 
-## Introduction
+## 简介
 AutoAI (the "System") is a project that connects a GPT-like artificial intelligence system to the internet and allows it to automate tasks. While the System is designed to be useful and efficient, there may be instances where the System could perform actions that may cause harm or have unintended consequences.
 
 ## No Liability for Actions of the System
