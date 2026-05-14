@@ -7,8 +7,8 @@ import docx
 import yaml
 from bs4 import BeautifulSoup
 
-from autogpt.commands.file_operations_utils import is_file_binary_fn, read_textual_file
-from autogpt.logs import logger
+from autoai.commands.file_operations_utils import is_file_binary_fn, read_textual_file
+from autoai.logs import logger
 
 plain_text_str = "Hello, world!"
 

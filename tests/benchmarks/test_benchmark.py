@@ -1,7 +1,7 @@
 import timeit
 from pathlib import Path
 
-from autogpt.self_improve import DatabaseManager, Profiler
+from autoai.self_improve import DatabaseManager, Profiler
 
 
 def test_profiler_benchmark(tmp_path: Path) -> None:

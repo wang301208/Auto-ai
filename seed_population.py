@@ -13,7 +13,7 @@ STEPS = ["plan", "search", "reflect", "execute"]
 def random_strategy() -> dict:
     return {
         "think_mode": random.choice(["depth_first", "breadth_first"]),
-        "prompt_template": "SYSTEM: You are AutoGPT.\nUSER: ${task}",
+        "prompt_template": "SYSTEM: You are AutoAI.\nUSER: ${task}",
         "toolset": random.sample(TOOLS, random.randint(1, len(TOOLS))),
         "step_sequence": random.sample(STEPS, random.randint(2, len(STEPS))),
     }

@@ -1,4 +1,4 @@
-"""Tests for :mod:`autogpt.skills.library`."""
+"""Tests for :mod:`autoai.skills.library`."""
 from __future__ import annotations
 
 import json
@@ -7,9 +7,9 @@ from typing import Dict, List
 
 import pytest
 
-from autogpt.config import Config
-from autogpt.skills import library as library_module
-from autogpt.skills.librarian import LibrarianAgent
+from autoai.config import Config
+from autoai.skills import library as library_module
+from autoai.skills.librarian import LibrarianAgent
 
 
 def make_embedding_map() -> Dict[str, List[float]]:
@@ -30,14 +30,14 @@ def test_skill_library_save_and_search(
     from types import ModuleType
 
     # Stub out heavy optional dependencies
-    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
-    vector_pkg = ModuleType("autogpt.memory.vector")
-    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
-    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoAI-0.4.7"))
+    vector_pkg = ModuleType("autoai.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autoai" / "memory" / "vector")]
+    sys.modules.setdefault("autoai.memory.vector", vector_pkg)
     sys.modules.setdefault("spacy", ModuleType("spacy"))
 
-    from autogpt.skills.library import SkillLibrary  # imported after stubbing
-    from autogpt.skills.vector_db import MemoryVectorDB
+    from autoai.skills.library import SkillLibrary  # imported after stubbing
+    from autoai.skills.vector_db import MemoryVectorDB
 
     config = Config()
     storage = tmp_path / "skill_library"
@@ -48,7 +48,7 @@ def test_skill_library_save_and_search(
     def fake_get_embedding(text: str, _config: Config) -> List[float]:
         return embeddings[text]
 
-    monkeypatch.setattr("autogpt.skills.library.get_embedding", fake_get_embedding)
+    monkeypatch.setattr("autoai.skills.library.get_embedding", fake_get_embedding)
 
     library = SkillLibrary(config, storage_path=storage, vector_db=vector_db)
 
@@ -101,14 +101,14 @@ def test_skill_library_reindex_and_nested_loading(
     import sys
     from types import ModuleType
 
-    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
-    vector_pkg = ModuleType("autogpt.memory.vector")
-    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
-    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoAI-0.4.7"))
+    vector_pkg = ModuleType("autoai.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autoai" / "memory" / "vector")]
+    sys.modules.setdefault("autoai.memory.vector", vector_pkg)
     sys.modules.setdefault("spacy", ModuleType("spacy"))
 
-    from autogpt.skills.library import SkillLibrary
-    from autogpt.skills.vector_db import MemoryVectorDB
+    from autoai.skills.library import SkillLibrary
+    from autoai.skills.vector_db import MemoryVectorDB
 
     config = Config()
     storage = tmp_path / "skill_library"
@@ -119,7 +119,7 @@ def test_skill_library_reindex_and_nested_loading(
     def fake_get_embedding(text: str, _config: Config) -> List[float]:
         return embeddings[text]
 
-    monkeypatch.setattr("autogpt.skills.library.get_embedding", fake_get_embedding)
+    monkeypatch.setattr("autoai.skills.library.get_embedding", fake_get_embedding)
 
     nested_dir = storage / "nested" / "skill3_1.0"
     nested_dir.mkdir(parents=True)
@@ -170,14 +170,14 @@ def test_git_commit_triggers_push(
     import sys
     from types import ModuleType
 
-    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
-    vector_pkg = ModuleType("autogpt.memory.vector")
-    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
-    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoAI-0.4.7"))
+    vector_pkg = ModuleType("autoai.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autoai" / "memory" / "vector")]
+    sys.modules.setdefault("autoai.memory.vector", vector_pkg)
     sys.modules.setdefault("spacy", ModuleType("spacy"))
 
-    from autogpt.skills.library import SkillLibrary
-    from autogpt.skills.vector_db import MemoryVectorDB
+    from autoai.skills.library import SkillLibrary
+    from autoai.skills.vector_db import MemoryVectorDB
 
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -190,7 +190,7 @@ def test_git_commit_triggers_push(
 
     storage = repo / "skills"
     config = Config()
-    monkeypatch.setattr("autogpt.skills.library.get_embedding", lambda *_: [0.0])
+    monkeypatch.setattr("autoai.skills.library.get_embedding", lambda *_: [0.0])
 
     calls: Dict[str, str] = {}
 
@@ -199,7 +199,7 @@ def test_git_commit_triggers_push(
         calls["branch_name"] = branch_name
         return "Pushed"
 
-    monkeypatch.setattr("autogpt.commands.git_operations.git_push", fake_git_push)
+    monkeypatch.setattr("autoai.commands.git_operations.git_push", fake_git_push)
 
     library = SkillLibrary(config, storage_path=storage, vector_db=MemoryVectorDB())
     library.add_skill("s", "1.0", "code", {}, "d", ["t"])
@@ -215,14 +215,14 @@ def test_git_commit_reports_push_failure(
     import sys
     from types import ModuleType
 
-    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
-    vector_pkg = ModuleType("autogpt.memory.vector")
-    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
-    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoAI-0.4.7"))
+    vector_pkg = ModuleType("autoai.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autoai" / "memory" / "vector")]
+    sys.modules.setdefault("autoai.memory.vector", vector_pkg)
     sys.modules.setdefault("spacy", ModuleType("spacy"))
 
-    from autogpt.skills.library import SkillLibrary
-    from autogpt.skills.vector_db import MemoryVectorDB
+    from autoai.skills.library import SkillLibrary
+    from autoai.skills.vector_db import MemoryVectorDB
 
     repo = tmp_path / "repo"
     repo.mkdir()
@@ -235,10 +235,10 @@ def test_git_commit_reports_push_failure(
 
     storage = repo / "skills"
     config = Config()
-    monkeypatch.setattr("autogpt.skills.library.get_embedding", lambda *_: [0.0])
+    monkeypatch.setattr("autoai.skills.library.get_embedding", lambda *_: [0.0])
 
     monkeypatch.setattr(
-        "autogpt.commands.git_operations.git_push",
+        "autoai.commands.git_operations.git_push",
         lambda *_: "Error: push failed",
     )
     printed: List[str] = []
@@ -255,10 +255,10 @@ def test_git_commit_reports_push_failure(
 # ---------------------------------------------------------------------------
 def _setup_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> LibrarianAgent:
     monkeypatch.setattr(
-        "autogpt.skills.library.get_embedding", lambda _text, _config: [0.1, 0.2, 0.3]
+        "autoai.skills.library.get_embedding", lambda _text, _config: [0.1, 0.2, 0.3]
     )
     monkeypatch.setattr(
-        "autogpt.skills.librarian.SkillLibrary",
+        "autoai.skills.librarian.SkillLibrary",
         lambda config: library_module.SkillLibrary(config, storage_path=tmp_path),
     )
     return LibrarianAgent(Config())
@@ -311,7 +311,7 @@ def test_librarian_add_skill_copy_failure_logs_error(
     def boom(*_args, **_kwargs) -> None:
         raise OSError("copy failed")
 
-    monkeypatch.setattr("autogpt.skills.librarian.shutil.copy2", boom)
+    monkeypatch.setattr("autoai.skills.librarian.shutil.copy2", boom)
 
     with caplog.at_level("ERROR"):
         with pytest.raises(OSError):

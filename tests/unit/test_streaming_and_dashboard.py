@@ -11,13 +11,13 @@ import time
 
 class TestStreamingEvent:
     def test_create_event(self):
-        from autogpt.llm.model_router.streaming import StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamingEvent, StreamEventType
         event = StreamingEvent(type=StreamEventType.THINK_TOKEN, content="hello")
         assert event.type == StreamEventType.THINK_TOKEN
         assert event.content == "hello"
 
     def test_event_types(self):
-        from autogpt.llm.model_router.streaming import StreamEventType
+        from autoai.llm.model_router.streaming import StreamEventType
         assert StreamEventType.THINK_START.value == "think_start"
         assert StreamEventType.THINK_TOKEN.value == "think_token"
         assert StreamEventType.EXEC_TOKEN.value == "exec_token"
@@ -26,7 +26,7 @@ class TestStreamingEvent:
 
 class TestStreamEmitter:
     def test_emit_think(self):
-        from autogpt.llm.model_router.streaming import StreamEmitter, StreamEventType
+        from autoai.llm.model_router.streaming import StreamEmitter, StreamEventType
         events = []
         emitter = StreamEmitter(model="test", on_event=lambda e: events.append(e))
         emitter.start()
@@ -42,7 +42,7 @@ class TestStreamEmitter:
         assert events[3].completion_tokens == 5
 
     def test_emit_exec(self):
-        from autogpt.llm.model_router.streaming import StreamEmitter, StreamEventType
+        from autoai.llm.model_router.streaming import StreamEmitter, StreamEventType
         events = []
         emitter = StreamEmitter(on_event=lambda e: events.append(e))
         emitter.emit_exec_start("write_file")
@@ -53,7 +53,7 @@ class TestStreamEmitter:
         assert events[0].content == "write_file"
 
     def test_emit_tool_call(self):
-        from autogpt.llm.model_router.streaming import StreamEmitter, StreamEventType
+        from autoai.llm.model_router.streaming import StreamEmitter, StreamEventType
         events = []
         emitter = StreamEmitter(on_event=lambda e: events.append(e))
         emitter.emit_tool_call("read_file", {"path": "/tmp/test"})
@@ -63,7 +63,7 @@ class TestStreamEmitter:
         assert events[1].tool_result == "file content"
 
     def test_emit_done_with_stats(self):
-        from autogpt.llm.model_router.streaming import StreamEmitter, StreamEventType
+        from autoai.llm.model_router.streaming import StreamEmitter, StreamEventType
         events = []
         emitter = StreamEmitter(on_event=lambda e: events.append(e))
         emitter.start()
@@ -75,7 +75,7 @@ class TestStreamEmitter:
         assert events[-1].completion_tokens == 20
 
     def test_pending_events_drain(self):
-        from autogpt.llm.model_router.streaming import StreamEmitter
+        from autoai.llm.model_router.streaming import StreamEmitter
         emitter = StreamEmitter()
         emitter.emit_think_token("a")
         emitter.emit_think_token("b")
@@ -86,7 +86,7 @@ class TestStreamEmitter:
 
 class TestStreamStats:
     def test_elapsed_and_tps(self):
-        from autogpt.llm.model_router.streaming import StreamStats
+        from autoai.llm.model_router.streaming import StreamStats
         stats = StreamStats()
         stats.start_time = time.monotonic() - 2.0
         stats.end_time = time.monotonic()
@@ -97,20 +97,20 @@ class TestStreamStats:
 
 class TestStreamBuffer:
     def test_push_and_accumulate(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
         buf = StreamBuffer()
         buf.push(StreamingEvent(type=StreamEventType.THINK_TOKEN, content="Hello "))
         buf.push(StreamingEvent(type=StreamEventType.THINK_TOKEN, content="world"))
         assert buf.think_text == "Hello world"
 
     def test_exec_accumulate(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
         buf = StreamBuffer()
         buf.push(StreamingEvent(type=StreamEventType.EXEC_TOKEN, content="result"))
         assert buf.exec_text == "result"
 
     def test_stats_update(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
         buf = StreamBuffer()
         buf.push(StreamingEvent(
             type=StreamEventType.THINK_END,
@@ -123,21 +123,21 @@ class TestStreamBuffer:
         assert buf.stats.total_cost == 0.01
 
     def test_make_callback(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
         buf = StreamBuffer()
         cb = buf.make_callback()
         cb(StreamingEvent(type=StreamEventType.THINK_TOKEN, content="via cb"))
         assert buf.think_text == "via cb"
 
     def test_max_events_trimming(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
         buf = StreamBuffer(max_events=5)
         for i in range(10):
             buf.push(StreamingEvent(type=StreamEventType.META, metadata={"i": i}))
         assert len(buf.all_events) == 5
 
     def test_clear(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
         buf = StreamBuffer()
         buf.push(StreamingEvent(type=StreamEventType.THINK_TOKEN, content="x"))
         buf.clear()
@@ -148,8 +148,8 @@ class TestStreamBuffer:
 class TestStreamingChat:
     @pytest.mark.asyncio
     async def test_stream_chat_with_non_streaming_provider(self):
-        from autogpt.llm.model_router.streaming import StreamingChat, StreamEventType
-        from autogpt.llm.model_router.base_provider import BaseProvider, ChatMessage, ChatResponse
+        from autoai.llm.model_router.streaming import StreamingChat, StreamEventType
+        from autoai.llm.model_router.base_provider import BaseProvider, ChatMessage, ChatResponse
 
         class MockProvider(BaseProvider):
             async def chat(self, messages, model="", **kwargs):
@@ -173,7 +173,7 @@ class TestStreamingChat:
 
     @pytest.mark.asyncio
     async def test_stream_think_execute(self):
-        from autogpt.llm.model_router.streaming import StreamingChat, StreamEventType
+        from autoai.llm.model_router.streaming import StreamingChat, StreamEventType
 
         sc = StreamingChat()
         events = []
@@ -200,8 +200,8 @@ class TestStreamingChat:
 
 class TestTUIStreamIntegration:
     def test_tui_on_stream_event(self):
-        from autogpt.app.tui import TUIObservationWindow
-        from autogpt.llm.model_router.streaming import StreamingEvent, StreamEventType
+        from autoai.app.tui import TUIObservationWindow
+        from autoai.llm.model_router.streaming import StreamingEvent, StreamEventType
 
         tui = TUIObservationWindow()
         tui.on_stream_event(StreamingEvent(type=StreamEventType.THINK_TOKEN, content="thinking..."))
@@ -212,8 +212,8 @@ class TestTUIStreamIntegration:
         assert len(tui._think_lines) == 1
 
     def test_tui_exec_stream(self):
-        from autogpt.app.tui import TUIObservationWindow
-        from autogpt.llm.model_router.streaming import StreamingEvent, StreamEventType
+        from autoai.app.tui import TUIObservationWindow
+        from autoai.llm.model_router.streaming import StreamingEvent, StreamEventType
 
         tui = TUIObservationWindow()
         tui.on_stream_event(StreamingEvent(type=StreamEventType.EXEC_TOKEN, content="result data"))
@@ -224,8 +224,8 @@ class TestTUIStreamIntegration:
         assert len(tui._exec_lines) == 1
 
     def test_tui_attach_stream_buffer(self):
-        from autogpt.app.tui import TUIObservationWindow
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.app.tui import TUIObservationWindow
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
 
         buf = StreamBuffer()
         tui = TUIObservationWindow()
@@ -242,26 +242,26 @@ class TestTUIStreamIntegration:
 
 class TestTerminalDashboard:
     def test_create_dashboard(self):
-        from autogpt.app.dashboard import TerminalDashboard
+        from autoai.app.dashboard import TerminalDashboard
         dash = TerminalDashboard()
         assert dash._system is None
 
     def test_log_event(self):
-        from autogpt.app.dashboard import TerminalDashboard
+        from autoai.app.dashboard import TerminalDashboard
         dash = TerminalDashboard()
         dash.log_event("test event", "info")
         dash.log_event("warning!", "warn")
         assert len(dash._event_log) == 2
 
     def test_render_without_system(self):
-        from autogpt.app.dashboard import TerminalDashboard
+        from autoai.app.dashboard import TerminalDashboard
         dash = TerminalDashboard()
         layout = dash.render()
         assert layout is not None
 
     def test_render_with_system(self):
-        from autogpt.app.dashboard import TerminalDashboard
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.app.dashboard import TerminalDashboard
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         import tempfile
         from pathlib import Path
 
@@ -282,6 +282,6 @@ class TestTerminalDashboard:
             assert layout is not None
 
     def test_create_dashboard_factory(self):
-        from autogpt.app.dashboard import create_dashboard
+        from autoai.app.dashboard import create_dashboard
         dash = create_dashboard(None)
         assert dash is not None

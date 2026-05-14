@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from autogpt.agents.tdd_developer import TDDDeveloper
-from autogpt.event_bus import (
+from autoai.agents.tdd_developer import TDDDeveloper
+from autoai.event_bus import (
     CODE_FIX_PROPOSED,
     DIAGNOSIS_COMPLETE,
     EventMessage,
@@ -24,19 +24,19 @@ def test_tdd_developer_uses_recommended_skill(agent, workspace, monkeypatch):
     developer = TDDDeveloper(agent=agent, message_queue=mq, librarian=FakeLibrarian())
 
     monkeypatch.setattr(
-        "autogpt.agents.tdd_developer.git_create_branch", lambda *a, **k: None
+        "autoai.agents.tdd_developer.git_create_branch", lambda *a, **k: None
     )
     monkeypatch.setattr(
-        "autogpt.agents.tdd_developer.git_checkout", lambda *a, **k: None
+        "autoai.agents.tdd_developer.git_checkout", lambda *a, **k: None
     )
     monkeypatch.setattr(
-        "autogpt.agents.tdd_developer.git_commit", lambda *a, **k: None
+        "autoai.agents.tdd_developer.git_commit", lambda *a, **k: None
     )
 
     repo_path = str(agent.workspace.root)
     run_results: list[dict] = []
 
-    from autogpt.agents import tdd_developer as tdd_module
+    from autoai.agents import tdd_developer as tdd_module
 
     original_run_tests = tdd_module.run_tests
 

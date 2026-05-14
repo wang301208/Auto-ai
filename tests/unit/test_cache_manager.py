@@ -6,7 +6,7 @@ from typing import Iterable, List
 
 import pytest
 
-from autogpt.cache.cache_manager import (
+from autoai.cache.cache_manager import (
     Artifact,
     CacheBackend,
     CacheManager,

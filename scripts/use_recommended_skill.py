@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from types import ModuleType
-from autogpt.skills import get as get_skill
+from autoai.skills import get as get_skill
 
 
 def main() -> None:

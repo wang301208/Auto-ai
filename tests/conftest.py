@@ -39,14 +39,14 @@ orjson_stub.dumps = lambda obj, option=0: b""
 orjson_stub.loads = lambda b: {}
 sys.modules.setdefault("orjson", orjson_stub)
 
-from autogpt.agents import Agent
-from autogpt.config import AIConfig, Config, ConfigBuilder
-from autogpt.llm.api_manager import ApiManager
-from autogpt.logs import logger
-from autogpt.memory.vector import get_memory
-from autogpt.models.command_registry import CommandRegistry
-from autogpt.prompts.prompt import DEFAULT_TRIGGERING_PROMPT
-from autogpt.workspace import Workspace
+from autoai.agents import Agent
+from autoai.config import AIConfig, Config, ConfigBuilder
+from autoai.llm.api_manager import ApiManager
+from autoai.logs import logger
+from autoai.memory.vector import get_memory
+from autoai.models.command_registry import CommandRegistry
+from autoai.prompts.prompt import DEFAULT_TRIGGERING_PROMPT
+from autoai.workspace import Workspace
 
 pytest_plugins = [
     "tests.integration.agent_factory",
@@ -73,7 +73,7 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
 
 @pytest.fixture()
 def workspace_root(tmp_path: Path) -> Path:
-    return tmp_path / "home/users/monty/auto_gpt_workspace"
+    return tmp_path / "home/users/monty/auto_ai_workspace"
 
 
 @pytest.fixture()
@@ -110,7 +110,7 @@ def config(
     config.plugins_config_file = temp_plugins_config_file
 
     # avoid circular dependency
-    from autogpt.plugins.plugins_config import PluginsConfig
+    from autoai.plugins.plugins_config import PluginsConfig
 
     config.plugins_config = PluginsConfig.load_config(
         plugins_config_file=config.plugins_config_file,

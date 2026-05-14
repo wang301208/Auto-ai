@@ -6,7 +6,7 @@ from _pytest.config.argparsing import Parser
 from _pytest.fixtures import FixtureRequest
 from pytest_mock import MockerFixture
 
-from autogpt.workspace import Workspace
+from autoai.workspace import Workspace
 from tests.challenges.challenge_decorator.challenge import Challenge
 from tests.vcr import before_record_response
 

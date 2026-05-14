@@ -1,6 +1,6 @@
-from autogpt.agents.agent import Agent, execute_command
-from autogpt.agents.base import BaseAgent
-from autogpt.llm.base import Message
+from autoai.agents.agent import Agent, execute_command
+from autoai.agents.base import BaseAgent
+from autoai.llm.base import Message
 
 
 def test_agent_initialization(agent: Agent):

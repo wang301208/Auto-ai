@@ -2,8 +2,8 @@
   "name": "echo",
   "description": "A simple plugin that echoes input",
   "instructions": "Create a function echo(text: str) -> str that returns text",
-  "developer": "Auto-GPT Maintainers",
-  "policy_maker": "Auto-GPT Maintainers",
+  "developer": "Auto-AI Maintainers",
+  "policy_maker": "Auto-AI Maintainers",
   "underlying_library": {
     "name": "python",
     "version": "3.11",

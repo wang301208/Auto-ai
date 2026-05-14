@@ -1,7 +1,7 @@
 """Break report generator for post-hoc human audit.
 
 Generates human-readable TUI reports from break log entries.
-Used by `agpt breaks` CLI command for post-hoc boundary break review.
+Used by `aai breaks` CLI command for post-hoc boundary break review.
 """
 
 from __future__ import annotations

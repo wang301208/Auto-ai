@@ -1,7 +1,7 @@
 import pytest
 
-from autogpt.agents.agent import Agent
-from autogpt.commands.testing import create_test_file, run_tests
+from autoai.agents.agent import Agent
+from autoai.commands.testing import create_test_file, run_tests
 
 
 def test_run_tests_success(workspace, agent: Agent):

@@ -1,7 +1,7 @@
 import pytest
 
-from autogpt.agents import Agent, CommandRepetitionError
-from autogpt.app.main import UserFeedback, run_interaction_loop
+from autoai.agents import Agent, CommandRepetitionError
+from autoai.app.main import UserFeedback, run_interaction_loop
 
 
 def test_execute_step_repeated_command_raises(agent: Agent, mocker):
@@ -23,9 +23,9 @@ def test_run_loop_prompts_user_on_repeated_command(agent: Agent, mocker):
     mocker.patch.object(agent, "think", return_value=("repeat", {}, {}))
     mock_execute = mocker.patch.object(agent, "execute", return_value="ok")
 
-    mocker.patch("autogpt.app.main.update_user")
+    mocker.patch("autoai.app.main.update_user")
     mock_get_user_feedback = mocker.patch(
-        "autogpt.app.main.get_user_feedback",
+        "autoai.app.main.get_user_feedback",
         return_value=(UserFeedback.EXIT, "", None),
     )
 

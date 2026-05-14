@@ -71,7 +71,7 @@ class _FakeClient:
 
 chromadb.PersistentClient = _FakeClient
 
-from autogpt.skills.vector_db import ChromaVectorDB
+from autoai.skills.vector_db import ChromaVectorDB
 
 
 def test_chroma_add_query_delete(tmp_path: Path) -> None:

@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, AsyncMock
 
 import pytest
 
-from autogpt.agents.arch_diagnoser import (
+from autoai.agents.arch_diagnoser import (
     ArchDiagnoser,
     ArchIssue,
     ArchIssueType,
@@ -18,19 +18,19 @@ from autogpt.agents.arch_diagnoser import (
     ModuleInfo,
     Severity,
 )
-from autogpt.agents.arch_refactorer import (
+from autoai.agents.arch_refactorer import (
     ArchRefactorer,
     RefactorPlan,
     RefactorResult,
 )
 from governance.autonomy_level import AutonomyLevel, AutonomyManager
-from autogpt.agents.capability_injector import (
+from autoai.agents.capability_injector import (
     CapabilityInjector,
     CapabilitySpec,
     InjectionType,
     InjectionRecord,
 )
-from autogpt.agents.protocol_upgrader import (
+from autoai.agents.protocol_upgrader import (
     AgentProtocolState,
     MessageSchema,
     ProtocolUpgrader,
@@ -50,7 +50,7 @@ class TestArchDiagnoser:
         assert len(report.issues) == 0
 
     def test_scan_real_project(self):
-        workspace = Path("G:/项目/AutoGPT-0.4.7")
+        workspace = Path("G:/项目/AutoAI-0.4.7")
         if not workspace.exists():
             pytest.skip("Project not found")
         diagnoser = ArchDiagnoser(workspace=workspace, coupling_threshold=15)
@@ -59,13 +59,13 @@ class TestArchDiagnoser:
         assert isinstance(report.issues, list)
 
     def test_detect_side_effects(self, tmp_path: Path):
-        mod_dir = tmp_path / "autogpt"
+        mod_dir = tmp_path / "autoai"
         mod_dir.mkdir()
         (mod_dir / "__init__.py").write_text("")
         (mod_dir / "side_effect.py").write_text(
             'import os\nos.makedirs("/tmp/test", exist_ok=True)\n'
         )
-        diagnoser = ArchDiagnoser(workspace=tmp_path, scan_dirs=["autogpt"])
+        diagnoser = ArchDiagnoser(workspace=tmp_path, scan_dirs=["autoai"])
         report = diagnoser.diagnose()
         perf_issues = [i for i in report.issues if i.issue_type == ArchIssueType.PERF_BOTTLENECK]
         assert len(perf_issues) >= 1
@@ -97,15 +97,15 @@ class TestArchDiagnoser:
         assert info.has_side_effects is False
 
     def test_detect_coupling_hotspot(self, tmp_path: Path):
-        mod_dir = tmp_path / "autogpt"
+        mod_dir = tmp_path / "autoai"
         mod_dir.mkdir()
         (mod_dir / "__init__.py").write_text("")
         hot = mod_dir / "hotspot.py"
         hot.write_text("class Hotspot:\n    pass\n")
         for i in range(12):
             consumer = mod_dir / f"consumer_{i}.py"
-            consumer.write_text("from autogpt.hotspot import Hotspot\n")
-        diagnoser = ArchDiagnoser(workspace=tmp_path, scan_dirs=["autogpt"], coupling_threshold=10)
+            consumer.write_text("from autoai.hotspot import Hotspot\n")
+        diagnoser = ArchDiagnoser(workspace=tmp_path, scan_dirs=["autoai"], coupling_threshold=10)
         report = diagnoser.diagnose()
         coupling = [i for i in report.issues if i.issue_type == ArchIssueType.COUPLING_HOTSPOT]
         assert len(coupling) >= 0
@@ -127,24 +127,24 @@ class TestArchRefactorer:
         assert plans == []
 
     def test_generate_lazy_import_plan(self, tmp_path: Path):
-        mod_dir = tmp_path / "autogpt"
+        mod_dir = tmp_path / "autoai"
         mod_dir.mkdir()
         (mod_dir / "__init__.py").write_text("")
-        (mod_dir / "a.py").write_text("from autogpt.b import B\n")
+        (mod_dir / "a.py").write_text("from autoai.b import B\n")
         issue = ArchIssue(
             issue_type=ArchIssueType.CIRCULAR_IMPORT,
             severity=Severity.CRITICAL,
-            location="autogpt/a.py",
+            location="autoai/a.py",
             description="Circular import: a → b → a",
-            context={"cycle": ["autogpt/a.py", "autogpt/b.py", "autogpt/a.py"]},
+            context={"cycle": ["autoai/a.py", "autoai/b.py", "autoai/a.py"]},
         )
         refactorer = ArchRefactorer(workspace=tmp_path)
         plan = refactorer._gen_lazy_import_patch(issue)
         assert plan is not None
-        assert "autogpt/a.py" in plan.target_files
+        assert "autoai/a.py" in plan.target_files
 
     def test_generate_dead_code_plan(self, tmp_path: Path):
-        mod_dir = tmp_path / "autogpt"
+        mod_dir = tmp_path / "autoai"
         mod_dir.mkdir()
         (mod_dir / "__init__.py").write_text("")
         dead = mod_dir / "dead.py"
@@ -152,7 +152,7 @@ class TestArchRefactorer:
         issue = ArchIssue(
             issue_type=ArchIssueType.DEAD_CODE,
             severity=Severity.LOW,
-            location="autogpt/dead.py",
+            location="autoai/dead.py",
             description="Dead code",
         )
         refactorer = ArchRefactorer(workspace=tmp_path)
@@ -163,7 +163,7 @@ class TestArchRefactorer:
         issue = ArchIssue(
             issue_type=ArchIssueType.COUPLING_HOTSPOT,
             severity=Severity.HIGH,
-            location="autogpt/agents/agent.py",
+            location="autoai/agents/agent.py",
             description="Coupling hotspot",
             context={"import_count": 15},
         )
@@ -176,7 +176,7 @@ class TestArchRefactorer:
         issue = ArchIssue(
             issue_type=ArchIssueType.INTERFACE_MISMATCH,
             severity=Severity.MEDIUM,
-            location="autogpt/agents/agent.py",
+            location="autoai/agents/agent.py",
             description="Interface mismatch",
             context={"method": "think", "implementations": ["Agent(a,b)", "Agent(a)"]},
         )
@@ -442,13 +442,13 @@ class TestProtocolUpgrader:
 
 class TestSelfThinkPhase18:
     def test_arch_diagnose_without_diagnoser(self, tmp_path: Path):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         engine = SelfThinkEngine(workspace=tmp_path)
         result = engine.arch_diagnose()
         assert result is None
 
     def test_arch_diagnose_with_diagnoser(self, tmp_path: Path):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         diagnoser = ArchDiagnoser(workspace=tmp_path, scan_dirs=[])
         engine = SelfThinkEngine(workspace=tmp_path, arch_diagnoser=diagnoser)
         result = engine.arch_diagnose()
@@ -456,13 +456,13 @@ class TestSelfThinkPhase18:
         assert "modules_scanned" in result
 
     def test_arch_refactor_without_components(self, tmp_path: Path):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         engine = SelfThinkEngine(workspace=tmp_path)
-        result = asyncio.get_event_loop().run_until_complete(engine.arch_refactor())
+        result = asyncio.run(engine.arch_refactor())
         assert result["diagnosed"] is False
 
     def test_stats_include_arch_counts(self, tmp_path: Path):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         engine = SelfThinkEngine(workspace=tmp_path)
         stats = engine.stats
         assert "arch_scan_count" in stats

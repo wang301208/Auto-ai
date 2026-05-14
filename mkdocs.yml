@@ -1,6 +1,6 @@
-site_name: Auto-GPT
-site_url: https://docs.agpt.co/
-repo_url: https://github.com/Significant-Gravitas/Auto-GPT
+site_name: Auto-AI
+site_url: https://docs.aai.co/
+repo_url: https://github.com/Significant-Gravitas/Auto-AI
 nav:
   - 首页: index.md
   - 安装: setup.md
@@ -17,7 +17,7 @@ nav:
       - 语音: configuration/voice.md
       - 图像生成: configuration/imagegen.md
 
-  - 帮助我们改进 Auto-GPT:
+  - 帮助我们改进 Auto-AI:
       - 分享调试日志: share-your-logs.md
       - 贡献指南: contributing.md
       - 运行测试: testing.md
@@ -39,7 +39,7 @@ nav:
   - 提交挑战: challenges/submit.md
   - 解决挑战: challenges/beat.md
 
-  - 许可证: https://github.com/Significant-Gravitas/Auto-GPT/blob/master/LICENSE
+  - 许可证: https://github.com/Significant-Gravitas/Auto-AI/blob/master/LICENSE
 
 theme:
   name: material

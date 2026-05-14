@@ -18,7 +18,7 @@ from __future__ import annotations
 import math
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from typing import Any
 
@@ -61,7 +61,7 @@ class ConstraintSet:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = datetime.now(timezone.utc).isoformat()
 
     def get(self, kind: ConstraintKind) -> Constraint | None:
         return self.constraints.get(kind)
@@ -148,7 +148,7 @@ AUTONOMY_PRESETS: dict[int, dict[ConstraintKind, Any]] = {
 class BoundaryManager:
     """Agent-autonomous boundary management: set / adjust / break.
 
-    Human role: post-hoc audit via `agpt audit` and `agpt breaks`.
+    Human role: post-hoc audit via `aai audit` and `aai breaks`.
     No human participates in any boundary decision at runtime.
     """
 
@@ -157,7 +157,7 @@ class BoundaryManager:
 
     def __init__(
         self,
-        agent_id: str = "auto-gpt",
+        agent_id: str = "auto-ai",
         audit_log: AuditLog | None = None,
         break_log: BreakLog | None = None,
         modification_chain: ModificationChain | None = None,
@@ -298,7 +298,7 @@ class BoundaryManager:
 
             if applied:
                 self._adjust_history.append({
-                    "timestamp": datetime.utcnow().isoformat(),
+                    "timestamp": datetime.now(timezone.utc).isoformat(),
                     "adjustments": applied,
                 })
 

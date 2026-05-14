@@ -8,25 +8,25 @@ from typing import List
 
 import pytest
 
-from autogpt.config import Config
-from autogpt.skills import library as library_module
-from autogpt.skills.librarian import LibrarianAgent
-from autogpt.telemetry import telemetry
+from autoai.config import Config
+from autoai.skills import library as library_module
+from autoai.skills.librarian import LibrarianAgent
+from autoai.telemetry import telemetry
 
 
 def _setup_agent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> LibrarianAgent:
     monkeypatch.setattr(
-        "autogpt.skills.library.get_embedding", lambda _text, _config: [0.1, 0.2, 0.3]
+        "autoai.skills.library.get_embedding", lambda _text, _config: [0.1, 0.2, 0.3]
     )
     monkeypatch.setattr(
-        "autogpt.skills.librarian.SkillLibrary",
+        "autoai.skills.librarian.SkillLibrary",
         lambda config: library_module.SkillLibrary(config, storage_path=tmp_path),
     )
-    from autogpt.plugins import library as plugin_library_module
-    from autogpt.skills.vector_db import MemoryVectorDB
+    from autoai.plugins import library as plugin_library_module
+    from autoai.skills.vector_db import MemoryVectorDB
 
     monkeypatch.setattr(
-        "autogpt.skills.librarian.PluginLibrary",
+        "autoai.skills.librarian.PluginLibrary",
         lambda config, _repo_path=None: plugin_library_module.PluginLibrary(
             config, tmp_path, vector_db=MemoryVectorDB()
         ),
@@ -61,8 +61,8 @@ def _create_plugin_spec(tmp_path: Path, name: str, policy: str) -> tuple[Path, P
         "name": name,
         "description": "Test plugin",
         "instructions": "",
-        "developer": "AutoGPT",
-        "policy_maker": "AutoGPT",
+        "developer": "AutoAI",
+        "policy_maker": "AutoAI",
         "underlying_library": {
             "name": "lib",
             "version": "0.1",
@@ -145,7 +145,7 @@ def test_find_plugin(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     def fake_get_embedding(text: str, _config: Config) -> List[float]:
         return embeddings[text]
 
-    monkeypatch.setattr("autogpt.plugins.library.get_embedding", fake_get_embedding)
+    monkeypatch.setattr("autoai.plugins.library.get_embedding", fake_get_embedding)
 
     agent = _setup_agent(tmp_path, monkeypatch)
 
@@ -274,7 +274,7 @@ def test_get_source_code_path_restricted(
     agent = _setup_agent(tmp_path, monkeypatch)
     agent.skill_library.config.plugins_dir = str(plugin_dir)
 
-    from autogpt.telemetry import audit as audit_module
+    from autoai.telemetry import audit as audit_module
 
     monkeypatch.setattr(
         audit_module, "AUDIT_LOG_FILE", tmp_path / "audit.log", raising=False

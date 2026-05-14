@@ -1,0 +1,112 @@
+# AutoAI Unified Model Configuration
+# This file defines model specs, aliases, and routing policies.
+
+models:
+  # OpenAI Models
+  - model_id: gpt-4o
+    provider_name: openai
+    display_name: GPT-4o
+    tier: smart
+    capabilities: 47  # CHAT|FUNCTION_CALLING|STREAMING|VISION
+    max_context_tokens: 128000
+    max_output_tokens: 16384
+    prompt_token_cost_per_1k: 0.0025
+    completion_token_cost_per_1k: 0.01
+    degradation_target: gpt-4o-mini
+
+  - model_id: gpt-4o-mini
+    provider_name: openai
+    display_name: GPT-4o Mini
+    tier: fast
+    capabilities: 22  # CHAT|FUNCTION_CALLING|STREAMING
+    max_context_tokens: 128000
+    max_output_tokens: 16384
+    prompt_token_cost_per_1k: 0.00015
+    completion_token_cost_per_1k: 0.0006
+    degradation_target: gpt-3.5-turbo
+
+  - model_id: gpt-3.5-turbo
+    provider_name: openai
+    display_name: GPT-3.5 Turbo
+    tier: fast
+    capabilities: 22
+    max_context_tokens: 16384
+    max_output_tokens: 4096
+    prompt_token_cost_per_1k: 0.0005
+    completion_token_cost_per_1k: 0.0015
+
+  - model_id: text-embedding-ada-002
+    provider_name: openai
+    display_name: Ada Embedding V2
+    tier: embedding
+    capabilities: 4  # EMBEDDING
+    max_context_tokens: 8192
+    prompt_token_cost_per_1k: 0.0001
+
+  # DeepSeek Models
+  - model_id: deepseek-chat
+    provider_name: deepseek
+    display_name: DeepSeek Chat
+    tier: balanced
+    capabilities: 22
+    max_context_tokens: 65536
+    max_output_tokens: 8192
+    prompt_token_cost_per_1k: 0.00014
+    completion_token_cost_per_1k: 0.00028
+
+  - model_id: deepseek-reasoner
+    provider_name: deepseek
+    display_name: DeepSeek Reasoner
+    tier: smart
+    capabilities: 18  # CHAT|REASONING|STREAMING
+    max_context_tokens: 65536
+    max_output_tokens: 8192
+    prompt_token_cost_per_1k: 0.00055
+    completion_token_cost_per_1k: 0.00219
+    degradation_target: deepseek-chat
+
+  # Anthropic Models (via OpenRouter or direct)
+  - model_id: claude-3-5-sonnet-latest
+    provider_name: anthropic
+    display_name: Claude 3.5 Sonnet
+    tier: smart
+    capabilities: 47
+    max_context_tokens: 200000
+    max_output_tokens: 8192
+    prompt_token_cost_per_1k: 0.003
+    completion_token_cost_per_1k: 0.015
+    degradation_target: deepseek-chat
+
+  # Local Models (Ollama)
+  - model_id: llama3.1:8b
+    provider_name: ollama
+    display_name: Llama 3.1 8B (Local)
+    tier: fast
+    capabilities: 17  # CHAT|STREAMING
+    max_context_tokens: 8192
+    max_output_tokens: 4096
+    is_local: true
+
+  - model_id: qwen2.5:14b
+    provider_name: ollama
+    display_name: Qwen 2.5 14B (Local)
+    tier: balanced
+    capabilities: 17
+    max_context_tokens: 32768
+    max_output_tokens: 8192
+    is_local: true
+
+  - model_id: deepseek-r1:7b
+    provider_name: ollama
+    display_name: DeepSeek R1 7B (Local)
+    tier: balanced
+    capabilities: 18  # CHAT|REASONING|STREAMING
+    max_context_tokens: 32768
+    max_output_tokens: 8192
+    is_local: true
+
+aliases:
+  smart: gpt-4o
+  fast: gpt-4o-mini
+  local: llama3.1:8b
+  embedding: text-embedding-ada-002

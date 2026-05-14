@@ -11,7 +11,7 @@ import pytest
 from governance.autonomy_level import AutonomyLevel, AutonomyManager
 from governance.modification_chain import ModificationChain
 from governance.experience_store import ExperienceStore
-from autogpt.agents.unattended_runner import (
+from autoai.agents.unattended_runner import (
     HealthStatus,
     Heartbeat,
     RunJournalEntry,
@@ -19,13 +19,13 @@ from autogpt.agents.unattended_runner import (
     UnattendedRunner,
     WatchdogEntry,
 )
-from autogpt.agents.full_evolution_loop import (
+from autoai.agents.full_evolution_loop import (
     EvolutionCycleResult,
     FullEvolutionLoop,
 )
-from autogpt.agents.arch_diagnoser import ArchDiagnoser
-from autogpt.agents.arch_refactorer import ArchRefactorer
-from autogpt.agents.evolution_community import (
+from autoai.agents.arch_diagnoser import ArchDiagnoser
+from autoai.agents.arch_refactorer import ArchRefactorer
+from autoai.agents.evolution_community import (
     CommunityMember,
     DistilledRule,
     EvolutionCommunity,
@@ -141,7 +141,7 @@ class TestFullEvolutionLoop:
 
     @pytest.mark.asyncio
     async def test_cycle_with_protocol_upgrader(self):
-        from autogpt.agents.protocol_upgrader import ProtocolUpgrader, ProtocolVersion
+        from autoai.agents.protocol_upgrader import ProtocolUpgrader, ProtocolVersion
         upgrader = ProtocolUpgrader()
         upgrader.register_agent("a1", [ProtocolVersion(1, 1, 0)])
         loop = FullEvolutionLoop(protocol_upgrader=upgrader)

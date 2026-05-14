@@ -1,6 +1,6 @@
 import pytest
 
-from autogpt.workspace import Workspace
+from autoai.workspace import Workspace
 from tests.challenges.challenge_decorator.challenge_decorator import challenge
 from tests.challenges.utils import run_challenge
 

@@ -1,7 +1,7 @@
 import pytest
 
-from autogpt.models.command_parameter import CommandParameter, ParameterType
-from autogpt.llm.providers.openai import OpenAIFunctionSpec
+from autoai.models.command_parameter import CommandParameter, ParameterType
+from autoai.llm.providers.openai import OpenAIFunctionSpec
 
 
 def test_invalid_command_parameter_type():

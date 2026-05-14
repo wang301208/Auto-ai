@@ -2,9 +2,9 @@ from types import SimpleNamespace
 
 import pytest
 
-from autogpt.agents.archaeologist import Archaeologist
-from autogpt.config import Config
-from autogpt.event_bus import (
+from autoai.agents.archaeologist import Archaeologist
+from autoai.config import Config
+from autoai.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
     EventMessage,
@@ -42,7 +42,7 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librari
     )
 
     monkeypatch.setattr(
-        "autogpt.agents.archaeologist.analyze_dependency",
+        "autoai.agents.archaeologist.analyze_dependency",
         lambda dep, src, new_version=None: {
             "dependency": dep,
             "version": None,
@@ -59,7 +59,7 @@ def test_archaeologist_recommends_skill_without_git_ops(monkeypatch, use_librari
         calls.append(cmd)
         return SimpleNamespace(stdout="", stderr="")
 
-    monkeypatch.setattr("autogpt.agents.archaeologist.subprocess.run", fake_run)
+    monkeypatch.setattr("autoai.agents.archaeologist.subprocess.run", fake_run)
 
     payload = {
         "plugin": "example_plugin",

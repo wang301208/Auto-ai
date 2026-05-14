@@ -1,7 +1,7 @@
 ## Original ignores
-autogpt/keys.py
-autogpt/*.json
-auto_gpt_workspace/*
+autoai/keys.py
+autoai/*.json
+auto_ai_workspace/*
 *.mpeg
 .env
 azure.yaml
@@ -9,14 +9,14 @@ ai_settings.yaml
 last_run_ai_settings.yaml
 .vscode
 .idea/*
-auto-gpt.json
+auto-ai.json
 log.txt
 log-ingestion.txt
 /logs
 *.log
 *.mp3
 mem.sqlite3
-venvAutoGPT
+venvAutoAI
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

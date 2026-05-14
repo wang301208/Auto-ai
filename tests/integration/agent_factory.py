@@ -1,9 +1,9 @@
 import pytest
 
-from autogpt.agents import Agent
-from autogpt.config import AIConfig, Config
-from autogpt.memory.vector import get_memory
-from autogpt.models.command_registry import CommandRegistry
+from autoai.agents import Agent
+from autoai.config import AIConfig, Config
+from autoai.memory.vector import get_memory
+from autoai.models.command_registry import CommandRegistry
 
 
 @pytest.fixture

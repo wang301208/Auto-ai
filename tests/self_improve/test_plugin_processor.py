@@ -3,9 +3,9 @@ from typing import Any
 
 import yaml
 
-from autogpt.self_improve import DatabaseManager, PatchAgent
-from autogpt.self_improve.plugin_processor import handle_plugin_todo
-from autogpt.self_improve.plugin_todo_queue import PluginTodo
+from autoai.self_improve import DatabaseManager, PatchAgent
+from autoai.self_improve.plugin_processor import handle_plugin_todo
+from autoai.self_improve.plugin_todo_queue import PluginTodo
 
 
 def test_handle_plugin_todo(tmp_path: Path, monkeypatch: Any) -> None:
@@ -35,7 +35,7 @@ def test_handle_plugin_todo(tmp_path: Path, monkeypatch: Any) -> None:
     patch_agent.verify = spy_verify  # type: ignore[assignment]
 
     monkeypatch.setattr(
-        "autogpt.self_improve.plugin_processor.generate_diff", lambda context: diff
+        "autoai.self_improve.plugin_processor.generate_diff", lambda context: diff
     )
 
     todo = PluginTodo(gap="test-gap", context="ctx", goal="goal")
@@ -79,13 +79,13 @@ def test_handle_plugin_todo_export_failure(tmp_path: Path, monkeypatch: Any) -> 
     patch_agent.verify = spy_verify  # type: ignore[assignment]
 
     monkeypatch.setattr(
-        "autogpt.self_improve.plugin_processor.generate_diff", lambda context: diff
+        "autoai.self_improve.plugin_processor.generate_diff", lambda context: diff
     )
 
     def fail_dump(*args: Any, **kwargs: Any) -> None:
         raise RuntimeError("dump fail")
 
-    monkeypatch.setattr("autogpt.self_improve.yaml_exporter.yaml.safe_dump", fail_dump)
+    monkeypatch.setattr("autoai.self_improve.yaml_exporter.yaml.safe_dump", fail_dump)
 
     todo = PluginTodo(gap="test-gap", context="ctx", goal="goal")
     handle_plugin_todo(todo, patch_agent, db, tmp_path)

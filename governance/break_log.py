@@ -2,7 +2,7 @@
 
 Replaces the approval workflow for the autonomous boundary management model.
 Every boundary break is recorded with full decision context for post-hoc audit.
-Human views break records via `agpt breaks` — no real-time approval needed.
+Human views break records via `aai breaks` — no real-time approval needed.
 """
 
 from __future__ import annotations
@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -34,7 +34,7 @@ class BreakRecord:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = datetime.now(timezone.utc).isoformat()
         if not self.record_id:
             self.record_id = f"break_{self.timestamp.replace(':', '').replace('.', '_')}_{id(self) & 0xFFFF}"
 
@@ -76,7 +76,7 @@ class BreakLog:
     """Append-only break decision log backed by JSONL file.
 
     Thread-safe. Used by BoundaryManager to record all break decisions.
-    Human inspects via `agpt breaks [--session ID] [--limit N]`.
+    Human inspects via `aai breaks [--session ID] [--limit N]`.
     """
 
     def __init__(self, log_path: str | Path = "governance/break_log.jsonl") -> None:

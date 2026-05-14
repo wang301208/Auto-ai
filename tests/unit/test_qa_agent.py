@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pytest_mock import MockerFixture
 
-from autogpt.event_bus import (
+from autoai.event_bus import (
     APPROVAL_GRANTED,
     CODE_FIX_PROPOSED,
     ApprovalGranted,
@@ -17,12 +17,12 @@ from autogpt.event_bus import (
     TestsFailed,
 )
 
-# Avoid importing autogpt.agents package initializer with heavy dependencies
-agents_pkg = types.ModuleType("autogpt.agents")
-agents_pkg.__path__ = ["autogpt/agents"]
-sys.modules.setdefault("autogpt.agents", agents_pkg)
+# Avoid importing autoai.agents package initializer with heavy dependencies
+agents_pkg = types.ModuleType("autoai.agents")
+agents_pkg.__path__ = ["autoai/agents"]
+sys.modules.setdefault("autoai.agents", agents_pkg)
 
-agent_stub = types.ModuleType("autogpt.agents.agent")
+agent_stub = types.ModuleType("autoai.agents.agent")
 
 
 class Agent:  # minimal stub to satisfy imports
@@ -30,23 +30,23 @@ class Agent:  # minimal stub to satisfy imports
 
 
 agent_stub.Agent = Agent  # type: ignore[attr-defined]
-sys.modules.setdefault("autogpt.agents.agent", agent_stub)
+sys.modules.setdefault("autoai.agents.agent", agent_stub)
 agents_pkg.Agent = Agent  # type: ignore[attr-defined]
 
-testing_stub = types.ModuleType("autogpt.commands.testing")
+testing_stub = types.ModuleType("autoai.commands.testing")
 testing_stub.run_tests = lambda *a, **k: ""  # type: ignore[attr-defined]
-sys.modules.setdefault("autogpt.commands.testing", testing_stub)
+sys.modules.setdefault("autoai.commands.testing", testing_stub)
 
-git_ops_stub = types.ModuleType("autogpt.commands.git_operations")
+git_ops_stub = types.ModuleType("autoai.commands.git_operations")
 git_ops_stub.git_checkout = lambda *a, **k: ""  # type: ignore[attr-defined]
 git_ops_stub.git_clone = lambda *a, **k: ""  # type: ignore[attr-defined]
-sys.modules.setdefault("autogpt.commands.git_operations", git_ops_stub)
+sys.modules.setdefault("autoai.commands.git_operations", git_ops_stub)
 
-librarian_stub = types.ModuleType("autogpt.skills.librarian")
+librarian_stub = types.ModuleType("autoai.skills.librarian")
 librarian_stub.LibrarianAgent = object  # type: ignore[attr-defined]
-sys.modules.setdefault("autogpt.skills.librarian", librarian_stub)
+sys.modules.setdefault("autoai.skills.librarian", librarian_stub)
 
-qa_module = importlib.import_module("autogpt.agents.qa_agent")
+qa_module = importlib.import_module("autoai.agents.qa_agent")
 QAAgent = qa_module.QAAgent
 
 

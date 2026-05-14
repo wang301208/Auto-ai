@@ -1,8 +1,8 @@
 from pathlib import Path
 from typing import Any
 
-from autogpt.event_bus import EventBus, MessageQueue
-from autogpt.self_improve import (
+from autoai.event_bus import EventBus, MessageQueue
+from autoai.self_improve import (
     DatabaseManager,
     PatchAgent,
     PluginTodoQueue,
@@ -39,7 +39,7 @@ def test_self_develop_processes_plugin_todo(tmp_path: Path, monkeypatch: Any) ->
     patch_agent.verify = spy_verify  # type: ignore[assignment]
 
     monkeypatch.setattr(
-        "autogpt.self_improve.self_develop.generate_diff", lambda context: diff
+        "autoai.self_improve.self_develop.generate_diff", lambda context: diff
     )
 
     plugin_queue.record_failure("gap", "ctx", "goal", threshold=1)

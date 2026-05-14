@@ -3,7 +3,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-from autogpt.event_bus.message_types import EventMessage
+from autoai.event_bus.message_types import EventMessage
 
 from dual_ring_ai.core.event_bus import EventBus
 from dual_ring_ai.core.event_bus import EventTypes

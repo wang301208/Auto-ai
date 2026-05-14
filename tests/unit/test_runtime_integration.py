@@ -7,7 +7,7 @@ import pytest
 
 class TestAsyncAgentModelRouter:
     def test_agent_has_new_fields(self):
-        from autogpt.agents.async_agent import AsyncAgent
+        from autoai.agents.async_agent import AsyncAgent
         import inspect
         source = inspect.getsource(AsyncAgent.__init__)
         assert "_model_router" in source
@@ -16,7 +16,7 @@ class TestAsyncAgentModelRouter:
         assert "_streaming_chat" in source
 
     def test_attach_model_router(self):
-        from autogpt.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
+        from autoai.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
         registry = ModelRegistry()
         registry.load_builtin_specs()
         router = ModelRouter(registry=registry)
@@ -34,7 +34,7 @@ class TestAsyncAgentModelRouter:
         assert agent._model_registry is registry
 
     def test_attach_sandbox(self):
-        from autogpt.sandbox import SubprocessSandbox, SandboxConfig
+        from autoai.sandbox import SubprocessSandbox, SandboxConfig
 
         sandbox = SubprocessSandbox(SandboxConfig())
 
@@ -48,7 +48,7 @@ class TestAsyncAgentModelRouter:
         assert agent._sandbox is sandbox
 
     def test_attach_stream_buffer(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer
+        from autoai.llm.model_router.streaming import StreamBuffer
 
         buf = StreamBuffer()
 
@@ -57,7 +57,7 @@ class TestAsyncAgentModelRouter:
             _streaming_chat = None
             def attach_stream_buffer(self, buf):
                 self._stream_buffer = buf
-                from autogpt.llm.model_router.streaming import StreamingChat
+                from autoai.llm.model_router.streaming import StreamingChat
                 self._streaming_chat = StreamingChat()
 
         agent = MockAgent()
@@ -69,7 +69,7 @@ class TestAsyncAgentModelRouter:
 class TestAsyncAgentSandboxIntegration:
     @pytest.mark.asyncio
     async def test_sandbox_blocks_command(self):
-        from autogpt.sandbox import SubprocessSandbox, SandboxConfig
+        from autoai.sandbox import SubprocessSandbox, SandboxConfig
 
         config = SandboxConfig(
             allowed_commands={"read_file"},
@@ -83,7 +83,7 @@ class TestAsyncAgentSandboxIntegration:
 
     @pytest.mark.asyncio
     async def test_sandbox_blocks_path(self):
-        from autogpt.sandbox import SubprocessSandbox, SandboxConfig
+        from autoai.sandbox import SubprocessSandbox, SandboxConfig
 
         config = SandboxConfig(workspace_dir="/tmp/safe")
         sandbox = SubprocessSandbox(config)
@@ -94,7 +94,7 @@ class TestAsyncAgentSandboxIntegration:
 
 class TestAsyncAgentStreamIntegration:
     def test_stream_buffer_receives_think_end(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamingEvent, StreamEventType
 
         buf = StreamBuffer()
         buf.push(StreamingEvent(
@@ -112,7 +112,7 @@ class TestAsyncAgentStreamIntegration:
         assert buf.stats.total_cost == 0.005
 
     def test_stream_callback_chain(self):
-        from autogpt.llm.model_router.streaming import StreamBuffer, StreamEmitter, StreamEventType
+        from autoai.llm.model_router.streaming import StreamBuffer, StreamEmitter, StreamEventType
 
         buf = StreamBuffer()
         emitter = StreamEmitter(model="test", on_event=buf.make_callback())
@@ -128,7 +128,7 @@ class TestAsyncAgentStreamIntegration:
 
 class TestSystemBootstrapFullIntegration:
     def test_full_system_attach(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         import tempfile
         from pathlib import Path
 
@@ -167,8 +167,8 @@ class TestSystemBootstrapFullIntegration:
 class TestDistributedTaskSchedulerIntegration:
     @pytest.mark.asyncio
     async def test_local_backend_dispatch(self):
-        from autogpt.distributed import LocalBackend
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory
+        from autoai.distributed import LocalBackend
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory
 
         backend = LocalBackend(max_concurrent=2)
         await backend.start()
@@ -185,8 +185,8 @@ class TestDistributedTaskSchedulerIntegration:
 
     @pytest.mark.asyncio
     async def test_concurrent_distributed_dispatch(self):
-        from autogpt.distributed import LocalBackend
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory
+        from autoai.distributed import LocalBackend
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory
 
         backend = LocalBackend(max_concurrent=3)
         await backend.start()

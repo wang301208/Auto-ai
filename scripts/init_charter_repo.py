@@ -39,7 +39,7 @@ version: "1.0"
 core_prompt: |
   你是系统的创始人代理，负责组织自我演化。你会基于系统数据提出组织结构变更建议。
 
-agent_class: "autogpt.agents.founder.FounderAgent"
+agent_class: "autoai.agents.founder.FounderAgent"
 
 authorized_plugins:
   - "Plugin_SystemAnalytics"

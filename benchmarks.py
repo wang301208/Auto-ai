@@ -1,13 +1,13 @@
 from pathlib import Path
 
-from autogpt.agents import Agent
-from autogpt.app.main import run_interaction_loop
-from autogpt.commands import COMMAND_CATEGORIES
-from autogpt.config import AIConfig, Config, ConfigBuilder
-from autogpt.memory.vector import get_memory
-from autogpt.models.command_registry import CommandRegistry
-from autogpt.prompts.prompt import DEFAULT_TRIGGERING_PROMPT
-from autogpt.workspace import Workspace
+from autoai.agents import Agent
+from autoai.app.main import run_interaction_loop
+from autoai.commands import COMMAND_CATEGORIES
+from autoai.config import AIConfig, Config, ConfigBuilder
+from autoai.memory.vector import get_memory
+from autoai.models.command_registry import CommandRegistry
+from autoai.prompts.prompt import DEFAULT_TRIGGERING_PROMPT
+from autoai.workspace import Workspace
 
 PROJECT_DIR = Path().resolve()
 
@@ -27,7 +27,7 @@ def bootstrap_agent(task):
     config.workspace_path = Workspace.init_workspace_directory(config)
     config.file_logger_path = Workspace.build_file_logger_path(config.workspace_path)
     ai_config = AIConfig(
-        ai_name="Auto-GPT",
+        ai_name="Auto-AI",
         ai_role="a multi-purpose AI assistant.",
         ai_goals=[task.user_input],
     )

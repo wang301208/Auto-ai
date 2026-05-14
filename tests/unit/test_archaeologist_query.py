@@ -4,15 +4,15 @@ import types
 
 import pytest
 
-from autogpt.event_bus import MessageQueue
-from autogpt.config import Config
+from autoai.event_bus import MessageQueue
+from autoai.config import Config
 
-# Avoid importing autogpt.agents package initializer with heavy dependencies
-agents_pkg = types.ModuleType("autogpt.agents")
-agents_pkg.__path__ = ["autogpt/agents"]
-sys.modules.setdefault("autogpt.agents", agents_pkg)
+# Avoid importing autoai.agents package initializer with heavy dependencies
+agents_pkg = types.ModuleType("autoai.agents")
+agents_pkg.__path__ = ["autoai/agents"]
+sys.modules.setdefault("autoai.agents", agents_pkg)
 
-arch_module = importlib.import_module("autogpt.agents.archaeologist")
+arch_module = importlib.import_module("autoai.agents.archaeologist")
 Archaeologist = arch_module.Archaeologist
 
 

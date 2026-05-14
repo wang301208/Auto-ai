@@ -328,14 +328,14 @@ DEFAULT_SENTRY_CONFIG = {
     ],
     "log_directories": [
         "logs",
-        "autogpt/logs"
+        "autoai/logs"
     ],
     "log_patterns": ["*.log", "*.txt", "error.log"],
     "github_repos": [
         {
-            "name": "autogpt",
+            "name": "autoai",
             "owner": "Significant-Gravitas",
-            "repo": "AutoGPT",
+            "repo": "AutoAI",
             "current_version": "0.4.7"
         }
     ],

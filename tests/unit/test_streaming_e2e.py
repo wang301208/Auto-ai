@@ -3,7 +3,7 @@
 import asyncio
 import pytest
 
-from autogpt.llm.model_router.streaming import (
+from autoai.llm.model_router.streaming import (
     StreamEventType,
     StreamingEvent,
     StreamEmitter,
@@ -11,7 +11,7 @@ from autogpt.llm.model_router.streaming import (
     StreamBuffer,
     StreamStats,
 )
-from autogpt.llm.model_router.base_provider import ChatMessage, ChatResponse
+from autoai.llm.model_router.base_provider import ChatMessage, ChatResponse
 
 
 class MockStreamingProvider:

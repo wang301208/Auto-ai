@@ -1,6 +1,6 @@
 from typing import Any, Dict
 
-from autogpt import build_agent_from_strategy
+from autoai import build_agent_from_strategy
 
 
 def compute_fitness(result: Dict[str, Any] | Any) -> float:

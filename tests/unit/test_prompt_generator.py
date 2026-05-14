@@ -1,4 +1,4 @@
-from autogpt.prompts.generator import PromptGenerator
+from autoai.prompts.generator import PromptGenerator
 
 
 def test_add_constraint():

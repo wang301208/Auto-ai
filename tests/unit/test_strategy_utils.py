@@ -4,8 +4,8 @@ import sys
 
 import yaml
 
-import autogpt.config_injector as injector
-from autogpt.config import AIConfig
+import autoai.config_injector as injector
+from autoai.config import AIConfig
 
 
 def test_apply_strategy_populates_ai_config(tmp_path):
@@ -44,16 +44,16 @@ def test_build_agent_from_strategy_uses_ai_config(tmp_path, monkeypatch):
     yaml_file.write_text(yaml.safe_dump(data))
 
     # stub dependencies to avoid heavy imports
-    sys.modules['autogpt.agents'] = SimpleNamespace(Agent=lambda **kwargs: SimpleNamespace(**kwargs))
-    sys.modules['autogpt.app.main'] = SimpleNamespace(COMMAND_CATEGORIES=[])
-    sys.modules['autogpt.memory.vector'] = SimpleNamespace(get_memory=lambda cfg: SimpleNamespace())
-    sys.modules['autogpt.models.command_registry'] = SimpleNamespace(CommandRegistry=SimpleNamespace(with_command_modules=lambda modules, config: SimpleNamespace()))
-    sys.modules['autogpt.prompts.prompt'] = SimpleNamespace(DEFAULT_TRIGGERING_PROMPT='default')
-    import autogpt.config as config_module
+    sys.modules['autoai.agents'] = SimpleNamespace(Agent=lambda **kwargs: SimpleNamespace(**kwargs))
+    sys.modules['autoai.app.main'] = SimpleNamespace(COMMAND_CATEGORIES=[])
+    sys.modules['autoai.memory.vector'] = SimpleNamespace(get_memory=lambda cfg: SimpleNamespace())
+    sys.modules['autoai.models.command_registry'] = SimpleNamespace(CommandRegistry=SimpleNamespace(with_command_modules=lambda modules, config: SimpleNamespace()))
+    sys.modules['autoai.prompts.prompt'] = SimpleNamespace(DEFAULT_TRIGGERING_PROMPT='default')
+    import autoai.config as config_module
     monkeypatch.setattr(config_module, 'ConfigBuilder', SimpleNamespace(build_config_from_env=lambda *a, **k: SimpleNamespace()))
 
-    import autogpt
-    agent = autogpt.build_agent_from_strategy(str(yaml_file))
+    import autoai
+    agent = autoai.build_agent_from_strategy(str(yaml_file))
     assert agent.ai_config.ai_name == data["ai_name"]
     assert agent.ai_config.ai_role == data["ai_role"]
     assert agent.ai_config.ai_goals == data["ai_goals"]

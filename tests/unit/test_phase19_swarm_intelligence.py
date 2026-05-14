@@ -8,7 +8,7 @@ from pathlib import Path
 
 import pytest
 
-from autogpt.agents.consensus_engine import (
+from autoai.agents.consensus_engine import (
     ConsensusEngine,
     ConsensusResult,
     Proposal,
@@ -16,7 +16,7 @@ from autogpt.agents.consensus_engine import (
     Vote,
     VoteChoice,
 )
-from autogpt.agents.division_emerger import (
+from autoai.agents.division_emerger import (
     Assignment,
     CapabilityProfile,
     DivisionEmerger,
@@ -24,14 +24,14 @@ from autogpt.agents.division_emerger import (
     RoleStability,
     TaskRequirement,
 )
-from autogpt.agents.knowledge_mesh import (
+from autoai.agents.knowledge_mesh import (
     KnowledgeFragment,
     KnowledgeMesh,
     KnowledgeQuery,
     KnowledgeStatus,
     KnowledgeVersion,
 )
-from autogpt.agents.democratic_governance import (
+from autoai.agents.democratic_governance import (
     AgentTerm,
     Constitution,
     DemocraticGovernance,

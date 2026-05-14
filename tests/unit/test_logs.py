@@ -1,6 +1,6 @@
 import pytest
 
-from autogpt.logs import remove_color_codes
+from autoai.logs import remove_color_codes
 
 
 @pytest.mark.parametrize(
@@ -11,8 +11,8 @@ from autogpt.logs import remove_color_codes
             "COMMAND = browse_website  ARGUMENTS = {'url': 'https://www.google.com', 'question': 'What is the capital of France?'}",
         ),
         (
-            "{'Schaue dir meine Projekte auf github () an, als auch meine Webseiten': 'https://github.com/Significant-Gravitas/Auto-GPT, https://discord.gg/autogpt und https://twitter.com/SigGravitas'}",
-            "{'Schaue dir meine Projekte auf github () an, als auch meine Webseiten': 'https://github.com/Significant-Gravitas/Auto-GPT, https://discord.gg/autogpt und https://twitter.com/SigGravitas'}",
+            "{'Schaue dir meine Projekte auf github () an, als auch meine Webseiten': 'https://github.com/Significant-Gravitas/Auto-AI, https://discord.gg/autoai und https://twitter.com/SigGravitas'}",
+            "{'Schaue dir meine Projekte auf github () an, als auch meine Webseiten': 'https://github.com/Significant-Gravitas/Auto-AI, https://discord.gg/autoai und https://twitter.com/SigGravitas'}",
         ),
         ("", ""),
         ("hello", "hello"),

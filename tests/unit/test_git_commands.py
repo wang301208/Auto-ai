@@ -4,8 +4,8 @@ import pytest
 from git.exc import GitCommandError
 from git.repo.base import Repo
 
-from autogpt.agents.agent import Agent
-from autogpt.commands.git_operations import (
+from autoai.agents.agent import Agent
+from autoai.commands.git_operations import (
     git_blame,
     git_checkout,
     git_clone,
@@ -20,13 +20,13 @@ def mock_clone_from(mocker):
     return mocker.patch.object(Repo, "clone_from")
 
 
-def test_git_clone_auto_gpt_repository(workspace, mock_clone_from, agent: Agent):
+def test_git_clone_auto_ai_repository(workspace, mock_clone_from, agent: Agent):
     mock_clone_from.return_value = None
 
-    repo = "github.com/Significant-Gravitas/Auto-GPT.git"
+    repo = "github.com/Significant-Gravitas/Auto-AI.git"
     scheme = "https://"
     url = scheme + repo
-    clone_path = str(workspace.get_path("auto-gpt-repo"))
+    clone_path = str(workspace.get_path("auto-ai-repo"))
 
     expected_output = f"Cloned {url} to {clone_path}"
 
@@ -58,7 +58,7 @@ def test_git_commit_success(mocker, workspace, agent: Agent):
     mock_repo.is_dirty.return_value = True
     mock_repo.git.add.return_value = None
     mock_repo.index.commit.return_value = None
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_commit(repo_path=repo_path, message="message", agent=agent)
 
@@ -71,7 +71,7 @@ def test_git_commit_no_changes(mocker, workspace, agent: Agent):
     repo_path = str(workspace.get_path("repo"))
     mock_repo = mocker.Mock()
     mock_repo.is_dirty.return_value = False
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_commit(repo_path=repo_path, message="message", agent=agent)
 
@@ -86,7 +86,7 @@ def test_git_commit_error(mocker, workspace, agent: Agent):
     mock_repo.is_dirty.return_value = True
     mock_repo.git.add.return_value = None
     mock_repo.index.commit.side_effect = GitCommandError("commit", "err", "")
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_commit(repo_path=repo_path, message="message", agent=agent)
 
@@ -102,7 +102,7 @@ def test_git_push_success(mocker, workspace, agent: Agent):
     mock_origin.url = "https://github.com/repo.git"
     mock_repo = mocker.Mock()
     mock_repo.remote.return_value = mock_origin
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_push(repo_path=repo_path, branch_name=branch, agent=agent)
 
@@ -120,7 +120,7 @@ def test_git_push_error(mocker, workspace, agent: Agent):
     mock_origin.push.side_effect = GitCommandError("push", "err", "")
     mock_repo = mocker.Mock()
     mock_repo.remote.return_value = mock_origin
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_push(repo_path=repo_path, branch_name=branch, agent=agent)
 
@@ -134,7 +134,7 @@ def test_git_create_branch_success(mocker, workspace, agent: Agent):
     existing_head.name = "main"
     mock_repo = mocker.Mock()
     mock_repo.heads = [existing_head]
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_create_branch(repo_path=repo_path, branch_name=branch, agent=agent)
 
@@ -149,7 +149,7 @@ def test_git_create_branch_exists(mocker, workspace, agent: Agent):
     existing_head.name = branch
     mock_repo = mocker.Mock()
     mock_repo.heads = [existing_head]
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_create_branch(repo_path=repo_path, branch_name=branch, agent=agent)
 
@@ -163,7 +163,7 @@ def test_git_create_branch_error(mocker, workspace, agent: Agent):
     mock_repo = mocker.Mock()
     mock_repo.heads = []
     mock_repo.create_head.side_effect = GitCommandError("branch", "err", "")
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_create_branch(repo_path=repo_path, branch_name=branch, agent=agent)
 
@@ -174,7 +174,7 @@ def test_git_checkout_success(mocker, workspace, agent: Agent):
     repo_path = str(workspace.get_path("repo"))
     branch = "develop"
     mock_repo = mocker.Mock()
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_checkout(repo_path=repo_path, branch_name=branch, agent=agent)
 
@@ -187,7 +187,7 @@ def test_git_checkout_error(mocker, workspace, agent: Agent):
     branch = "develop"
     mock_repo = mocker.Mock()
     mock_repo.git.checkout.side_effect = GitCommandError("checkout", "err", "")
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_checkout(repo_path=repo_path, branch_name=branch, agent=agent)
 
@@ -200,7 +200,7 @@ def test_git_blame_success(mocker, workspace, agent: Agent):
     line = 10
     mock_repo = mocker.Mock()
     mock_repo.git.blame.return_value = "commit info"
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_blame(
         repo_path=repo_path, file_path=file_path, line_number=line, agent=agent
@@ -218,7 +218,7 @@ def test_git_blame_error(mocker, workspace, agent: Agent):
     line = 10
     mock_repo = mocker.Mock()
     mock_repo.git.blame.side_effect = GitCommandError("blame", "err", "")
-    mocker.patch("autogpt.commands.git_operations.Repo", return_value=mock_repo)
+    mocker.patch("autoai.commands.git_operations.Repo", return_value=mock_repo)
 
     result = git_blame(
         repo_path=repo_path, file_path=file_path, line_number=line, agent=agent

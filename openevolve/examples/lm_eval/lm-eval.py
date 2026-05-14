@@ -26,7 +26,7 @@ from lm_eval.evaluator import evaluate
 # cd to the parent parent directory of this file
 os.chdir(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-PIPELINE_CMD = ["agpt", "alphaevolve"]
+PIPELINE_CMD = ["aai", "alphaevolve"]
 
 
 @register_model("openevolve")

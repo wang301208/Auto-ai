@@ -1,4 +1,4 @@
-"""Algorithm Library for AutoGPT.
+"""Algorithm Library for AutoAI.
 
 Provides algorithm registration, versioning, lifecycle management,
 evaluation, and promotion workflows. Integrates with the governance

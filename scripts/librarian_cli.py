@@ -8,9 +8,9 @@ import logging
 from pathlib import Path
 from types import SimpleNamespace
 
-from autogpt.commands.code_reader import read_and_understand_code
-from autogpt.config import Config
-from autogpt.skills import LibrarianAgent
+from autoai.commands.code_reader import read_and_understand_code
+from autoai.config import Config
+from autoai.skills import LibrarianAgent
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +81,7 @@ def main() -> None:
         report = read_and_understand_code(args.path, dummy_agent)
         print(report)
     elif args.command == "audit-log":
-        from autogpt.telemetry.audit import load_log
+        from autoai.telemetry.audit import load_log
 
         entries = load_log()
         if args.export:

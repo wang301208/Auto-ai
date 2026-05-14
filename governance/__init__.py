@@ -1,4 +1,4 @@
-"""Governance module for AutoGPT.
+"""Governance module for AutoAI.
 
 Provides policy enforcement, boundary management, rate limiting, audit logging,
 quota management, auto-evolution, autonomy escalation, modification chains,

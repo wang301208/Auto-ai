@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from autogpt.orchestrator_blueprint import BlueprintOrchestrator
+from autoai.orchestrator_blueprint import BlueprintOrchestrator
 
 
 def main() -> None:
@@ -15,7 +15,7 @@ def main() -> None:
 
     orch = BlueprintOrchestrator(
         charter_git_url=args.charter_url,
-        local_path=".autogpt_charter",
+        local_path=".autoai_charter",
         events_db=args.events_db,
         poll_interval_sec=args.poll,
     )

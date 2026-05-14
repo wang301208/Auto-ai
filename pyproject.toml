@@ -3,67 +3,37 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "agpt"
+name = "aai"
 version = "0.4.7"
 authors = [
-  { name="Torantulino", email="support@agpt.co" },
+  { name="Torantulino", email="support@aai.co" },
 ]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 description = "An open-source attempt to make GPT-4 autonomous"
 
 dependencies = [
-    "beautifulsoup4>=4.12.2",
-    "colorama==0.4.6",
-    "distro==1.8.0",
-    "openai>=1.0",
-    "playsound==1.2.2",
-    "python-dotenv==0.21",
-    "pyyaml==6.0.1",
-    "PyPDF2",
-    "python-docx",
-    "markdown",
-    "pylatexenc",
-    "readability-lxml==0.8.1",
-    "requests",
-    "tiktoken==0.3.3",
-    "gTTS==2.3.1",
-    "duckduckgo-search==3.0.2",
-    "watchdog",
-    "google-api-python-client",
-    "pinecone-client==2.2.1",
-    "redis",
-    "orjson==3.8.10",
-    "ftfy>=6.1.1",
-    "Pillow",
-    "selenium==4.1.4",
-    "webdriver-manager",
-    "jsonschema",
-    "click",
-    "charset-normalizer>=3.1.0",
-    "spacy>=3.0.0,<4.0.0",
-    "zh-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.7.0/zh_core_web_sm-3.7.0-py3-none-any.whl",
-    "prompt_toolkit>=3.0.38",
-    "pydantic",
-    "inflection",
-    "agent-protocol>=0.1.1",
-    "fastapi",
-    "uvicorn",
-    "chromadb",
-    "pytest",
+    "openai>=1.30",
+    "pyyaml>=6.0.1",
+    "requests>=2.31",
+    "tiktoken>=0.7",
+    "click>=8.1",
+    "pydantic>=2.0",
+    "gitpython>=3.1.31",
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/Significant-Gravitas/Auto-GPT"
-"Bug Tracker" = "https://github.com/Significant-Gravitas/Auto-GPT"
+"Homepage" = "https://github.com/Significant-Gravitas/Auto-AI"
+"Bug Tracker" = "https://github.com/Significant-Gravitas/Auto-AI"
 
 [project.scripts]
-agpt = "autogpt.app.cli:main"
+aai = "autoai.app.cli:main"
 local-agent = "tui_gateway.cli:main"
 
 [project.optional-dependencies]
@@ -75,8 +45,6 @@ dev = [
     "autoflake",
     "black",
     "isort",
-    "gitpython==3.1.31",
-    "auto-gpt-plugin-template @ git+https://github.com/Significant-Gravitas/Auto-GPT-Plugin-Template@0.1.0",
     "mkdocs",
     "mkdocs-material",
     "mkdocs-table-reader-plugin",
@@ -84,44 +52,86 @@ dev = [
     "mypy",
     "types-Markdown",
     "types-beautifulsoup4",
-    "types-colorama",
     "types-Pillow",
-    "openapi-python-client==0.13.4",
+    "openapi-python-client>=0.15",
     "ruff",
 ]
 
 test = [
-    # pytest is part of core dependencies
-    "asynctest",
-    "pytest-asyncio",
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
     "pytest-benchmark",
     "pytest-cov",
     "pytest-integration",
     "pytest-mock",
-    "vcrpy @ git+https://github.com/Significant-Gravitas/vcrpy.git@master",
+    "vcrpy",
     "pytest-recording",
     "pytest-xdist",
 ]
 
-pubsub = [
-    "pypubsub",
-]
 
 alphaevolve = [
     "flask",
+]
+
+nlp = [
+    "spacy>=3.0.0,<4.0.0",
+    "zh-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/zh_core_web_sm-3.7.0/zh_core_web_sm-3.7.0-py3-none-any.whl",
+]
+
+vector-db = [
+    "chromadb",
+    "redis",
+]
+
+web = [
+    "beautifulsoup4>=4.12.2",
+    "selenium>=4.18",
+    "webdriver-manager",
+    "duckduckgo-search==3.0.2",
+]
+
+media = [
+    "Pillow",
+    "PyPDF2",
+    "python-docx",
+    "pylatexenc",
+    "gTTS==2.3.1",
+]
+
+interactive = [
+    "prompt_toolkit>=3.0.38",
+]
+api-server = [
+    "fastapi",
+    "uvicorn",
+    "agent-protocol>=0.1.1",
+]
+
+format = [
+    "orjson>=3.9",
+    "ftfy>=6.1.1",
+    "jsonschema",
+    "charset-normalizer>=3.1.0",
+    "google-api-python-client",
+    "watchdog",
+]
+
+all = [
+    "aai[nlp,vector-db,web,media,api-server,format,interactive,dev,test]",
 ]
 
 [tool.hatch.metadata]
 allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["autogpt", "openevolve/openevolve"]
+packages = ["autoai", "openevolve/openevolve"]
 
 [tool.black]
 line-length = 88
-target-version = ['py310']
+target-version = ['py312']
 include = '\.pyi?$'
-packages = ["autogpt"]
+packages = ["autoai"]
 extend-exclude = '.+/(dist|.venv|venv|build)/.+'
 
 

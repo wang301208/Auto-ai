@@ -1,8 +1,8 @@
 import logging
 import os
 
-from autogpt.core.ability.builtins.file_operations import WriteFile
-from autogpt.core.workspace import Workspace
+from autoai.core.ability.builtins.file_operations import WriteFile
+from autoai.core.workspace import Workspace
 
 
 def test_writefile_existing_directory(workspace: Workspace) -> None:

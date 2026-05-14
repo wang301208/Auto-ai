@@ -1,5 +1,5 @@
 # Use an official Python base image from the Docker Hub
-FROM python:3.10
+FROM python:3.12
 
 # Install browsers
 RUN apt-get update && apt-get install -y \
@@ -10,4 +10,4 @@ RUN apt-get update && apt-get install -y \
 RUN apt-get install -y curl jq wget git
 
 # Declare working directory
-WORKDIR /workspace/Auto-GPT
+WORKDIR /workspace/Auto-AI

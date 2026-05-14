@@ -22,7 +22,7 @@ import json
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from enum import Enum
@@ -56,7 +56,7 @@ class FixPattern:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = datetime.now(timezone.utc).isoformat()
         if not self.last_used:
             self.last_used = self.created_at
 
@@ -140,7 +140,7 @@ class ExperienceStore:
             if key in self._patterns:
                 p = self._patterns[key]
                 p.success_count += 1
-                p.last_used = datetime.utcnow().isoformat()
+                p.last_used = datetime.now(timezone.utc).isoformat()
                 p.confidence = min(1.0, p.confidence + 0.05)
                 if metadata:
                     p.metadata.update(metadata)

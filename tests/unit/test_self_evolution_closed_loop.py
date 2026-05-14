@@ -8,7 +8,7 @@ from pathlib import Path
 
 class TestSelfThinkClosedLoop:
     def test_engine_new_fields(self):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         engine = SelfThinkEngine(workspace=Path("/tmp"), auto_fix=True, verify_after_fix=True)
         assert engine.auto_fix
         assert engine.verify_after_fix
@@ -16,8 +16,8 @@ class TestSelfThinkClosedLoop:
         assert engine._fix_success == 0
 
     def test_scan_inject(self):
-        from autogpt.agents.self_think import SelfThinkEngine, SelfReviewSource
-        from autogpt.core.planning.schema import Task, TaskType
+        from autoai.agents.self_think import SelfThinkEngine, SelfReviewSource
+        from autoai.core.planning.schema import Task, TaskType
 
         class MockSource(SelfReviewSource):
             name = "mock"
@@ -33,8 +33,8 @@ class TestSelfThinkClosedLoop:
 
     @pytest.mark.asyncio
     async def test_auto_fix_cycle_success(self):
-        from autogpt.agents.self_think import SelfThinkEngine, SelfReviewSource
-        from autogpt.core.planning.schema import Task, TaskType, TaskStatus
+        from autoai.agents.self_think import SelfThinkEngine, SelfReviewSource
+        from autoai.core.planning.schema import Task, TaskType, TaskStatus
 
         class MockSource(SelfReviewSource):
             name = "mock"
@@ -64,8 +64,8 @@ class TestSelfThinkClosedLoop:
 
     @pytest.mark.asyncio
     async def test_auto_fix_cycle_failure(self):
-        from autogpt.agents.self_think import SelfThinkEngine, SelfReviewSource
-        from autogpt.core.planning.schema import Task, TaskType
+        from autoai.agents.self_think import SelfThinkEngine, SelfReviewSource
+        from autoai.core.planning.schema import Task, TaskType
 
         class MockSource(SelfReviewSource):
             name = "mock"
@@ -92,8 +92,8 @@ class TestSelfThinkClosedLoop:
 
     @pytest.mark.asyncio
     async def test_auto_fix_cycle_no_executor(self):
-        from autogpt.agents.self_think import SelfThinkEngine, SelfReviewSource
-        from autogpt.core.planning.schema import Task, TaskType
+        from autoai.agents.self_think import SelfThinkEngine, SelfReviewSource
+        from autoai.core.planning.schema import Task, TaskType
 
         class MockSource(SelfReviewSource):
             name = "mock"
@@ -109,8 +109,8 @@ class TestSelfThinkClosedLoop:
 
     @pytest.mark.asyncio
     async def test_auto_fix_with_policy_evolver(self):
-        from autogpt.agents.self_think import SelfThinkEngine, SelfReviewSource
-        from autogpt.core.planning.schema import Task, TaskType
+        from autoai.agents.self_think import SelfThinkEngine, SelfReviewSource
+        from autoai.core.planning.schema import Task, TaskType
         from governance import GovernanceGate, PolicyEvolver
 
         class MockSource(SelfReviewSource):
@@ -137,7 +137,7 @@ class TestSelfThinkClosedLoop:
         assert summary["policy_adjusted"] is True
 
     def test_stats(self):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         engine = SelfThinkEngine(workspace=Path("/tmp"))
         stats = engine.stats
         assert "scan_count" in stats
@@ -145,9 +145,9 @@ class TestSelfThinkClosedLoop:
         assert "fix_success" in stats
 
     def test_history_recording(self):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         engine = SelfThinkEngine(workspace=Path("/tmp"))
-        from autogpt.core.planning.schema import Task, TaskType
+        from autoai.core.planning.schema import Task, TaskType
         task = Task(objective="test", type=TaskType.CODE, priority=1, ready_criteria=[], acceptance_criteria=[])
         engine._record_history(task, "fixed_and_verified", {"success": True})
         assert len(engine._history) == 1
@@ -185,7 +185,7 @@ class TestPolicyEvolverFromCycle:
 
 class TestConfigModelRouterBridge:
     def test_alias_setup(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         with tempfile.TemporaryDirectory() as tmpdir:
             config = SystemConfig(
                 enable_health_monitor=False,
@@ -202,7 +202,7 @@ class TestConfigModelRouterBridge:
             assert system.model_registry.get_model("embedding") is not None
 
     def test_resolve_model_alias(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         with tempfile.TemporaryDirectory() as tmpdir:
             config = SystemConfig(
                 enable_health_monitor=False,

@@ -212,21 +212,21 @@ class TestAutonomyLevel:
 
 class TestSelfModifyPipeline:
     def test_can_modify_l2(self):
-        from autogpt.agents.self_modify import SelfModifyPipeline
+        from autoai.agents.self_modify import SelfModifyPipeline
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_BOUND)
         pipeline = SelfModifyPipeline(workspace=Path("/tmp"), autonomy=autonomy)
         assert pipeline.can_modify is True
 
     def test_cannot_modify_l1(self):
-        from autogpt.agents.self_modify import SelfModifyPipeline
+        from autoai.agents.self_modify import SelfModifyPipeline
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SUPERVISED)
         pipeline = SelfModifyPipeline(workspace=Path("/tmp"), autonomy=autonomy)
         assert pipeline.can_modify is False
 
     def test_can_hot_reload_l3(self):
-        from autogpt.agents.self_modify import SelfModifyPipeline
+        from autoai.agents.self_modify import SelfModifyPipeline
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_REWRITE)
         pipeline = SelfModifyPipeline(workspace=Path("/tmp"), autonomy=autonomy)
@@ -235,7 +235,7 @@ class TestSelfModifyPipeline:
 
     @pytest.mark.asyncio
     async def test_low_autonomy_returns_suggestion(self):
-        from autogpt.agents.self_modify import SelfModifyPipeline
+        from autoai.agents.self_modify import SelfModifyPipeline
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.MANUAL)
         pipeline = SelfModifyPipeline(workspace=Path("/tmp"), autonomy=autonomy)
@@ -247,7 +247,7 @@ class TestSelfModifyPipeline:
         assert "suggestion" in result
 
     def test_sandbox_workspace_context_manager(self):
-        from autogpt.agents.self_modify import SandboxWorkspace
+        from autoai.agents.self_modify import SandboxWorkspace
         with tempfile.TemporaryDirectory() as tmpdir:
             src = Path(tmpdir) / "src"
             src.mkdir()
@@ -259,20 +259,20 @@ class TestSelfModifyPipeline:
             assert not sandbox_path.exists()
 
     def test_file_to_module(self):
-        from autogpt.agents.self_modify import SelfModifyPipeline
+        from autoai.agents.self_modify import SelfModifyPipeline
         from governance.autonomy_level import AutonomyManager
         pipeline = SelfModifyPipeline(workspace=Path("/tmp"))
-        assert pipeline._file_to_module("autogpt/agents/agent.py") == "autogpt.agents.agent"
-        assert pipeline._file_to_module("autogpt/agents/__init__.py") == "autogpt.agents"
+        assert pipeline._file_to_module("autoai/agents/agent.py") == "autoai.agents.agent"
+        assert pipeline._file_to_module("autoai/agents/__init__.py") == "autoai.agents"
         assert pipeline._file_to_module("data.json") is None
 
 
 class TestSelfThinkWithPipeline:
     @pytest.mark.asyncio
     async def test_auto_fix_with_pipeline_l2(self):
-        from autogpt.agents.self_think import SelfThinkEngine, SelfReviewSource
-        from autogpt.agents.self_modify import SelfModifyPipeline
-        from autogpt.core.planning.schema import Task, TaskType
+        from autoai.agents.self_think import SelfThinkEngine, SelfReviewSource
+        from autoai.agents.self_modify import SelfModifyPipeline
+        from autoai.core.planning.schema import Task, TaskType
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
 
         class MockSource(SelfReviewSource):
@@ -295,8 +295,8 @@ class TestSelfThinkWithPipeline:
 
     @pytest.mark.asyncio
     async def test_auto_fix_without_pipeline_fallback(self):
-        from autogpt.agents.self_think import SelfThinkEngine, SelfReviewSource
-        from autogpt.core.planning.schema import Task, TaskType
+        from autoai.agents.self_think import SelfThinkEngine, SelfReviewSource
+        from autoai.core.planning.schema import Task, TaskType
 
         class MockSource(SelfReviewSource):
             name = "mock"

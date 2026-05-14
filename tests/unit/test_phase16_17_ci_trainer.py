@@ -7,7 +7,7 @@ from pathlib import Path
 
 class TestCIAutoBuilder:
     def test_diagnose_no_ci(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder
+        from autoai.agents.ci_auto_builder import CIAutoBuilder
         with tempfile.TemporaryDirectory() as tmpdir:
             builder = CIAutoBuilder(workspace=Path(tmpdir))
             diag = builder.diagnose()
@@ -15,7 +15,7 @@ class TestCIAutoBuilder:
             assert diag.platform is None
 
     def test_diagnose_with_github_actions(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder
+        from autoai.agents.ci_auto_builder import CIAutoBuilder
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = Path(tmpdir)
             wf = ws / ".github" / "workflows"
@@ -27,7 +27,7 @@ class TestCIAutoBuilder:
             assert diag.platform.value == "github_actions"
 
     def test_auto_create_github_actions(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder, CIOperation
+        from autoai.agents.ci_auto_builder import CIAutoBuilder, CIOperation
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = Path(tmpdir)
@@ -39,7 +39,7 @@ class TestCIAutoBuilder:
             assert (ws / ".github" / "workflows" / "ci.yml").is_file()
 
     def test_auto_create_gitlab_ci(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder, CIPlatform
+        from autoai.agents.ci_auto_builder import CIAutoBuilder, CIPlatform
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = Path(tmpdir)
@@ -50,7 +50,7 @@ class TestCIAutoBuilder:
             assert (ws / ".gitlab-ci.yml").is_file()
 
     def test_auto_create_makefile(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder, CIPlatform
+        from autoai.agents.ci_auto_builder import CIAutoBuilder, CIPlatform
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = Path(tmpdir)
@@ -61,7 +61,7 @@ class TestCIAutoBuilder:
             assert (ws / "Makefile").is_file()
 
     def test_cannot_modify_below_l2(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder
+        from autoai.agents.ci_auto_builder import CIAutoBuilder
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         with tempfile.TemporaryDirectory() as tmpdir:
             autonomy = AutonomyManager(initial_level=AutonomyLevel.MANUAL)
@@ -71,7 +71,7 @@ class TestCIAutoBuilder:
             assert len(actions) == 0
 
     def test_no_duplicate_create(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder
+        from autoai.agents.ci_auto_builder import CIAutoBuilder
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = Path(tmpdir)
@@ -82,7 +82,7 @@ class TestCIAutoBuilder:
             assert len(actions2) == 0
 
     def test_auto_extend_ci(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder
+        from autoai.agents.ci_auto_builder import CIAutoBuilder
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         with tempfile.TemporaryDirectory() as tmpdir:
             ws = Path(tmpdir)
@@ -91,13 +91,13 @@ class TestCIAutoBuilder:
             builder.auto_create_ci()
             action = builder.auto_extend_ci(
                 "security_scan",
-                "      - run: pip install bandit\n      - run: bandit -r autogpt/\n",
+                "      - run: pip install bandit\n      - run: bandit -r autoai/\n",
             )
             assert action is not None
             assert "security_scan" in (ws / ".github" / "workflows" / "ci.yml").read_text()
 
     def test_stats(self):
-        from autogpt.agents.ci_auto_builder import CIAutoBuilder
+        from autoai.agents.ci_auto_builder import CIAutoBuilder
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         with tempfile.TemporaryDirectory() as tmpdir:
             autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_BOUND)
@@ -110,7 +110,7 @@ class TestCIAutoBuilder:
 
 class TestModelAutoTrainer:
     def test_cannot_train_below_l3(self):
-        from autogpt.llm.model_router.model_auto_trainer import ModelAutoTrainer, TrainingStatus
+        from autoai.llm.model_router.model_auto_trainer import ModelAutoTrainer, TrainingStatus
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_BOUND)
         trainer = ModelAutoTrainer(workspace=Path("/tmp"), autonomy=autonomy)
@@ -120,14 +120,14 @@ class TestModelAutoTrainer:
         assert "autonomy" in record.error
 
     def test_can_train_at_l3(self):
-        from autogpt.llm.model_router.model_auto_trainer import ModelAutoTrainer
+        from autoai.llm.model_router.model_auto_trainer import ModelAutoTrainer
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_REWRITE)
         trainer = ModelAutoTrainer(workspace=Path("/tmp"), autonomy=autonomy)
         assert trainer.can_train is True
 
     def test_insufficient_data_fails(self):
-        from autogpt.llm.model_router.model_auto_trainer import ModelAutoTrainer, TrainingStatus
+        from autoai.llm.model_router.model_auto_trainer import ModelAutoTrainer, TrainingStatus
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_REWRITE)
         trainer = ModelAutoTrainer(workspace=Path("/tmp"), autonomy=autonomy)
@@ -136,7 +136,7 @@ class TestModelAutoTrainer:
         assert "insufficient_data" in record.error
 
     def test_prepare_sft_data_from_store(self):
-        from autogpt.llm.model_router.model_auto_trainer import ModelAutoTrainer
+        from autoai.llm.model_router.model_auto_trainer import ModelAutoTrainer
         from governance.experience_store import ExperienceStore, IssueType
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         store = ExperienceStore()
@@ -151,7 +151,7 @@ class TestModelAutoTrainer:
         assert "unused var" in data[0].prompt or "null ptr" in data[0].prompt
 
     def test_save_sft_dataset(self):
-        from autogpt.llm.model_router.model_auto_trainer import ModelAutoTrainer, SFTDataPoint
+        from autoai.llm.model_router.model_auto_trainer import ModelAutoTrainer, SFTDataPoint
         with tempfile.TemporaryDirectory() as tmpdir:
             trainer = ModelAutoTrainer(workspace=Path(tmpdir))
             data = [
@@ -165,14 +165,14 @@ class TestModelAutoTrainer:
             assert "add check" in content
 
     def test_training_config_defaults(self):
-        from autogpt.llm.model_router.model_auto_trainer import TrainingConfig
+        from autoai.llm.model_router.model_auto_trainer import TrainingConfig
         config = TrainingConfig()
         assert config.lora_rank == 8
         assert config.num_epochs == 3
         assert config.min_data_points == 50
 
     def test_stats(self):
-        from autogpt.llm.model_router.model_auto_trainer import ModelAutoTrainer
+        from autoai.llm.model_router.model_auto_trainer import ModelAutoTrainer
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_REWRITE)
         trainer = ModelAutoTrainer(workspace=Path("/tmp"), autonomy=autonomy)

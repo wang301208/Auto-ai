@@ -9,7 +9,7 @@ from __future__ import annotations
 import json
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -75,18 +75,18 @@ class QuotaUsage:
 
     def __post_init__(self) -> None:
         if not self.period_start:
-            self.period_start = datetime.utcnow().isoformat()
+            self.period_start = datetime.now(timezone.utc).isoformat()
 
     def is_period_expired(self) -> bool:
         if self.period_seconds is None:
             return False
         start = datetime.fromisoformat(self.period_start)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         return (now - start).total_seconds() >= self.period_seconds
 
     def reset_period(self) -> None:
         self.used = 0.0
-        self.period_start = datetime.utcnow().isoformat()
+        self.period_start = datetime.now(timezone.utc).isoformat()
 
 
 class QuotaManager:

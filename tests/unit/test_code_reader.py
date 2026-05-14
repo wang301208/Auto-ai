@@ -5,8 +5,8 @@ from pathlib import Path
 
 from pytest_mock import MockerFixture
 
-from autogpt.agents.agent import Agent
-from autogpt.commands import code_reader
+from autoai.agents.agent import Agent
+from autoai.commands import code_reader
 
 
 def test_read_and_understand_code_reads_all_files(
@@ -22,7 +22,7 @@ def test_read_and_understand_code_reads_all_files(
 
     mock_resp = types.SimpleNamespace(content="analysis")
     create_chat = mocker.patch(
-        "autogpt.commands.code_reader.create_chat_completion", return_value=mock_resp
+        "autoai.commands.code_reader.create_chat_completion", return_value=mock_resp
     )
 
     with caplog.at_level(logging.INFO):

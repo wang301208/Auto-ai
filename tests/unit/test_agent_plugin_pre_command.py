@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pytest_mock import MockerFixture
 
-from autogpt.agents.agent import Agent
+from autoai.agents.agent import Agent
 
 
 class CommandModifyingPlugin:
@@ -27,7 +27,7 @@ def test_pre_command_modifies_arguments(agent: Agent, mocker: MockerFixture) -> 
     agent.config.plugins = [plugin]
 
     mocked_execute = mocker.patch(
-        "autogpt.agents.agent.execute_command", return_value="result"
+        "autoai.agents.agent.execute_command", return_value="result"
     )
 
     agent.execute("orig", {"arg": "old"}, None)

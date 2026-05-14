@@ -1,10 +1,10 @@
-"""CLI entry point for running the AutoGPT orchestrator."""
+"""CLI entry point for running the AutoAI orchestrator."""
 
 import argparse
 from pathlib import Path
 from typing import Dict
 
-from autogpt.orchestrator import AVAILABLE_AGENTS, Orchestrator
+from autoai.orchestrator import AVAILABLE_AGENTS, Orchestrator
 
 
 def parse_workdirs(pairs: list[str]) -> Dict[str, str]:
@@ -19,7 +19,7 @@ def parse_workdirs(pairs: list[str]) -> Dict[str, str]:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Run AutoGPT orchestrator")
+    parser = argparse.ArgumentParser(description="Run AutoAI orchestrator")
     parser.add_argument(
         "--agents",
         nargs="*",

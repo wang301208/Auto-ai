@@ -2,9 +2,9 @@ import logging
 
 import pytest
 
-from autogpt.core.ability.schema import AbilityResult
-from autogpt.core.agent.simple import SimpleAgent
-from autogpt.core.planning.schema import Task, TaskStatus, TaskType
+from autoai.core.ability.schema import AbilityResult
+from autoai.core.agent.simple import SimpleAgent
+from autoai.core.planning.schema import Task, TaskStatus, TaskType
 
 
 class DummyAbility:

@@ -1,4 +1,4 @@
-"""Tests for :mod:`autogpt.plugins.library`."""
+"""Tests for :mod:`autoai.plugins.library`."""
 from __future__ import annotations
 
 import json
@@ -7,7 +7,7 @@ from typing import Dict, List
 
 import pytest
 
-from autogpt.config import Config
+from autoai.config import Config
 
 
 def _make_embedding_map() -> Dict[str, List[float]]:
@@ -26,14 +26,14 @@ def test_plugin_library_load_and_search(tmp_path: Path, monkeypatch: pytest.Monk
     from types import ModuleType
 
     # Stub out heavy optional dependencies used by get_embedding
-    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
-    vector_pkg = ModuleType("autogpt.memory.vector")
-    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
-    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoAI-0.4.7"))
+    vector_pkg = ModuleType("autoai.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autoai" / "memory" / "vector")]
+    sys.modules.setdefault("autoai.memory.vector", vector_pkg)
     sys.modules.setdefault("spacy", ModuleType("spacy"))
 
-    from autogpt.plugins.library import PluginLibrary
-    from autogpt.skills.vector_db import MemoryVectorDB
+    from autoai.plugins.library import PluginLibrary
+    from autoai.skills.vector_db import MemoryVectorDB
 
     config = Config()
     repo = tmp_path / "plugin_repo"
@@ -51,7 +51,7 @@ def test_plugin_library_load_and_search(tmp_path: Path, monkeypatch: pytest.Monk
     def fake_get_embedding(text: str, _config: Config) -> List[float]:
         return embeddings[text]
 
-    monkeypatch.setattr("autogpt.plugins.library.get_embedding", fake_get_embedding)
+    monkeypatch.setattr("autoai.plugins.library.get_embedding", fake_get_embedding)
 
     library = PluginLibrary(config, repo, vector_db=MemoryVectorDB())
 

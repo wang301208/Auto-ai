@@ -7,7 +7,7 @@ from pathlib import Path
 
 class TestAutonomousSpawner:
     def test_cannot_spawn_below_l4(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_BOUND)
         spawner = AutonomousSpawner(autonomy=autonomy)
@@ -16,14 +16,14 @@ class TestAutonomousSpawner:
         assert result is None
 
     def test_can_spawn_at_l4(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy)
         assert spawner.can_spawn is True
 
     def test_spawn_on_overload(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner, SpawnReason
+        from autoai.agents.autonomous_spawner import AutonomousSpawner, SpawnReason
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, overload_threshold=5)
@@ -34,7 +34,7 @@ class TestAutonomousSpawner:
         assert spawner.children[child_id].reason in (SpawnReason.OVERLOADED, SpawnReason.MISSING_ROLE)
 
     def test_spawn_missing_role(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner, SpawnReason
+        from autoai.agents.autonomous_spawner import AutonomousSpawner, SpawnReason
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, overload_threshold=5)
@@ -44,7 +44,7 @@ class TestAutonomousSpawner:
         assert spawner.children[child_id].role == "security"
 
     def test_no_spawn_below_threshold(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, overload_threshold=50)
@@ -53,7 +53,7 @@ class TestAutonomousSpawner:
         assert result is None
 
     def test_max_children_limit(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, max_children=2, overload_threshold=1)
@@ -67,7 +67,7 @@ class TestAutonomousSpawner:
         assert spawner.child_count == 2
 
     def test_destroy_idle_child(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, overload_threshold=1, idle_timeout_seconds=10)
@@ -79,7 +79,7 @@ class TestAutonomousSpawner:
         assert spawner.child_count == 0
 
     def test_destroy_not_idle(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, overload_threshold=1, idle_timeout_seconds=300)
@@ -89,7 +89,7 @@ class TestAutonomousSpawner:
         assert destroyed is False
 
     def test_consolidate(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, overload_threshold=1)
@@ -102,7 +102,7 @@ class TestAutonomousSpawner:
         assert spawner.child_count == 0
 
     def test_record_child_progress(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy, overload_threshold=1)
@@ -113,7 +113,7 @@ class TestAutonomousSpawner:
         assert spawner.children[child_id].tasks_assigned == 3
 
     def test_stats(self):
-        from autogpt.agents.autonomous_spawner import AutonomousSpawner
+        from autoai.agents.autonomous_spawner import AutonomousSpawner
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_SPAWN)
         spawner = AutonomousSpawner(autonomy=autonomy)

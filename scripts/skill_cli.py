@@ -7,8 +7,8 @@ import json
 import subprocess
 from pathlib import Path
 
-from autogpt.config import Config
-from autogpt.skills.library import SkillLibrary
+from autoai.config import Config
+from autoai.skills.library import SkillLibrary
 
 
 def add_skill(path: str) -> None:

@@ -11,19 +11,19 @@ repos:
       - id: debug-statements
 
   - repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.0
     hooks:
       - id: isort
-        language_version: python3.10
+        language_version: python3.12
 
   - repo: https://github.com/psf/black
-    rev: 23.3.0
+    rev: 24.8.0
     hooks:
       - id: black
-        language_version: python3.10
+        language_version: python3.12
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: 'v1.3.0'
+    rev: 'v1.11.0'
     hooks:
       - id: mypy
 
@@ -31,12 +31,12 @@ repos:
     hooks:
       - id: autoflake
         name: autoflake
-        entry: autoflake --in-place --remove-all-unused-imports --recursive --ignore-init-module-imports --ignore-pass-after-docstring autogpt tests
+        entry: autoflake --in-place --remove-all-unused-imports --recursive --ignore-init-module-imports --ignore-pass-after-docstring autoai tests
         language: python
         types: [ python ]
       - id: pytest-check
         name: pytest-check
-        entry: pytest --cov=autogpt tests/unit
+        entry: pytest --cov=autoai tests/unit
         language: system
         pass_filenames: false
         always_run: true

@@ -2,9 +2,9 @@ from unittest.mock import ANY
 
 from pytest_mock import MockerFixture
 
-from autogpt.app.main import print_assistant_thoughts
-from autogpt.config.config import Config
-from autogpt.core.runner.client_lib.parser import parse_next_ability
+from autoai.app.main import print_assistant_thoughts
+from autoai.config.config import Config
+from autoai.core.runner.client_lib.parser import parse_next_ability
 
 
 class DummyTask:
@@ -39,7 +39,7 @@ def test_print_assistant_thoughts_displays_repetition_assessment(
             "speak": "",
         }
     }
-    logger_mock = mocker.patch("autogpt.app.main.logger.typewriter_log")
+    logger_mock = mocker.patch("autoai.app.main.logger.typewriter_log")
 
     print_assistant_thoughts(ai_name, assistant_reply_json_valid, Config())
 

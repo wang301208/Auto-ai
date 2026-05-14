@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from autogpt.self_improve import DatabaseManager, Profiler
+from autoai.self_improve import DatabaseManager, Profiler
 
 
 def slow_fn() -> int:

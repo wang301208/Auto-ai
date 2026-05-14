@@ -11,8 +11,8 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 
 # 导入现有的event_bus实现
-from autogpt.event_bus import redis_connect, redis_publish, redis_subscribe
-from autogpt.event_bus.message_types import EventMessage
+from autoai.event_bus import redis_connect, redis_publish, redis_subscribe
+from autoai.event_bus.message_types import EventMessage
 
 logger = logging.getLogger(__name__)
 

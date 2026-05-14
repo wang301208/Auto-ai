@@ -7,8 +7,8 @@ from typing import Dict, List, Tuple
 
 import pytest
 
-from autogpt.config import Config
-from autogpt.skills.vector_db import VectorDBProvider
+from autoai.config import Config
+from autoai.skills.vector_db import VectorDBProvider
 
 
 class DummyVectorDB(VectorDBProvider):
@@ -55,13 +55,13 @@ def test_repository_saves_structure_and_parses_metadata(
     from types import ModuleType
 
     # Stub out heavy optional dependencies
-    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
-    vector_pkg = ModuleType("autogpt.memory.vector")
-    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
-    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoAI-0.4.7"))
+    vector_pkg = ModuleType("autoai.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autoai" / "memory" / "vector")]
+    sys.modules.setdefault("autoai.memory.vector", vector_pkg)
     sys.modules.setdefault("spacy", ModuleType("spacy"))
 
-    from autogpt.skills.library import SkillLibrary
+    from autoai.skills.library import SkillLibrary
 
     monkeypatch.setattr(SkillLibrary, "_git_commit", lambda *_, **__: None)
 
@@ -70,7 +70,7 @@ def test_repository_saves_structure_and_parses_metadata(
     def fake_get_embedding(text: str, _config: Config) -> List[float]:
         return embeddings[text]
 
-    monkeypatch.setattr("autogpt.skills.library.get_embedding", fake_get_embedding)
+    monkeypatch.setattr("autoai.skills.library.get_embedding", fake_get_embedding)
 
     config = Config()
     storage = tmp_path / "skills"
@@ -114,13 +114,13 @@ def test_repository_search_by_description_and_tags(
     import sys
     from types import ModuleType
 
-    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoGPT-0.4.7"))
-    vector_pkg = ModuleType("autogpt.memory.vector")
-    vector_pkg.__path__ = [str(repo_root / "autogpt" / "memory" / "vector")]
-    sys.modules.setdefault("autogpt.memory.vector", vector_pkg)
+    repo_root = next(Path(p) for p in sys.path if p.endswith("AutoAI-0.4.7"))
+    vector_pkg = ModuleType("autoai.memory.vector")
+    vector_pkg.__path__ = [str(repo_root / "autoai" / "memory" / "vector")]
+    sys.modules.setdefault("autoai.memory.vector", vector_pkg)
     sys.modules.setdefault("spacy", ModuleType("spacy"))
 
-    from autogpt.skills.library import SkillLibrary
+    from autoai.skills.library import SkillLibrary
 
     monkeypatch.setattr(SkillLibrary, "_git_commit", lambda *_, **__: None)
 
@@ -129,7 +129,7 @@ def test_repository_search_by_description_and_tags(
     def fake_get_embedding(text: str, _config: Config) -> List[float]:
         return embeddings[text]
 
-    monkeypatch.setattr("autogpt.skills.library.get_embedding", fake_get_embedding)
+    monkeypatch.setattr("autoai.skills.library.get_embedding", fake_get_embedding)
 
     config = Config()
     storage = tmp_path / "skills"

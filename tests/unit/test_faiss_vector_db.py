@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from autogpt.skills.vector_db import FaissVectorDB
+from autoai.skills.vector_db import FaissVectorDB
 
 
 def test_faiss_add_query_delete(tmp_path: Path) -> None:

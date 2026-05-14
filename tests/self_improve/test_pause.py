@@ -1,7 +1,7 @@
 from pathlib import Path
 import pytest
 
-from autogpt.self_improve import DatabaseManager, PatchAgent
+from autoai.self_improve import DatabaseManager, PatchAgent
 
 
 def test_pause_after_three_failures(tmp_path: Path) -> None:

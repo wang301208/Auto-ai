@@ -4,8 +4,8 @@ from typing import Dict
 import pytest
 from pytest_mock import MockerFixture
 
-from autogpt.commands.file_operations import read_file
-from autogpt.workspace import Workspace
+from autoai.commands.file_operations import read_file
+from autoai.workspace import Workspace
 from tests.challenges.challenge_decorator.challenge_decorator import challenge
 from tests.challenges.utils import get_workspace_path, run_challenge
 

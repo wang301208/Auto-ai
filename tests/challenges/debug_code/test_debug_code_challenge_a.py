@@ -3,9 +3,9 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
-from autogpt.agents import Agent
-from autogpt.commands.execute_code import execute_python_file
-from autogpt.workspace import Workspace
+from autoai.agents import Agent
+from autoai.commands.execute_code import execute_python_file
+from autoai.workspace import Workspace
 from tests.challenges.challenge_decorator.challenge_decorator import challenge
 from tests.challenges.utils import (
     copy_file_into_workspace,

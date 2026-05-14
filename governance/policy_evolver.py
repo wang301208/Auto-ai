@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from .audit import AuditEntry, AuditEventType, AuditLog
@@ -54,7 +54,7 @@ class EvolutionResult:
 
     def __post_init__(self) -> None:
         if not self.timestamp:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = datetime.now(timezone.utc).isoformat()
 
 
 class PolicyEvolver:
@@ -101,7 +101,7 @@ class PolicyEvolver:
                     reason="No governance gate attached",
                 )
 
-            since = (datetime.utcnow() - timedelta(hours=lookback_hours)).isoformat()
+            since = (datetime.now(timezone.utc) - timedelta(hours=lookback_hours)).isoformat()
             entries = self.audit.query(since=since, limit=10000)
 
             if len(entries) < self.config.min_sample_size:
@@ -115,7 +115,7 @@ class PolicyEvolver:
             adjustments.extend(self._evolve_quotas(entries))
 
             if adjustments:
-                self._last_evolution = datetime.utcnow().isoformat()
+                self._last_evolution = datetime.now(timezone.utc).isoformat()
                 for adj in adjustments:
                     self.audit.record(
                         AuditEventType.POLICY_AUTO_ADJUSTED,
@@ -130,7 +130,7 @@ class PolicyEvolver:
         if not self._last_evolution:
             return True
         last = datetime.fromisoformat(self._last_evolution)
-        elapsed = (datetime.utcnow() - last).total_seconds()
+        elapsed = (datetime.now(timezone.utc) - last).total_seconds()
         return elapsed >= self.config.cooldown_seconds
 
     def _evolve_rate_limits(self, entries: list[AuditEntry]) -> list[dict[str, Any]]:
@@ -250,7 +250,7 @@ class PolicyEvolver:
 
     def get_evolution_summary(self, lookback_hours: float = 168.0) -> dict[str, Any]:
         """Get a summary of evolution adjustments over the lookback period."""
-        since = (datetime.utcnow() - timedelta(hours=lookback_hours)).isoformat()
+        since = (datetime.now(timezone.utc) - timedelta(hours=lookback_hours)).isoformat()
         entries = self.audit.query(
             event_type=AuditEventType.POLICY_AUTO_ADJUSTED,
             since=since,

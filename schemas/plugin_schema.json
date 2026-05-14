@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://raw.githubusercontent.com/Significant-Gravitas/AutoGPT/master/schemas/plugin_schema.json",
-  "$comment": "Example: {\"name\": \"Translator\", \"version\": \"1.0.0\", \"description\": \"Translates text\", \"author\": \"AutoGPT\", \"inputs\": [{\"name\": \"text\", \"type\": \"string\", \"description\": \"Text to translate\"}], \"outputs\": [{\"name\": \"translation\", \"type\": \"string\", \"description\": \"Translated text\"}] }",
+  "$id": "https://raw.githubusercontent.com/Significant-Gravitas/AutoAI/master/schemas/plugin_schema.json",
+  "$comment": "Example: {\"name\": \"Translator\", \"version\": \"1.0.0\", \"description\": \"Translates text\", \"author\": \"AutoAI\", \"inputs\": [{\"name\": \"text\", \"type\": \"string\", \"description\": \"Text to translate\"}], \"outputs\": [{\"name\": \"translation\", \"type\": \"string\", \"description\": \"Translated text\"}] }",
   "title": "Plugin Metadata Schema",
   "type": "object",
   "required": ["name", "version", "description", "author"],

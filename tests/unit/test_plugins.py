@@ -4,19 +4,19 @@ from pathlib import Path
 
 import yaml
 
-from autogpt.config.config import Config
-from autogpt.plugins import (
+from autoai.config.config import Config
+from autoai.plugins import (
     inspect_zip_for_modules,
     scan_plugins,
     load_plugin_commands,
 )
-from autogpt.models.command_registry import CommandRegistry
-from autogpt.plugins.plugin_config import PluginConfig
-from autogpt.plugins.plugins_config import PluginsConfig
+from autoai.models.command_registry import CommandRegistry
+from autoai.plugins.plugin_config import PluginConfig
+from autoai.plugins.plugins_config import PluginsConfig
 
 PLUGINS_TEST_DIR = "tests/unit/data/test_plugins"
-PLUGIN_TEST_ZIP_FILE = "Auto-GPT-Plugin-Test-master.zip"
-PLUGIN_TEST_INIT_PY = "Auto-GPT-Plugin-Test-master/src/auto_gpt_vicuna/__init__.py"
+PLUGIN_TEST_ZIP_FILE = "Auto-AI-Plugin-Test-master.zip"
+PLUGIN_TEST_INIT_PY = "Auto-AI-Plugin-Test-master/src/auto_ai_vicuna/__init__.py"
 PLUGIN_TEST_OPENAI = "https://weathergpt.vercel.app/"
 
 
@@ -35,35 +35,35 @@ def test_scan_plugins_openai(config: Config):
 def test_scan_plugins_generic(config: Config):
     # Test that the function returns the correct number of plugins
     plugins_config = config.plugins_config
-    plugins_config.plugins["auto_gpt_guanaco"] = PluginConfig(
-        name="auto_gpt_guanaco", enabled=True
+    plugins_config.plugins["auto_ai_guanaco"] = PluginConfig(
+        name="auto_ai_guanaco", enabled=True
     )
-    plugins_config.plugins["AutoGPTPVicuna"] = PluginConfig(
-        name="AutoGPTPVicuna", enabled=True
+    plugins_config.plugins["AutoAIPVicuna"] = PluginConfig(
+        name="AutoAIPVicuna", enabled=True
     )
     result = scan_plugins(config, debug=True)
     plugin_class_names = [plugin.__class__.__name__ for plugin in result]
 
     assert len(result) == 2
-    assert "AutoGPTGuanaco" in plugin_class_names
-    assert "AutoGPTPVicuna" in plugin_class_names
+    assert "AutoAIGuanaco" in plugin_class_names
+    assert "AutoAIPVicuna" in plugin_class_names
 
 
 def test_scan_plugins_not_enabled(config: Config):
     # Test that the function returns the correct number of plugins
     plugins_config = config.plugins_config
-    plugins_config.plugins["auto_gpt_guanaco"] = PluginConfig(
-        name="auto_gpt_guanaco", enabled=True
+    plugins_config.plugins["auto_ai_guanaco"] = PluginConfig(
+        name="auto_ai_guanaco", enabled=True
     )
-    plugins_config.plugins["auto_gpt_vicuna"] = PluginConfig(
-        name="auto_gptp_vicuna", enabled=False
+    plugins_config.plugins["auto_ai_vicuna"] = PluginConfig(
+        name="auto_aip_vicuna", enabled=False
     )
     result = scan_plugins(config, debug=True)
     plugin_class_names = [plugin.__class__.__name__ for plugin in result]
 
     assert len(result) == 1
-    assert "AutoGPTGuanaco" in plugin_class_names
-    assert "AutoGPTPVicuna" not in plugin_class_names
+    assert "AutoAIGuanaco" in plugin_class_names
+    assert "AutoAIPVicuna" not in plugin_class_names
 
 
 def test_inspect_zip_for_modules():
@@ -129,14 +129,14 @@ def test_load_config(config: Config):
 
 def test_plugin_registry_written(config: Config, tmp_path: Path):
     """After scanning plugins, the registry file should contain plugin info."""
-    config.plugins_config.plugins["auto_gpt_guanaco"] = PluginConfig(
-        name="auto_gpt_guanaco", enabled=True
+    config.plugins_config.plugins["auto_ai_guanaco"] = PluginConfig(
+        name="auto_ai_guanaco", enabled=True
     )
     scan_plugins(config, debug=True)
     registry_file = Path("plugin_registry.json")
     assert registry_file.exists()
     data = json.loads(registry_file.read_text())
-    assert any(d["name"] == "Auto-GPT-Guanaco" and d["status"] == "enabled" for d in data)
+    assert any(d["name"] == "Auto-AI-Guanaco" and d["status"] == "enabled" for d in data)
 
 
 def test_load_plugin_commands(tmp_path: Path):

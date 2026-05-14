@@ -23,7 +23,7 @@ from __future__ import annotations
 
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import IntEnum
 from typing import Any
 
@@ -100,7 +100,7 @@ class AutonomyManager:
     when an agent has earned (or lost) higher autonomy.
 
     Usage:
-        mgr = AutonomyManager(agent_id="auto-gpt")
+        mgr = AutonomyManager(agent_id="auto-ai")
         mgr.record_success()  # after each successful operation
         mgr.record_failure()  # after each failed operation
         print(mgr.level)      # current autonomy level
@@ -109,7 +109,7 @@ class AutonomyManager:
 
     def __init__(
         self,
-        agent_id: str = "auto-gpt",
+        agent_id: str = "auto-ai",
         initial_level: AutonomyLevel = AutonomyLevel.SUPERVISED,
         config: AutonomyConfig | None = None,
     ) -> None:
@@ -169,7 +169,7 @@ class AutonomyManager:
         with self._lock:
             old = self._level
             self._history.append(EscalationRecord(
-                timestamp=datetime.utcnow().isoformat(),
+                timestamp=datetime.now(timezone.utc).isoformat(),
                 old_level=old,
                 new_level=self._level,
                 reason=reason,
@@ -186,7 +186,7 @@ class AutonomyManager:
             from datetime import timedelta
             try:
                 last = datetime.fromisoformat(self._last_escalation)
-                elapsed = (datetime.utcnow() - last).total_seconds()
+                elapsed = (datetime.now(timezone.utc) - last).total_seconds()
                 if elapsed < self._config.escalation_cooldown_seconds:
                     return False
             except (ValueError, TypeError):
@@ -202,7 +202,7 @@ class AutonomyManager:
         old = self._level
         new_level = AutonomyLevel(min(old + 1, self._config.max_level))
         self._level = new_level
-        now = datetime.utcnow().isoformat()
+        now = datetime.now(timezone.utc).isoformat()
         self._last_escalation = now
         self._consecutive_successes = 0
         self._history.append(EscalationRecord(
@@ -221,7 +221,7 @@ class AutonomyManager:
         self._level = new_level
         self._consecutive_failures = 0
         self._history.append(EscalationRecord(
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=datetime.now(timezone.utc).isoformat(),
             old_level=old,
             new_level=new_level,
             reason=reason,

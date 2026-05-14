@@ -4,8 +4,8 @@ from types import SimpleNamespace
 import pytest
 from pytest_mock import MockerFixture
 
-from autogpt.llm.api_manager import ApiManager
-from autogpt.llm.providers.openai import OPEN_AI_CHAT_MODELS, OPEN_AI_EMBEDDING_MODELS
+from autoai.llm.api_manager import ApiManager
+from autoai.llm.providers.openai import OPEN_AI_CHAT_MODELS, OPEN_AI_EMBEDDING_MODELS
 
 api_manager = ApiManager()
 
@@ -89,7 +89,7 @@ class TestApiManager:
     @staticmethod
     def test_get_models():
         """Test if getting models works correctly."""
-        with patch("autogpt.llm.providers.openai.OpenAI") as mock_openai:
+        with patch("autoai.llm.providers.openai.OpenAI") as mock_openai:
             mock_client = MagicMock()
             mock_client.models.list.return_value.data = [
                 SimpleNamespace(id="gpt-3.5-turbo")

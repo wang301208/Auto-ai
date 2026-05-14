@@ -1,4 +1,4 @@
-# AutoGPT Unified Makefile
+# AutoAI Unified Makefile
 # All project operations accessible through a single entry point.
 # Usage: make <target>   or   make help
 
@@ -17,7 +17,7 @@ DEFAULT_GOAL := help
 # ============================================================
 PYTHON      ?= python
 PIP         ?= pip
-AGPT        ?= agpt
+AGPT        ?= aai
 PYTEST      ?= pytest
 DOCKER      ?= docker
 NODE        ?= node
@@ -27,11 +27,11 @@ NPM         ?= npm
 # Help
 # ============================================================
 help: ## Show this help message
-	@echo "AutoGPT Unified Command Reference"
+	@echo "AutoAI Unified Command Reference"
 	@echo "=================================="
 	@echo ""
 	@echo "Core Commands:"
-	@echo "  make run              Start AutoGPT assistant"
+	@echo "  make run              Start AutoAI assistant"
 	@echo "  make install          Install project dependencies"
 	@echo "  make dev              Install with dev dependencies"
 	@echo "  make test             Run test suite"
@@ -77,12 +77,12 @@ dev: ## Install with dev dependencies
 	$(PIP) install -e ".[dev]"
 
 test: ## Run test suite with coverage
-	$(PYTEST) --cov=autogpt --cov-report=term-missing -q
+	$(PYTEST) --cov=autoai --cov-report=term-missing -q
 
 lint: ## Run all linters (black, ruff, mypy)
 	black --check .
 	ruff check .
-	mypy autogpt/
+	mypy autoai/
 
 fmt: ## Auto-format code
 	black .
@@ -93,7 +93,7 @@ clean: ## Remove build artifacts
 	rm -rf build/ dist/ *.egg-info .pytest_cache .mypy_cache .ruff_cache
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 
-run: ## Start AutoGPT assistant
+run: ## Start AutoAI assistant
 	$(AGPT)
 
 # ============================================================
@@ -160,25 +160,25 @@ doctor: ## Run health diagnostics
 # Docker
 # ============================================================
 docker-build: ## Build Docker image
-	$(DOCKER) build -t autogpt .
+	$(DOCKER) build -t autoai .
 
 docker-run: ## Run Docker container
-	$(DOCKER) run -it --rm autogpt
+	$(DOCKER) run -it --rm autoai
 
 # ============================================================
-# Legacy script compatibility (deprecated, use agpt commands)
+# Legacy script compatibility (deprecated, use aai commands)
 # ============================================================
-run-orchestrator: ## [DEPRECATED] Use: agpt orchestrate start
+run-orchestrator: ## [DEPRECATED] Use: aai orchestrate start
 	$(AGPT) orchestrate start
 
-run-blueprint: ## [DEPRECATED] Use: agpt orchestrate blueprint
+run-blueprint: ## [DEPRECATED] Use: aai orchestrate blueprint
 	$(AGPT) orchestrate blueprint --charter-url "$(charter_url)"
 
-run-executor: ## [DEPRECATED] Use: agpt orchestrate execute
+run-executor: ## [DEPRECATED] Use: aai orchestrate execute
 	$(AGPT) orchestrate execute "$(goal)"
 
-launch-tui: ## [DEPRECATED] Use: agpt tui
+launch-tui: ## [DEPRECATED] Use: aai tui
 	$(AGPT) tui
 
-approve-fix: ## [DEPRECATED] Use: agpt governance approve
+approve-fix: ## [DEPRECATED] Use: aai governance approve
 	$(AGPT) governance approve "$(request_id)"

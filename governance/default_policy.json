@@ -1,6 +1,6 @@
 {
   "name": "default",
-  "description": "Default governance policy for AutoGPT. Agent autonomously manages boundaries via BoundaryManager. This policy defines hard deny rules (hard boundaries) that block even in autonomous mode. All other operations are allowed with audit trail.",
+  "description": "Default governance policy for AutoAI. Agent autonomously manages boundaries via BoundaryManager. This policy defines hard deny rules (hard boundaries) that block even in autonomous mode. All other operations are allowed with audit trail.",
   "default_effect": "deny",
   "rules": [
     {

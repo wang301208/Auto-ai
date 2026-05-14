@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from autogpt.event_bus import ApprovalGranted, EventBus, MessageQueue
+from autoai.event_bus import ApprovalGranted, EventBus, MessageQueue
 
 
 def main() -> None:

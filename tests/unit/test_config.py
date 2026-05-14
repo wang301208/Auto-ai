@@ -11,9 +11,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autogpt.app.configurator import GPT_3_MODEL, GPT_4_MODEL, create_config
-from autogpt.config import Config, ConfigBuilder
-from autogpt.workspace.workspace import Workspace
+from autoai.app.configurator import GPT_3_MODEL, GPT_4_MODEL, create_config
+from autoai.config import Config, ConfigBuilder
+from autoai.workspace.workspace import Workspace
 
 
 def test_initial_values(config: Config) -> None:
@@ -107,7 +107,7 @@ def test_set_debug_mode(config: Config) -> None:
     config.debug_mode = debug_mode
 
 
-@patch("autogpt.llm.providers.openai.OpenAI")
+@patch("autoai.llm.providers.openai.OpenAI")
 def test_smart_and_fast_llms_set_to_gpt4(mock_openai: Any, config: Config) -> None:
     """
     Test if models update to gpt-3.5-turbo if both are set to gpt-4.
@@ -224,7 +224,7 @@ azure_model_map:
 
 
 def test_create_config_gpt4only(config: Config) -> None:
-    with mock.patch("autogpt.llm.api_manager.ApiManager.get_models") as mock_get_models:
+    with mock.patch("autoai.llm.api_manager.ApiManager.get_models") as mock_get_models:
         mock_get_models.return_value = [{"id": GPT_4_MODEL}]
         create_config(
             config=config,
@@ -247,7 +247,7 @@ def test_create_config_gpt4only(config: Config) -> None:
 
 
 def test_create_config_gpt3only(config: Config) -> None:
-    with mock.patch("autogpt.llm.api_manager.ApiManager.get_models") as mock_get_models:
+    with mock.patch("autoai.llm.api_manager.ApiManager.get_models") as mock_get_models:
         mock_get_models.return_value = [{"id": GPT_3_MODEL}]
         create_config(
             config=config,

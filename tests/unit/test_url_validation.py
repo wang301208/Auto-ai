@@ -1,7 +1,7 @@
 import pytest
 from pytest import raises
 
-from autogpt.url_utils.validators import validate_url
+from autoai.url_utils.validators import validate_url
 
 """
 Code Analysis

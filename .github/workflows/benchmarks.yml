@@ -14,10 +14,10 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - python-version: "3.10"
+          - python-version: "3.12"
             task: "tests/challenges"
             task-name: "Mandatory Tasks"
-          - python-version: "3.10"
+          - python-version: "3.12"
             task: "--beat-challenges -ra tests/challenges"
             task-name: "Challenging Tasks"
 
@@ -49,7 +49,7 @@ jobs:
 
       - name: Run pytest with coverage
         run: |
-          rm -rf tests/Auto-GPT-test-cassettes
+          rm -rf tests/Auto-AI-test-cassettes
           pytest -n auto --record-mode=all ${{ matrix.config.task }}
         env:
           CI: true
@@ -70,4 +70,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: cassettes-${{ matrix.config.task-name }}
-          path: tests/Auto-GPT-test-cassettes/
+          path: tests/Auto-AI-test-cassettes/

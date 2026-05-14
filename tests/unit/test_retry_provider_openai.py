@@ -6,7 +6,7 @@ try:
 except ImportError:  # openai>=1 does not expose this error
     from openai import InternalServerError as ServiceUnavailableError
 
-from autogpt.llm.providers import openai
+from autoai.llm.providers import openai
 
 
 @pytest.fixture(

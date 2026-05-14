@@ -13,9 +13,9 @@ class TestAgentFactory:
     """Test agent factory and fleet creation."""
 
     def test_create_fleet_from_default_config(self):
-        from autogpt.agents.agent_factory import AgentFactory, create_default_fleet_config
-        from autogpt.agents.agent_comm import AgentCommunicationBus
-        from autogpt.agents.workflow_orchestrator import WorkflowOrchestrator
+        from autoai.agents.agent_factory import AgentFactory, create_default_fleet_config
+        from autoai.agents.agent_comm import AgentCommunicationBus
+        from autoai.agents.workflow_orchestrator import WorkflowOrchestrator
         bus = AgentCommunicationBus()
         orch = WorkflowOrchestrator(comm_bus=bus)
         factory = AgentFactory(orchestrator=orch, comm_bus=bus)
@@ -27,9 +27,9 @@ class TestAgentFactory:
         assert "tester" in created
 
     def test_destroy_all(self):
-        from autogpt.agents.agent_factory import AgentFactory, create_default_fleet_config
-        from autogpt.agents.agent_comm import AgentCommunicationBus
-        from autogpt.agents.workflow_orchestrator import WorkflowOrchestrator
+        from autoai.agents.agent_factory import AgentFactory, create_default_fleet_config
+        from autoai.agents.agent_comm import AgentCommunicationBus
+        from autoai.agents.workflow_orchestrator import WorkflowOrchestrator
         bus = AgentCommunicationBus()
         orch = WorkflowOrchestrator(comm_bus=bus)
         factory = AgentFactory(orchestrator=orch, comm_bus=bus)
@@ -40,7 +40,7 @@ class TestAgentFactory:
         assert len(factory.created_agents) == 0
 
     def test_agent_spec_from_dict(self):
-        from autogpt.agents.agent_factory import AgentSpec
+        from autoai.agents.agent_factory import AgentSpec
         spec = AgentSpec.from_dict({
             "agent_id": "coder1",
             "name": "Coder",
@@ -53,7 +53,7 @@ class TestAgentFactory:
         assert spec.max_concurrent_tasks == 5
 
     def test_fleet_config_save_load(self):
-        from autogpt.agents.agent_factory import AgentFleetConfig, AgentSpec
+        from autoai.agents.agent_factory import AgentFleetConfig, AgentSpec
         config = AgentFleetConfig(
             fleet_name="test",
             agents=[
@@ -69,7 +69,7 @@ class TestAgentFactory:
             assert loaded.agents[0].agent_id == "a1"
 
     def test_agent_spec_to_profile(self):
-        from autogpt.agents.agent_factory import AgentSpec
+        from autoai.agents.agent_factory import AgentSpec
         spec = AgentSpec(
             agent_id="a1",
             roles={"coder"},
@@ -86,7 +86,7 @@ class TestSystemBootstrap:
     """Test the complete multi-agent system bootstrap."""
 
     def test_full_setup_and_teardown(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         config = SystemConfig(
             autonomous=True,
             enable_tui=False,
@@ -115,7 +115,7 @@ class TestSystemBootstrap:
         assert system._running is False
 
     def test_system_status(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         config = SystemConfig(autonomous=True, enable_tui=False)
         system = MultiAgentSystem(config=config)
         system.setup()
@@ -127,7 +127,7 @@ class TestSystemBootstrap:
         system.stop()
 
     def test_governance_gate_blocks_hard_boundary(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         config = SystemConfig(autonomous=True, enable_tui=False)
         system = MultiAgentSystem(config=config)
         system.setup()
@@ -136,7 +136,7 @@ class TestSystemBootstrap:
         system.stop()
 
     def test_governance_gate_allows_normal_in_autonomous(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         config = SystemConfig(autonomous=True, enable_tui=False)
         system = MultiAgentSystem(config=config)
         system.setup()
@@ -145,7 +145,7 @@ class TestSystemBootstrap:
         system.stop()
 
     def test_bootstrap_convenience_function(self):
-        from autogpt.agents.system_bootstrap import bootstrap_multi_agent_system
+        from autoai.agents.system_bootstrap import bootstrap_multi_agent_system
         system = bootstrap_multi_agent_system(autonomous=True)
         assert system.comm_bus is not None
         assert system.governance_gate is not None
@@ -192,10 +192,10 @@ class TestEndToEndWorkflow:
     """Test complete workflow: create system → define DAG → execute → checkpoint."""
 
     def test_full_workflow_lifecycle(self):
-        from autogpt.agents.workflow_orchestrator import (
+        from autoai.agents.workflow_orchestrator import (
             WorkflowDAG, WorkflowTask, WorkflowOrchestrator, AgentProfile,
         )
-        from autogpt.agents.workflow_checkpoint import CheckpointManager
+        from autoai.agents.workflow_checkpoint import CheckpointManager
 
         with tempfile.TemporaryDirectory() as tmpdir:
             orch = WorkflowOrchestrator()
@@ -230,8 +230,8 @@ class TestEndToEndWorkflow:
             assert loaded.task_states[t3.task_id] == "success"
 
     def test_inter_agent_communication_in_system(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
-        from autogpt.agents.agent_comm import AgentMessage, AgentMessageType
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.agent_comm import AgentMessage, AgentMessageType
 
         config = SystemConfig(autonomous=True, enable_tui=False, enable_agent_pool=False)
         system = MultiAgentSystem(config=config)

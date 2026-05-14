@@ -19,4 +19,4 @@ RUN pip install --root-user-action=ignore -e .
 VOLUME ["/app"]
 
 # Set the entry point to the unified CLI
-ENTRYPOINT ["agpt", "alphaevolve"]
+ENTRYPOINT ["aai", "alphaevolve"]

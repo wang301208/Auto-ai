@@ -1,4 +1,4 @@
-from autogpt.config.prompt_config import PromptConfig
+from autoai.config.prompt_config import PromptConfig
 
 """
 Test cases for the PromptConfig class, which handles loads the Prompts configuration

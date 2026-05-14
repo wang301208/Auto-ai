@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from autogpt.event_bus import (
+from autoai.event_bus import (
     DIAGNOSIS_COMPLETE,
     DiagnosisComplete,
     EventBus,
@@ -22,7 +22,7 @@ def message_queue(event_bus: EventBus, monkeypatch: pytest.MonkeyPatch) -> Messa
     """Message queue using the fallback implementation without external backend."""
 
     # Ensure tests do not depend on the optional `pubsub` package
-    monkeypatch.setattr("autogpt.event_bus.message_queue._HAS_PUBSUB", False)
+    monkeypatch.setattr("autoai.event_bus.message_queue._HAS_PUBSUB", False)
     return MessageQueue(event_bus)
 
 

@@ -6,9 +6,9 @@ import tempfile
 
 import pytest
 
-import autogpt.commands.execute_code as sut  # system under testing
-from autogpt.agents.agent import Agent
-from autogpt.config import Config
+import autoai.commands.execute_code as sut  # system under testing
+from autoai.agents.agent import Agent
+from autoai.config import Config
 
 
 @pytest.fixture

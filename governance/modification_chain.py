@@ -12,7 +12,7 @@ Architecture:
 Usage:
     chain = ModificationChain(workspace=Path("."))
     block = chain.append(
-        agent_id="auto-gpt",
+        agent_id="auto-ai",
         patch_diff="--- a/foo.py\n+++ b/foo.py\n...",
         target_files=["foo.py"],
         test_result=TestResult(passed=True, output="5 passed"),
@@ -27,7 +27,7 @@ import hashlib
 import json
 import threading
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any
@@ -171,7 +171,7 @@ class ModificationChain:
         with self._lock:
             index = len(self._blocks)
             prev_hash = self._blocks[-1].hash if self._blocks else GENESIS_HASH
-            timestamp = datetime.utcnow().isoformat()
+            timestamp = datetime.now(timezone.utc).isoformat()
 
             hash_ = self._compute_hash(
                 index, timestamp, prev_hash, agent_id,

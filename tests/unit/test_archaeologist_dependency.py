@@ -4,12 +4,12 @@ import types
 from pathlib import Path
 from unittest.mock import patch
 
-# Avoid importing autogpt.agents package initializer with heavy dependencies
-agents_pkg = types.ModuleType("autogpt.agents")
-agents_pkg.__path__ = ["autogpt/agents"]
-sys.modules.setdefault("autogpt.agents", agents_pkg)
+# Avoid importing autoai.agents package initializer with heavy dependencies
+agents_pkg = types.ModuleType("autoai.agents")
+agents_pkg.__path__ = ["autoai/agents"]
+sys.modules.setdefault("autoai.agents", agents_pkg)
 
-dep = importlib.import_module("autogpt.agents.archaeologist_dependency")
+dep = importlib.import_module("autoai.agents.archaeologist_dependency")
 
 
 def test_analyze_dependency_uses_new_version(tmp_path: Path) -> None:

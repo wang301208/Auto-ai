@@ -1,8 +1,8 @@
-import autogpt.agents.archaeologist as arch_module
-from autogpt.agents.archaeologist import Archaeologist
-from autogpt.config import Config
-from autogpt.event_bus import MessageQueue
-from autogpt.llm import ChatModelInfo, ChatModelResponse
+import autoai.agents.archaeologist as arch_module
+from autoai.agents.archaeologist import Archaeologist
+from autoai.config import Config
+from autoai.event_bus import MessageQueue
+from autoai.llm import ChatModelInfo, ChatModelResponse
 
 class DummyResponse(ChatModelResponse):
     def __init__(self, content: str) -> None:

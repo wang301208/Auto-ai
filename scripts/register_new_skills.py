@@ -15,7 +15,7 @@ from pathlib import Path
 
 import argparse
 
-from autogpt.skills import LibrarianAgent
+from autoai.skills import LibrarianAgent
 
 
 def _get_base_ref() -> str:

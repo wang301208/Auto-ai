@@ -4,7 +4,7 @@ on:
   push:
     branches: [ master, ci-test* ]
     paths-ignore:
-      - 'tests/Auto-GPT-test-cassettes'
+      - 'tests/Auto-AI-test-cassettes'
       - 'tests/challenges/current_score.json'
   pull_request:
     branches: [ stable, master, release-* ]
@@ -22,7 +22,7 @@ jobs:
 
     runs-on: ubuntu-latest
     env:
-      min-python-version: "3.10"
+      min-python-version: "3.12"
 
     steps:
       - name: Checkout repository
@@ -69,7 +69,7 @@ jobs:
 
       - name: Check for unused imports and pass statements
         run: |
-          cmd="autoflake --remove-all-unused-imports --recursive --ignore-init-module-imports --ignore-pass-after-docstring autogpt tests"
+          cmd="autoflake --remove-all-unused-imports --recursive --ignore-init-module-imports --ignore-pass-after-docstring autoai tests"
           $cmd --check || (echo "You have unused imports or pass statements, please run '${cmd} --in-place'" && exit 1)
 
   test:
@@ -88,7 +88,7 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.12"]
 
     steps:
       - name: Checkout repository
@@ -99,17 +99,17 @@ jobs:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           submodules: true
 
-      - name: Configure git user Auto-GPT-Bot
+      - name: Configure git user Auto-AI-Bot
         run: |
-          git config --global user.name "Auto-GPT-Bot"
-          git config --global user.email "github-bot@agpt.co"
+          git config --global user.name "Auto-AI-Bot"
+          git config --global user.email "github-bot@aai.co"
 
       - name: Checkout cassettes
         if: ${{ startsWith(github.event_name, 'pull_request') }}
         run: |
           cassette_branch="${{ github.event.pull_request.user.login }}-${{ github.event.pull_request.head.ref }}"
           cassette_base_branch="${{ github.event.pull_request.base.ref }}"
-          cd tests/Auto-GPT-test-cassettes
+          cd tests/Auto-AI-test-cassettes
 
           if ! git ls-remote --exit-code --heads origin $cassette_base_branch ; then
             cassette_base_branch="master"
@@ -153,7 +153,7 @@ jobs:
 
       - name: Run pytest with coverage
         run: |
-          pytest -vv --cov=autogpt --cov-branch --cov-report term-missing --cov-report xml \
+          pytest -vv --cov=autoai --cov-branch --cov-report term-missing --cov-report xml \
             --numprocesses=logical --durations=10 \
             tests/unit tests/integration tests/challenges
           python tests/challenges/utils/build_current_score.py
@@ -179,7 +179,7 @@ jobs:
           git config "$config_key" \
             "Authorization: Basic $base64_pat"
 
-          cd tests/Auto-GPT-test-cassettes
+          cd tests/Auto-AI-test-cassettes
           git config "$config_key" \
             "Authorization: Basic $base64_pat"
 
@@ -210,7 +210,7 @@ jobs:
             cassette_branch="${{ github.ref_name }}"
           fi
 
-          cd tests/Auto-GPT-test-cassettes
+          cd tests/Auto-AI-test-cassettes
           # Commit & push changes to cassettes if any
           if ! git diff --quiet; then
             git add .
@@ -218,7 +218,7 @@ jobs:
             git push origin HEAD:$cassette_branch
             if [ ! $is_pull_request ]; then
               cd ../..
-              git add tests/Auto-GPT-test-cassettes
+              git add tests/Auto-AI-test-cassettes
               git commit -m "Update cassette submodule"
               git push origin HEAD:$cassette_branch
             fi
@@ -250,7 +250,7 @@ jobs:
             -d '{"labels":["behaviour change"]}'
 
             echo $TOKEN | gh auth login --with-token
-            gh api repos/$REPO/issues/$PR_NUMBER/comments -X POST -F body="You changed AutoGPT's behaviour. The cassettes have been updated and will be merged to the submodule when this Pull Request gets merged."
+            gh api repos/$REPO/issues/$PR_NUMBER/comments -X POST -F body="You changed AutoAI's behaviour. The cassettes have been updated and will be merged to the submodule when this Pull Request gets merged."
           fi
 
       - name: Upload logs to artifact
@@ -276,7 +276,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.12"
 
       - name: Install dependencies
         run: |

@@ -1,8 +1,8 @@
 from unittest.mock import MagicMock, patch
 
-from colorama import Fore
+from autoai.utils.ansi_colors import Fore
 
-from autogpt.app.main import update_user
+from autoai.app.main import update_user
 
 
 def test_update_user_command_name_is_none() -> None:
@@ -13,9 +13,9 @@ def test_update_user_command_name_is_none() -> None:
 
     # Mock print_assistant_thoughts and logger.typewriter_log
     with patch(
-        "autogpt.app.main.print_assistant_thoughts"
+        "autoai.app.main.print_assistant_thoughts"
     ) as mock_print_assistant_thoughts, patch(
-        "autogpt.app.main.logger.typewriter_log"
+        "autoai.app.main.logger.typewriter_log"
     ) as mock_logger_typewriter_log:
         # Test the update_user function with None command_name
         update_user(config, ai_config, None, None, assistant_reply_dict)

@@ -1,5 +1,6 @@
 """Algorithm registry for versioned algorithm manifests.
 
+from datetime import timezone
 Stores algorithm metadata (name, version, status, metrics) as JSON files
 under algorithm_library/<name>_<version>/algorithm.json.
 """
@@ -106,7 +107,7 @@ class AlgorithmRegistry:
         from datetime import datetime
 
         if not manifest.created_at:
-            manifest.created_at = datetime.utcnow().isoformat()
+            manifest.created_at = datetime.now(timezone.utc).isoformat()
         algo_dir = self.root_path / manifest.dir_name
         algo_dir.mkdir(parents=True, exist_ok=True)
         path = algo_dir / "algorithm.json"
@@ -164,7 +165,7 @@ class AlgorithmRegistry:
         manifest.status = new_status
         if new_status == AlgorithmStatus.ACTIVE:
             from datetime import datetime
-            manifest.promoted_at = datetime.utcnow().isoformat()
+            manifest.promoted_at = datetime.now(timezone.utc).isoformat()
         self.register(manifest)
         return manifest
 

@@ -1,6 +1,6 @@
 think_mode: depth_first
 prompt_template: |
-  SYSTEM: You are AutoGPT.
+  SYSTEM: You are AutoAI.
   USER: ${task}
 toolset:
   - web_browser

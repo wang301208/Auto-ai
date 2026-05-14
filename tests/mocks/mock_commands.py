@@ -1,4 +1,4 @@
-from autogpt.command_decorator import command
+from autoai.command_decorator import command
 
 COMMAND_CATEGORY = "mock"
 

@@ -1,7 +1,7 @@
 """Legacy script shims for backward compatibility.
 
 Each shim prints a deprecation warning and forwards to the
-corresponding `agpt` subcommand. These allow existing CI pipelines
+corresponding `aai` subcommand. These allow existing CI pipelines
 and shell scripts to continue working during migration.
 
 Remove after deprecation period (e.g. 2 minor releases).
@@ -37,14 +37,14 @@ def run_shim(legacy_name: str) -> None:
     target = _LEGACY_MAP[legacy_name]
     warnings.warn(
         f"scripts/{legacy_name} is deprecated. "
-        f"Use 'agpt {' '.join(target)}' instead.",
+        f"Use 'aai {' '.join(target)}' instead.",
         DeprecationWarning,
         stacklevel=2,
     )
 
-    agpt_args = target + sys.argv[1:]
+    aai_args = target + sys.argv[1:]
     result = subprocess.run(
-        [sys.executable, "-m", "autogpt"] + agpt_args,
+        [sys.executable, "-m", "autoai"] + aai_args,
     )
     sys.exit(result.returncode)
 

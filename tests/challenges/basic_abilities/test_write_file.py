@@ -1,7 +1,7 @@
 import pytest
 
-from autogpt.config import Config
-from autogpt.workspace import Workspace
+from autoai.config import Config
+from autoai.workspace import Workspace
 from tests.challenges.challenge_decorator.challenge_decorator import challenge
 from tests.challenges.utils import get_workspace_path, run_challenge
 

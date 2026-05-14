@@ -11,12 +11,12 @@ from pathlib import Path
 import pytest
 from pytest_mock import MockerFixture
 
-import autogpt.commands.file_operations as file_ops
-from autogpt.agents.agent import Agent
-from autogpt.config import Config
-from autogpt.memory.vector.memory_item import MemoryItem
-from autogpt.memory.vector.utils import Embedding
-from autogpt.workspace import Workspace
+import autoai.commands.file_operations as file_ops
+from autoai.agents.agent import Agent
+from autoai.config import Config
+from autoai.memory.vector.memory_item import MemoryItem
+from autoai.memory.vector.utils import Embedding
+from autoai.workspace import Workspace
 
 
 @pytest.fixture()

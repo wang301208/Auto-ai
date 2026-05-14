@@ -1,8 +1,8 @@
 import pytest
 from pytest_mock import MockerFixture
 
-from autogpt.agents.agent import Agent
-from autogpt.commands.web_selenium import browse_website
+from autoai.agents.agent import Agent
+from autoai.commands.web_selenium import browse_website
 
 
 @pytest.mark.vcr

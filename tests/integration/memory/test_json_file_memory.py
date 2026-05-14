@@ -3,9 +3,9 @@
 import orjson
 import pytest
 
-from autogpt.config import Config
-from autogpt.memory.vector import JSONFileMemory, MemoryItem
-from autogpt.workspace import Workspace
+from autoai.config import Config
+from autoai.memory.vector import JSONFileMemory, MemoryItem
+from autoai.workspace import Workspace
 
 
 def test_json_memory_init_without_backing_file(config: Config, workspace: Workspace):

@@ -1,4 +1,4 @@
-# AutoGPT-0.4.7 自主进化终端Agent系统
+# AutoAI-0.4.7 自主进化终端Agent系统
 
 ## 项目定位
 
@@ -20,7 +20,7 @@
 ## 架构全景
 
 ```
-autogpt/                          # Agent核心
+autoai/                          # Agent核心
 ├── agents/
 │   ├── agent.py                  # V1 Agent主类
 │   ├── async_agent.py            # V2 AsyncAgent核心（ModelRouter/Sandbox/Streaming接入）
@@ -35,6 +35,20 @@ autogpt/                          # Agent核心
 │   ├── health_monitor.py         # Agent健康监控
 │   ├── workflow_checkpoint.py    # 检查点管理
 │   ├── agent_pool.py             # Agent池
+│   ├── agent_factory.py          # Agent工厂+AgentSpec
+│   ├── arch_diagnoser.py         # 架构自诊断器（6类缺陷扫描）
+│   ├── arch_refactorer.py        # 架构自重构器（自动生成重构patch）
+│   ├── capability_injector.py    # 能力注入器（Mixin/装饰器/Protocol+回滚）
+│   ├── protocol_upgrader.py      # 协议版本自升级（协商/迁移/自动升级）
+│   ├── consensus_engine.py       # 共识引擎（加权投票+拜占庭容错+提案链）
+│   ├── division_emerger.py       # 分工涌现器（能力聚类+角色发现+负载均衡）
+│   ├── knowledge_mesh.py         # 知识共享网（发布/查询/去重/版本化/声誉加权）
+│   ├── democratic_governance.py  # 民主治理（提案/投票/否决/弹劾/宪法/任期限制）
+│   ├── unattended_runner.py      # 无人值守运行器（心跳/看门狗/自动恢复/运行日志）
+│   ├── full_evolution_loop.py    # 全链路自进化闭环（诊断→重构→注入→升级→验证）
+│   ├── evolution_community.py    # 进化社区（经验广播/知识蒸馏/同行评审/声誉追踪）
+│   ├── autonomous_spawner.py     # Agent自主创建/销毁子Agent
+│   ├── ci_auto_builder.py        # CI/CD自建管道（3平台模板）
 │   └── agent_factory.py          # Agent工厂+AgentSpec
 ├── app/
 │   ├── main.py                   # 主入口（async_mode/autonomous/multi_agent集成）
@@ -46,6 +60,7 @@ autogpt/                          # Agent核心
 │   ├── dashboard.py              # 终端Dashboard（Rich 4象限仪表板）
 │   ├── i18n.py                   # 多语言切换框架
 │   ├── zh_CN.json / en.json      # 中英locale文件
+│   ├── dependency_audit.py        # 依赖审计命令
 │   └── __main__.py               # 入口（UTF-8终端强制）
 ├── llm/model_router/             # 统一模型层
 │   ├── base_provider.py          # BaseProvider抽象+ChatMessage/ChatResponse
@@ -55,6 +70,7 @@ autogpt/                          # Agent核心
 │   ├── openai_provider.py        # OpenAICompatProvider（含stream_chat）
 │   ├── ollama_provider.py        # OllamaProvider（含stream_chat+自动检测）
 │   ├── model_auto_selector.py    # 模型自选（Agent根据任务实时选模型）
+│   ├── model_auto_trainer.py     # 模型自训练（Agent自训练专属模型）
 │   ├── streaming.py              # StreamingEvent+StreamEmitter+StreamingChat+StreamBuffer
 │   └── models.yaml               # 声明式模型配置（9个模型+3个别名）
 ├── sandbox/                      # 安全沙箱
@@ -84,13 +100,17 @@ governance/                       # 治理引擎
 ├── autonomy_level.py             # 自主等级管理（L0-L5+自动晋升/降级）
 ├── modification_chain.py         # 不可变修改日志链（SHA256链式审计）
 ├── experience_store.py           # 经验库（修复模式存储+匹配+复用）
+├── project_fingerprint.py        # 项目指纹+跨项目迁移
+├── boundary_manager.py           # Agent自主边界管理
+├── break_log.py                  # 边界突破日志
+├── break_report.py               # 边界突破报告
 ├── default_policy.json           # 默认策略
 └── agents_fleet.json             # 默认舰队配置
 
 algorithm_library/                # 算法库
 ├── base.py / registry.py / evaluation.py / lifecycle.py / catalog.py
 
-tests/unit/                       # 测试套件（241个测试全部PASSED）
+tests/unit/                       # 测试套件（261个测试全部PASSED）
 ```
 
 ## 自我进化闭环
@@ -165,25 +185,25 @@ cp .env.template .env
 
 ```bash
 # 标准模式
-python -m autogpt
+python -m autoai
 
 # 异步模式
-python -m autogpt --async-mode
+python -m autoai --async-mode
 
 # 自主模式（无人值守）
-python -m autogpt --async-mode --autonomous
+python -m autoai --async-mode --autonomous
 
 # 多Agent模式
-python -m autogpt --async-mode --multi-agent
+python -m autoai --async-mode --multi-agent
 
 # 中文化
-python -m autogpt --lang zh_CN
+python -m autoai --lang zh_CN
 ```
 
 ### 诊断
 
 ```bash
-python -m autogpt doctor
+python -m autoai doctor
 ```
 
 检测项：Python版本、openai/chromadb/rich/click/httpx、governance/、model_router/、sandbox/、distributed/、streaming/、self_think/、ray(可选)/seccomp(可选)
@@ -191,17 +211,18 @@ python -m autogpt doctor
 ## CLI命令组
 
 ```bash
-autogpt doctor                    # 健康诊断
-autogpt model list               # 列出已注册模型
-autogpt model route --tier fast  # 查看路由决策
-autogpt model providers          # 列出可用Provider
-autogpt dashboard                # 终端4象限仪表板
-autogpt governance breaks        # 查看边界突破记录（事后审计）
-autogpt governance audit         # 查看治理审计日志
-autogpt governance policy        # 查看当前策略
-autogpt governance evolve        # 触发策略自演化
-autogpt stop                     # 终止Agent运行（唯一人类运行时干预）
-autogpt orchestrate              # 多Agent编排
+autoai doctor                    # 健康诊断
+autoai model list               # 列出已注册模型
+autoai model route --tier fast  # 查看路由决策
+autoai model providers          # 列出可用Provider
+autoai dashboard                # 终端4象限仪表板
+autoai governance breaks        # 查看边界突破记录（事后审计）
+autoai governance audit         # 查看治理审计日志
+autoai governance policy        # 查看当前策略
+autoai governance evolve        # 触发策略自演化
+autoai stop                     # 终止Agent运行（唯一人类运行时干预）
+autoai orchestrate              # 多Agent编排
+autoai dependency-audit         # 依赖审计（扫描+报告依赖使用状态）
 ```
 
 ## 治理引擎
@@ -218,10 +239,10 @@ autogpt orchestrate              # 多Agent编排
 10种约束类型：token_budget / file_write_scope / file_read_scope / network_access / shell_execute / sandbox_strictness / time_budget / model_tier / self_modify / agent_spawn
 
 人类交互入口仅三个：
-- `agpt run` — 下达目标
-- `agpt audit` — 事后审视审计日志
-- `agpt breaks` — 事后审视边界突破记录
-- `agpt stop` — 终止运行（唯一运行时干预，不影响边界决策）
+- `aai run` — 下达目标
+- `aai audit` — 事后审视审计日志
+- `aai breaks` — 事后审视边界突破记录
+- `aai stop` — 终止运行（唯一运行时干预，不影响边界决策）
 
 ### 策略自演化
 
@@ -241,8 +262,8 @@ autogpt orchestrate              # 多Agent编排
 支持中文/英文切换，110+条翻译覆盖：
 
 ```bash
-python -m autogpt --lang zh_CN    # 中文
-python -m autogpt --lang en       # 英文
+python -m autoai --lang zh_CN    # 中文
+python -m autoai --lang en       # 英文
 ```
 
 或在`.env`中设置`LANGUAGE=zh_CN`。
@@ -288,7 +309,7 @@ fast→gpt-4o-mini / balanced→gpt-4o / smart→claude-3-opus
 
 ## 测试
 
-241个测试全部PASSED：
+261个测试全部PASSED：
 
 | 测试文件 | 用例数 | 覆盖范围 |
 |---------|--------|---------|
@@ -303,6 +324,12 @@ fast→gpt-4o-mini / balanced→gpt-4o / smart→claude-3-opus
 | test_streaming_e2e.py | 10 | 流式端到端 |
 | test_phase11_self_modify.py | 30 | 修改链+自主等级+自修改管道 |
 | test_phase12_13_experience_model.py | 22 | 经验库+模型自选 |
+| test_phase14_15_spawner_fingerprint.py | 19 | 子Agent创建+跨项目迁移 |
+| test_phase16_17_ci_trainer.py | 16 | CI/CD自建+模型自训练 |
+| test_phase18_arch_self_rewrite.py | 41 | 架构诊断+重构+能力注入+协议升级 |
+| test_phase19_swarm_intelligence.py | 42 | 共识+分工+知识共享+民主治理 |
+| test_phase20_l5_autonomy.py | 33 | 无人值守+全链路闭环+进化社区 |
+| test_stdlib_replacements.py | 29 | 标准库替代模块 |
 
 运行测试：
 
@@ -335,12 +362,14 @@ python -m pytest tests/unit/ -v
 
 ## 项目统计
 
-- 代码文件：215+ Python文件
-- 代码行数：32,000+行
-- 测试用例：241个（全部PASSED）
-- 治理模块：11个文件
+- 代码文件：230+ Python文件
+- 代码行数：38,000+行
+- 测试用例：261个（全部PASSED）
+- 治理模块：13个文件
 - 内置模型：9个Spec + 3个别名
 - 中文化：93+条翻译
+- 核心依赖：11个（精简72%）
+- 可选依赖分组：7个（nlp/vector-db/web/media/api-server/format/all）
 
 ## 开发路线图
 
@@ -355,10 +384,53 @@ python -m pytest tests/unit/ -v
 | 11 | 已完成 | 代码自修改管道+修改日志链+自主等级 |
 | 12 | 已完成 | 经验库+模型自选 |
 | 13 | 已完成 | 策略自生成集成 |
-| 14 | 规划中 | Agent自主创建子Agent |
-| 15 | 规划中 | 跨项目经验迁移 |
-| 16 | 规划中 | Agent自搭CI/CD |
-| 17 | 规划中 | Agent自训练专属模型 |
-| 18 | 规划中 | Agent重写自身架构 |
-| 19 | 规划中 | 群体智能 |
-| 20 | 规划中 | L5完全自治 |
+| 14 | 已完成 | Agent自主创建子Agent |
+| 15 | 已完成 | 跨项目经验迁移 |
+| 16 | 已完成 | Agent自搭CI/CD |
+| 17 | 已完成 | Agent自训练专属模型 |
+| 18 | 已完成 | 架构自诊断/自重构+能力注入+协议自升级 |
+| 19 | 已完成 | 群体智能（共识/分工/知识共享/民主治理） |
+| 20 | 已完成 | L5完全自治（无人值守+全链路闭环+进化社区） |
+
+## 群体智能（Phase 19）
+
+- **ConsensusEngine**：类区块链投票共识——加权投票+拜占庭容错(f≤⌊(n-1)/3⌋)+委托投票+提案链
+- **DivisionEmerger**：分工涌现器——能力聚类→角色发现→负载均衡→自动重平衡
+- **KnowledgeMesh**：知识共享网——发布/查询/去重/版本化/声誉加权/合并
+- **DemocraticGovernance**：民主治理——提案/投票/否决/否决覆盖/弹劾/宪法/任期限制
+
+## L5完全自治（Phase 20）
+
+- **UnattendedRunner**：无人值守运行器——心跳+看门狗+自动恢复+优雅降级+运行日志+进化调度
+- **FullEvolutionLoop**：全链路自进化闭环——诊断→重构→注入→升级→经验→策略→验证
+- **EvolutionCommunity**：进化社区——经验广播/集体学习/知识蒸馏/同行评审/声誉追踪
+
+## 依赖精简
+
+核心依赖从39个精简到11个（减少72%）：
+
+| 核心依赖（11个） | |
+|-----------------|--|
+| openai | LLM调用 |
+| click | CLI框架 |
+| rich | 终端TUI |
+| httpx | HTTP客户端 |
+| pydantic>=2.0 | 数据校验 |
+| python-dotenv | 环境变量 |
+| toml | 配置解析 |
+| jsonschema | JSON校验 |
+| tenacity | 重试 |
+| tiktoken | Token计数 |
+| numpy | 数值计算 |
+
+| 可选分组 | 依赖 |
+|---------|------|
+| nlp | spacy |
+| vector-db | chromadb, pinecone |
+| web | fastapi, uvicorn, selenium, webdriver-manager |
+| media | Pillow, pylatenc |
+| api-server | google-api, agent-protocol |
+| format | docx, readability-lxml, ftfy |
+| all | 以上全部 |
+
+零依赖替代模块（`autoai/utils/stdlib_replacements.py`）：inflection→underscore/dasherize/camelize、distro→platform、orjson→json、ftfy→自实现fix_text

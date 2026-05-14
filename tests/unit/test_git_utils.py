@@ -2,7 +2,7 @@ import pytest
 from pathlib import Path
 from git import Repo, Actor
 
-from autogpt.utils.git import git_checkout, git_blame
+from autoai.utils.git import git_checkout, git_blame
 
 
 @pytest.fixture

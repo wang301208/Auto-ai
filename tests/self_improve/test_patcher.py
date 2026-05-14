@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pytest import MonkeyPatch
 
-from autogpt.self_improve.patcher import PatchAgent
+from autoai.self_improve.patcher import PatchAgent
 
 
 def test_apply_diff_rolls_back_on_failure(tmp_path: Path) -> None:

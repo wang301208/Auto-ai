@@ -1,7 +1,7 @@
 import pytest
 
-from autogpt.llm.base import Message
-from autogpt.llm.utils import count_message_tokens, count_string_tokens
+from autoai.llm.base import Message
+from autoai.llm.utils import count_message_tokens, count_string_tokens
 
 
 def test_count_message_tokens():

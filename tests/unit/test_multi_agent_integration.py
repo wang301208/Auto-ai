@@ -108,7 +108,7 @@ class TestAgentCommunication:
     """Test the inter-agent communication protocol."""
 
     def test_direct_message(self):
-        from autogpt.agents.agent_comm import AgentCommunicationBus, AgentMessage, AgentMessageType
+        from autoai.agents.agent_comm import AgentCommunicationBus, AgentMessage, AgentMessageType
         bus = AgentCommunicationBus()
         bus.register_agent("a1", "coder")
         bus.register_agent("a2", "reviewer")
@@ -124,7 +124,7 @@ class TestAgentCommunication:
         assert received.payload["code"] == "print('hello')"
 
     def test_broadcast(self):
-        from autogpt.agents.agent_comm import AgentCommunicationBus, AgentMessageType
+        from autoai.agents.agent_comm import AgentCommunicationBus, AgentMessageType
         bus = AgentCommunicationBus()
         bus.register_agent("a1", "coder")
         bus.register_agent("a2", "reviewer")
@@ -133,7 +133,7 @@ class TestAgentCommunication:
         assert count == 2
 
     def test_request_response(self):
-        from autogpt.agents.agent_comm import AgentCommunicationBus, AgentMessage, AgentMessageType
+        from autoai.agents.agent_comm import AgentCommunicationBus, AgentMessage, AgentMessageType
         bus = AgentCommunicationBus()
         bus.register_agent("a1", "coder")
         bus.register_agent("a2", "reviewer")
@@ -152,7 +152,7 @@ class TestAgentCommunication:
         asyncio.run(_test())
 
     def test_channel(self):
-        from autogpt.agents.agent_comm import AgentCommunicationBus, AgentMessage, AgentMessageType
+        from autoai.agents.agent_comm import AgentCommunicationBus, AgentMessage, AgentMessageType
         bus = AgentCommunicationBus()
         bus.register_agent("a1", "coder")
         bus.register_agent("a2", "reviewer")
@@ -162,14 +162,14 @@ class TestAgentCommunication:
         assert count == 1
 
     def test_stats(self):
-        from autogpt.agents.agent_comm import AgentCommunicationBus
+        from autoai.agents.agent_comm import AgentCommunicationBus
         bus = AgentCommunicationBus()
         bus.register_agent("a1", "coder")
         stats = bus.get_stats()
         assert stats["registered_agents"] == 1
 
     def test_message_expiry(self):
-        from autogpt.agents.agent_comm import AgentMessage, AgentMessageType
+        from autoai.agents.agent_comm import AgentMessage, AgentMessageType
         msg = AgentMessage(
             message_type=AgentMessageType.DIRECT,
             sender_id="a1",
@@ -184,7 +184,7 @@ class TestWorkflowOrchestrator:
     """Test the DAG workflow orchestrator."""
 
     def test_dag_validation_no_cycle(self):
-        from autogpt.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask
+        from autoai.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask
         dag = WorkflowDAG("test")
         t1 = WorkflowTask(name="t1")
         t2 = WorkflowTask(name="t2", dependencies={t1.task_id})
@@ -194,7 +194,7 @@ class TestWorkflowOrchestrator:
         assert len(errors) == 0
 
     def test_dag_validation_missing_dep(self):
-        from autogpt.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask
+        from autoai.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask
         dag = WorkflowDAG("test")
         t1 = WorkflowTask(name="t1", dependencies={"nonexistent"})
         dag.add_task(t1)
@@ -202,7 +202,7 @@ class TestWorkflowOrchestrator:
         assert len(errors) > 0
 
     def test_dag_ready_tasks(self):
-        from autogpt.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask
+        from autoai.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask
         dag = WorkflowDAG("test")
         t1 = WorkflowTask(name="t1")
         t2 = WorkflowTask(name="t2", dependencies={t1.task_id})
@@ -213,7 +213,7 @@ class TestWorkflowOrchestrator:
         assert ready[0].name == "t1"
 
     def test_agent_profile_matching(self):
-        from autogpt.agents.workflow_orchestrator import AgentProfile, WorkflowTask
+        from autoai.agents.workflow_orchestrator import AgentProfile, WorkflowTask
         profile = AgentProfile(
             agent_id="coder1",
             roles={"coder"},
@@ -229,7 +229,7 @@ class TestWorkflowOrchestrator:
         assert score > 0
 
     def test_workflow_execution(self):
-        from autogpt.agents.workflow_orchestrator import (
+        from autoai.agents.workflow_orchestrator import (
             WorkflowDAG, WorkflowTask, WorkflowOrchestrator, AgentProfile, TaskState,
         )
         dag = WorkflowDAG("test")
@@ -248,7 +248,7 @@ class TestWorkflowOrchestrator:
         assert t1.task_id in result.task_results
 
     def test_skip_dependents_of_failed(self):
-        from autogpt.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask, TaskState
+        from autoai.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask, TaskState
         dag = WorkflowDAG("test")
         t1 = WorkflowTask(name="t1")
         t2 = WorkflowTask(name="t2", dependencies={t1.task_id})
@@ -264,7 +264,7 @@ class TestMultiAgentTUI:
     """Test the multi-agent TUI observation window."""
 
     def test_add_remove_agent(self):
-        from autogpt.app.multi_agent_tui import MultiAgentTUI, AgentViewData
+        from autoai.app.multi_agent_tui import MultiAgentTUI, AgentViewData
         tui = MultiAgentTUI()
         tui.update_agent(AgentViewData(agent_id="a1", name="Agent1", role="coder"))
         assert len(tui._agents) == 1
@@ -272,7 +272,7 @@ class TestMultiAgentTUI:
         assert len(tui._agents) == 0
 
     def test_tab_cycling(self):
-        from autogpt.app.multi_agent_tui import MultiAgentTUI
+        from autoai.app.multi_agent_tui import MultiAgentTUI
         tui = MultiAgentTUI()
         assert tui._current_tab == 0
         tui.cycle_tab()
@@ -282,7 +282,7 @@ class TestMultiAgentTUI:
         assert tui._current_tab == 0
 
     def test_workflow_data_update(self):
-        from autogpt.app.multi_agent_tui import MultiAgentTUI, WorkflowViewData
+        from autoai.app.multi_agent_tui import MultiAgentTUI, WorkflowViewData
         tui = MultiAgentTUI()
         tui.update_workflow(WorkflowViewData(
             workflow_id="w1",
@@ -293,13 +293,13 @@ class TestMultiAgentTUI:
         assert tui._workflow.total_tasks == 5
 
     def test_comm_data_update(self):
-        from autogpt.app.multi_agent_tui import MultiAgentTUI, CommViewData
+        from autoai.app.multi_agent_tui import MultiAgentTUI, CommViewData
         tui = MultiAgentTUI()
         tui.update_comm(CommViewData(active_agents=3, total_direct=10))
         assert tui._comm.active_agents == 3
 
     def test_render_does_not_crash(self):
-        from autogpt.app.multi_agent_tui import MultiAgentTUI, AgentViewData
+        from autoai.app.multi_agent_tui import MultiAgentTUI, AgentViewData
         tui = MultiAgentTUI()
         tui.update_agent(AgentViewData(agent_id="a1", name="Agent1"))
         layout = tui.render()

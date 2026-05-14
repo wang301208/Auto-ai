@@ -100,27 +100,27 @@ class TestExperienceStore:
 
 class TestModelAutoSelector:
     def test_trivial_uses_fast(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
         sel = ModelAutoSelector()
         choice = sel.select(TaskProfile(objective="fix lint", complexity=TaskComplexity.TRIVIAL))
         assert choice.tier == "fast"
         assert "budget_low" not in choice.reason
 
     def test_complex_uses_smart(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
         sel = ModelAutoSelector()
         choice = sel.select(TaskProfile(objective="refactor architecture", complexity=TaskComplexity.COMPLEX))
         assert choice.tier == "smart"
 
     def test_budget_low_downgrades(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
         sel = ModelAutoSelector(budget_remaining=0.5)
         choice = sel.select(TaskProfile(objective="refactor", complexity=TaskComplexity.COMPLEX))
         assert choice.tier == "fast"
         assert "budget_low" in choice.reason
 
     def test_latency_sensitive_downgrades(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
         sel = ModelAutoSelector()
         choice = sel.select(TaskProfile(
             objective="quick check", complexity=TaskComplexity.COMPLEX,
@@ -129,13 +129,13 @@ class TestModelAutoSelector:
         assert choice.tier == "balanced"
 
     def test_embedding_task(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile
         sel = ModelAutoSelector()
         choice = sel.select(TaskProfile(objective="embed text", task_type="embedding"))
         assert choice.tier == "embedding"
 
     def test_record_outcome(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector
         sel = ModelAutoSelector(budget_remaining=10.0)
         sel.record_outcome("gpt-4o-mini", "code", success=True, latency_ms=300, cost=0.001)
         sel.record_outcome("gpt-4o-mini", "code", success=True, latency_ms=250, cost=0.001)
@@ -143,7 +143,7 @@ class TestModelAutoSelector:
         assert sel.budget_remaining < 10.0
 
     def test_performance_based_selection(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
         sel = ModelAutoSelector()
         sel.record_outcome("qwen3-4b", "code", success=True, latency_ms=100)
         sel.record_outcome("qwen3-4b", "code", success=True, latency_ms=120)
@@ -152,7 +152,7 @@ class TestModelAutoSelector:
         assert choice.model_id == "qwen3-4b"
 
     def test_creativity_escalates(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
         sel = ModelAutoSelector()
         choice = sel.select(TaskProfile(
             objective="design new architecture",
@@ -162,7 +162,7 @@ class TestModelAutoSelector:
         assert choice.tier == "smart"
 
     def test_stats(self):
-        from autogpt.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
+        from autoai.llm.model_router.model_auto_selector import ModelAutoSelector, TaskProfile, TaskComplexity
         sel = ModelAutoSelector()
         sel.select(TaskProfile(objective="test"))
         s = sel.stats()
@@ -172,9 +172,9 @@ class TestModelAutoSelector:
 
 class TestAutonomyAsyncAgentIntegration:
     def test_autonomy_attached_to_engine(self):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         from governance.autonomy_level import AutonomyLevel, AutonomyManager
-        from autogpt.agents.self_modify import SelfModifyPipeline
+        from autoai.agents.self_modify import SelfModifyPipeline
         autonomy = AutonomyManager(initial_level=AutonomyLevel.SELF_BOUND)
         pipeline = SelfModifyPipeline(workspace=Path("/tmp"), autonomy=autonomy)
         engine = SelfThinkEngine(
@@ -185,7 +185,7 @@ class TestAutonomyAsyncAgentIntegration:
         assert engine._self_modify_pipeline.can_modify is True
 
     def test_experience_store_attached_to_engine(self):
-        from autogpt.agents.self_think import SelfThinkEngine
+        from autoai.agents.self_think import SelfThinkEngine
         from governance.experience_store import ExperienceStore
         store = ExperienceStore()
         engine = SelfThinkEngine(workspace=Path("/tmp"))

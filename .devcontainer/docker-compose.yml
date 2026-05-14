@@ -1,12 +1,12 @@
 # To boot the app run the following:
-# docker-compose run auto-gpt
+# docker-compose run auto-ai
 version: '3.9'
 
 services:
-  auto-gpt:
+  auto-ai:
     build:
       dockerfile: .devcontainer/Dockerfile
       context: ../
     tty: true
     volumes:
-      - ../:/workspace/Auto-GPT
+      - ../:/workspace/Auto-AI

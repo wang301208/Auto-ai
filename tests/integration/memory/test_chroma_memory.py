@@ -1,9 +1,9 @@
 # sourcery skip: snake-case-functions
 """Tests for ChromaMemory class"""
 
-from autogpt.config import Config
-from autogpt.memory.vector import MemoryItem
-from autogpt.memory.vector.providers.chroma import ChromaMemory
+from autoai.config import Config
+from autoai.memory.vector import MemoryItem
+from autoai.memory.vector.providers.chroma import ChromaMemory
 
 
 def test_chroma_memory_add_retrieve_clear(

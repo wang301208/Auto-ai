@@ -2,8 +2,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autogpt.llm.api_manager import ApiManager
-from autogpt.llm.providers import openai
+from autoai.llm.api_manager import ApiManager
+from autoai.llm.providers import openai
 
 api_manager = ApiManager()
 

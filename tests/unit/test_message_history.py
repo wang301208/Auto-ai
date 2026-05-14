@@ -4,13 +4,13 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from autogpt.agents import Agent
-from autogpt.config import AIConfig
-from autogpt.config.config import Config
-from autogpt.llm.base import ChatModelResponse, ChatSequence, Message
-from autogpt.llm.providers.openai import OPEN_AI_CHAT_MODELS
-from autogpt.llm.utils import count_string_tokens
-from autogpt.memory.message_history import MessageHistory
+from autoai.agents import Agent
+from autoai.config import AIConfig
+from autoai.config.config import Config
+from autoai.llm.base import ChatModelResponse, ChatSequence, Message
+from autoai.llm.providers.openai import OPEN_AI_CHAT_MODELS
+from autoai.llm.utils import count_string_tokens
+from autoai.memory.message_history import MessageHistory
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def test_message_history_batch_summary(mocker, agent: Agent, config: Config):
         function_call=None,
     )
     mock_summary = mocker.patch(
-        "autogpt.memory.message_history.create_chat_completion",
+        "autoai.memory.message_history.create_chat_completion",
         return_value=mock_summary_response,
     )
 

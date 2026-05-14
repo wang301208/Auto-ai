@@ -1,5 +1,5 @@
 {
-  "fleet_name": "default_autogpt",
+  "fleet_name": "default_autoai",
   "agents": [
     {
       "agent_id": "primary",

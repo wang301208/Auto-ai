@@ -1,6 +1,6 @@
 import pytest
 
-from autogpt.models.base_open_ai_plugin import BaseOpenAIPlugin
+from autoai.models.base_open_ai_plugin import BaseOpenAIPlugin
 
 
 class DummyPlugin(BaseOpenAIPlugin):

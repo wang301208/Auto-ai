@@ -115,8 +115,8 @@ class NaturalLanguageInterface:
     def _init_tts(self):
         """Initialize Text-to-Speech engine."""
         try:
-            from autogpt.speech.say import say_text
-            from autogpt.config import Config
+            from autoai.speech.say import say_text
+            from autoai.config import Config
             
             # Get config from agent if available
             app_config = getattr(self.agent, 'config', None)

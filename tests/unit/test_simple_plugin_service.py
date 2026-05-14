@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from autogpt.core.plugin.simple import SimplePluginService
+from autoai.core.plugin.simple import SimplePluginService
 
 
 def test_load_from_file_path_directory(tmp_path):
@@ -42,7 +42,7 @@ def test_resolve_name_to_path_file(tmp_path, monkeypatch):
 
 
 def test_resolve_name_to_path_import(tmp_path):
-    pkg_root = tmp_path / "autogpt_plugins"
+    pkg_root = tmp_path / "autoai_plugins"
     pkg_root.mkdir()
     (pkg_root / "__init__.py").write_text("")
     (pkg_root / "bar.py").write_text("")
@@ -50,6 +50,6 @@ def test_resolve_name_to_path_import(tmp_path):
     sys.path.insert(0, str(tmp_path))
     try:
         resolved = SimplePluginService.resolve_name_to_path("bar", "import")
-        assert resolved == "autogpt_plugins.bar"
+        assert resolved == "autoai_plugins.bar"
     finally:
         sys.path.pop(0)

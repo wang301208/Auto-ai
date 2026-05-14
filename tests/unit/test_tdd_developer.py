@@ -7,22 +7,22 @@ from unittest.mock import ANY
 
 from pytest_mock import MockerFixture
 
-from autogpt.agents.agent import Agent
-from autogpt.event_bus import (
+from autoai.agents.agent import Agent
+from autoai.event_bus import (
     CODE_FIX_PROPOSED,
     DIAGNOSIS_COMPLETE,
     EventBus,
     EventMessage,
     MessageQueue,
 )
-from autogpt.workspace import Workspace
+from autoai.workspace import Workspace
 
-# Avoid importing autogpt.agents package initializer with heavy dependencies
-agents_pkg = types.ModuleType("autogpt.agents")
-agents_pkg.__path__ = ["autogpt/agents"]
-sys.modules.setdefault("autogpt.agents", agents_pkg)
+# Avoid importing autoai.agents package initializer with heavy dependencies
+agents_pkg = types.ModuleType("autoai.agents")
+agents_pkg.__path__ = ["autoai/agents"]
+sys.modules.setdefault("autoai.agents", agents_pkg)
 
-tdd_module = importlib.import_module("autogpt.agents.tdd_developer")
+tdd_module = importlib.import_module("autoai.agents.tdd_developer")
 TDDDeveloper = tdd_module.TDDDeveloper
 
 
@@ -34,19 +34,19 @@ def test_tdd_developer_handles_diagnosis(
     TDDDeveloper(agent=agent, message_queue=message_queue)
 
     create_branch = mocker.patch(
-        "autogpt.agents.tdd_developer.git_create_branch", return_value=""
+        "autoai.agents.tdd_developer.git_create_branch", return_value=""
     )
     checkout = mocker.patch(
-        "autogpt.agents.tdd_developer.git_checkout", return_value=""
+        "autoai.agents.tdd_developer.git_checkout", return_value=""
     )
     create_test = mocker.patch(
-        "autogpt.agents.tdd_developer.create_test_file", return_value=""
+        "autoai.agents.tdd_developer.create_test_file", return_value=""
     )
     write_file = mocker.patch(
-        "autogpt.agents.tdd_developer.write_to_file", return_value=""
+        "autoai.agents.tdd_developer.write_to_file", return_value=""
     )
     run = mocker.patch(
-        "autogpt.agents.tdd_developer.run_tests",
+        "autoai.agents.tdd_developer.run_tests",
         side_effect=[
             {
                 "status": "failed",
@@ -74,7 +74,7 @@ def test_tdd_developer_handles_diagnosis(
             },
         ],
     )
-    commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+    commit = mocker.patch("autoai.agents.tdd_developer.git_commit", return_value="")
 
     received: list[EventMessage] = []
     message_queue.subscribe(CODE_FIX_PROPOSED, lambda msg: received.append(msg))
@@ -117,9 +117,9 @@ def test_tdd_developer_generates_repro_test(
     message_queue = MessageQueue(event_bus)
     TDDDeveloper(agent=agent, message_queue=message_queue)
 
-    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
-    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
-    mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_checkout", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_commit", return_value="")
 
     captured: dict[str, str] = {}
 
@@ -128,11 +128,11 @@ def test_tdd_developer_generates_repro_test(
         return ""
 
     mocker.patch(
-        "autogpt.agents.tdd_developer.create_test_file", side_effect=capture_create_test_file
+        "autoai.agents.tdd_developer.create_test_file", side_effect=capture_create_test_file
     )
 
     mocker.patch(
-        "autogpt.agents.tdd_developer.run_tests",
+        "autoai.agents.tdd_developer.run_tests",
         side_effect=[
             {
                 "status": "failed",
@@ -180,13 +180,13 @@ def test_tdd_developer_handles_recommended_skill_without_fix_loop(
     message_queue = MessageQueue(event_bus)
     TDDDeveloper(agent=agent, message_queue=message_queue)
 
-    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
-    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_checkout", return_value="")
     write_file = mocker.patch(
-        "autogpt.agents.tdd_developer.write_to_file", return_value="",
+        "autoai.agents.tdd_developer.write_to_file", return_value="",
     )
     create_test = mocker.patch(
-        "autogpt.agents.tdd_developer.create_test_file", return_value="",
+        "autoai.agents.tdd_developer.create_test_file", return_value="",
     )
 
     repo_path = str(workspace.root)
@@ -200,9 +200,9 @@ def test_tdd_developer_handles_recommended_skill_without_fix_loop(
         return {"exit_code": 0}
 
     run = mocker.patch(
-        "autogpt.agents.tdd_developer.run_tests", side_effect=capture_run
+        "autoai.agents.tdd_developer.run_tests", side_effect=capture_run
     )
-    commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+    commit = mocker.patch("autoai.agents.tdd_developer.git_commit", return_value="")
 
     received: list[EventMessage] = []
     message_queue.subscribe(CODE_FIX_PROPOSED, lambda msg: received.append(msg))
@@ -242,14 +242,14 @@ def test_tdd_developer_adds_new_skill(
     librarian = mocker.Mock()
     TDDDeveloper(agent=agent, message_queue=message_queue, librarian=librarian)
 
-    create_branch = mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
-    checkout = mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
-    write_file = mocker.patch("autogpt.agents.tdd_developer.write_to_file", return_value="")
-    run = mocker.patch("autogpt.agents.tdd_developer.run_tests")
-    commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+    create_branch = mocker.patch("autoai.agents.tdd_developer.git_create_branch", return_value="")
+    checkout = mocker.patch("autoai.agents.tdd_developer.git_checkout", return_value="")
+    write_file = mocker.patch("autoai.agents.tdd_developer.write_to_file", return_value="")
+    run = mocker.patch("autoai.agents.tdd_developer.run_tests")
+    commit = mocker.patch("autoai.agents.tdd_developer.git_commit", return_value="")
 
     repo_obj = types.SimpleNamespace(head=types.SimpleNamespace(commit=types.SimpleNamespace(hexsha="abc123")))
-    mocker.patch("autogpt.agents.tdd_developer.Repo", return_value=repo_obj)
+    mocker.patch("autoai.agents.tdd_developer.Repo", return_value=repo_obj)
 
     received: list[EventMessage] = []
     message_queue.subscribe(CODE_FIX_PROPOSED, lambda msg: received.append(msg))
@@ -303,10 +303,10 @@ def test_tdd_developer_aborts_on_failed_add_skill(
     librarian.add_skill.side_effect = RuntimeError("failure")
     TDDDeveloper(agent=agent, message_queue=message_queue, librarian=librarian)
 
-    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
-    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
-    mocker.patch("autogpt.agents.tdd_developer.write_to_file", return_value="")
-    commit = mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_checkout", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.write_to_file", return_value="")
+    commit = mocker.patch("autoai.agents.tdd_developer.git_commit", return_value="")
 
     repo_path = str(workspace.root)
     payload = {
@@ -342,19 +342,19 @@ def test_tdd_developer_learning_phase(
     dev = TDDDeveloper(agent=agent, message_queue=message_queue)
 
     learn = mocker.patch(
-        "autogpt.agents.tdd_developer.read_and_understand_code", return_value="report"
+        "autoai.agents.tdd_developer.read_and_understand_code", return_value="report"
     )
-    mocker.patch("autogpt.agents.tdd_developer.git_create_branch", return_value="")
-    mocker.patch("autogpt.agents.tdd_developer.git_checkout", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_create_branch", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_checkout", return_value="")
     mocker.patch(
-        "autogpt.agents.tdd_developer.create_test_file", return_value=""
+        "autoai.agents.tdd_developer.create_test_file", return_value=""
     )
     mocker.patch(
-        "autogpt.agents.tdd_developer.run_tests",
+        "autoai.agents.tdd_developer.run_tests",
         return_value={"status": "failed", "exit_code": 1, "successes": 0, "failures": 1, "errors": 0, "logs": ""},
     )
-    mocker.patch("autogpt.agents.tdd_developer.git_commit", return_value="")
-    mocker.patch("autogpt.agents.tdd_developer.write_to_file", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.git_commit", return_value="")
+    mocker.patch("autoai.agents.tdd_developer.write_to_file", return_value="")
 
     repo_path = str(workspace.root)
     payload = {

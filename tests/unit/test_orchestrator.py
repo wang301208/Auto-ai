@@ -6,8 +6,8 @@ from multiprocessing.synchronize import Event
 
 import pytest
 
-import autogpt.orchestrator as orch_mod
-from autogpt.orchestrator import Orchestrator
+import autoai.orchestrator as orch_mod
+from autoai.orchestrator import Orchestrator
 
 
 def test_dashboard_process_monitored(monkeypatch: pytest.MonkeyPatch) -> None:

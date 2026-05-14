@@ -11,7 +11,7 @@ from datetime import datetime
 
 class TestUnifiedTask:
     def test_create_default_task(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory, UnifiedTaskStatus
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory, UnifiedTaskStatus
         task = UnifiedTask(name="test", objective="do something")
         assert task.category == TaskCategory.STANDARD
         assert task.status == UnifiedTaskStatus.PENDING
@@ -19,7 +19,7 @@ class TestUnifiedTask:
         assert task.created_at
 
     def test_task_lifecycle(self):
-        from autogpt.agents.unified_task import UnifiedTask, UnifiedTaskStatus
+        from autoai.agents.unified_task import UnifiedTask, UnifiedTaskStatus
         task = UnifiedTask(name="test", objective="do something")
         task.mark_dispatched("agent-1")
         assert task.status == UnifiedTaskStatus.DISPATCHED
@@ -36,7 +36,7 @@ class TestUnifiedTask:
         assert task.is_done
 
     def test_task_failure_with_retry(self):
-        from autogpt.agents.unified_task import UnifiedTask, UnifiedTaskStatus
+        from autoai.agents.unified_task import UnifiedTask, UnifiedTaskStatus
         task = UnifiedTask(name="test", objective="fail", max_retries=2)
         task.mark_running()
         task.mark_failed("error 1")
@@ -53,14 +53,14 @@ class TestUnifiedTask:
         assert task.is_done
 
     def test_task_timeout(self):
-        from autogpt.agents.unified_task import UnifiedTask, UnifiedTaskStatus
+        from autoai.agents.unified_task import UnifiedTask, UnifiedTaskStatus
         task = UnifiedTask(name="test", objective="slow", timeout_seconds=30)
         task.mark_timed_out()
         assert task.status == UnifiedTaskStatus.TIMED_OUT
         assert "Timeout" in task.error
 
     def test_pause_resume(self):
-        from autogpt.agents.unified_task import UnifiedTask, UnifiedTaskStatus
+        from autoai.agents.unified_task import UnifiedTask, UnifiedTaskStatus
         task = UnifiedTask(name="test", objective="long")
         task.mark_running()
         task.pause()
@@ -69,7 +69,7 @@ class TestUnifiedTask:
         assert task.status == UnifiedTaskStatus.RUNNING
 
     def test_effective_timeout_by_category(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory
         immediate = UnifiedTask(name="t", objective="o", category=TaskCategory.IMMEDIATE, timeout_seconds=120)
         assert immediate.effective_timeout == 30.0
 
@@ -80,7 +80,7 @@ class TestUnifiedTask:
         assert daemon.effective_timeout == 0.0
 
     def test_phases(self):
-        from autogpt.agents.unified_task import UnifiedTask, UnifiedTaskStatus
+        from autoai.agents.unified_task import UnifiedTask, UnifiedTaskStatus
         task = UnifiedTask(name="test", objective="multi-phase")
         task.add_phase("phase1", "First phase")
         task.add_phase("phase2", "Second phase")
@@ -101,8 +101,8 @@ class TestUnifiedTask:
         assert final is None  # no more phases
 
     def test_from_workflow_task(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory
-        from autogpt.agents.workflow_orchestrator import WorkflowTask
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory
+        from autoai.agents.workflow_orchestrator import WorkflowTask
         wf = WorkflowTask(name="wf-task", description="A workflow task", priority=5, timeout_seconds=15)
         unified = UnifiedTask.from_workflow_task(wf)
         assert unified.name == "wf-task"
@@ -114,13 +114,13 @@ class TestUnifiedTask:
 
 class TestCircuitBreaker:
     def test_closed_state(self):
-        from autogpt.agents.unified_task import CircuitBreaker
+        from autoai.agents.unified_task import CircuitBreaker
         cb = CircuitBreaker(failure_threshold=3)
         assert not cb.is_open
         assert cb.state == "closed"
 
     def test_opens_after_threshold(self):
-        from autogpt.agents.unified_task import CircuitBreaker
+        from autoai.agents.unified_task import CircuitBreaker
         cb = CircuitBreaker(failure_threshold=3)
         cb.record_failure()
         cb.record_failure()
@@ -130,7 +130,7 @@ class TestCircuitBreaker:
         assert cb.state == "open"
 
     def test_success_resets(self):
-        from autogpt.agents.unified_task import CircuitBreaker
+        from autoai.agents.unified_task import CircuitBreaker
         cb = CircuitBreaker(failure_threshold=2)
         cb.record_failure()
         cb.record_failure()
@@ -143,7 +143,7 @@ class TestCircuitBreaker:
 class TestTaskScheduler:
     @pytest.mark.asyncio
     async def test_dispatch_immediate(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
 
         executed = []
 
@@ -159,7 +159,7 @@ class TestTaskScheduler:
 
     @pytest.mark.asyncio
     async def test_dispatch_standard_with_retry(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
 
         call_count = 0
 
@@ -178,7 +178,7 @@ class TestTaskScheduler:
 
     @pytest.mark.asyncio
     async def test_dispatch_long_run_phases(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
 
         phase_count = 0
 
@@ -197,7 +197,7 @@ class TestTaskScheduler:
 
     @pytest.mark.asyncio
     async def test_submit_and_stats(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
 
         async def executor(task):
             return {"ok": True}
@@ -218,7 +218,7 @@ class TestTaskScheduler:
 
     @pytest.mark.asyncio
     async def test_checkpoint_saved(self):
-        from autogpt.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
+        from autoai.agents.unified_task import UnifiedTask, TaskCategory, TaskScheduler
 
         async def executor(task):
             return {"_checkpoint": {"data": "test"}, "result": "ok"}
@@ -239,7 +239,7 @@ class TestTaskScheduler:
 
 class TestModelSpec:
     def test_create_spec(self):
-        from autogpt.llm.model_router.model_spec import ModelSpec, ModelCapability, ModelTier
+        from autoai.llm.model_router.model_spec import ModelSpec, ModelCapability, ModelTier
         spec = ModelSpec(
             model_id="test-model",
             provider_name="test",
@@ -254,12 +254,12 @@ class TestModelSpec:
         assert not spec.is_free
 
     def test_free_model(self):
-        from autogpt.llm.model_router.model_spec import ModelSpec, ModelCapability, ModelTier
+        from autoai.llm.model_router.model_spec import ModelSpec, ModelCapability, ModelTier
         spec = ModelSpec(model_id="local", provider_name="ollama", tier=ModelTier.FAST, is_local=True)
         assert spec.is_free
 
     def test_to_from_dict(self):
-        from autogpt.llm.model_router.model_spec import ModelSpec, ModelCapability, ModelTier, BUILTIN_MODEL_SPECS
+        from autoai.llm.model_router.model_spec import ModelSpec, ModelCapability, ModelTier, BUILTIN_MODEL_SPECS
         for spec_dict in BUILTIN_MODEL_SPECS[:3]:
             spec = ModelSpec.from_dict(spec_dict)
             d = spec.to_dict()
@@ -269,8 +269,8 @@ class TestModelSpec:
 
 class TestModelRegistry:
     def test_register_and_lookup(self):
-        from autogpt.llm.model_router import ModelRegistry
-        from autogpt.llm.model_router.model_spec import ModelSpec, ModelTier
+        from autoai.llm.model_router import ModelRegistry
+        from autoai.llm.model_router.model_spec import ModelSpec, ModelTier
         registry = ModelRegistry()
         spec = ModelSpec(model_id="test", provider_name="p1", tier=ModelTier.FAST)
         registry.register_model(spec)
@@ -279,8 +279,8 @@ class TestModelRegistry:
         assert registry.model_count == 1
 
     def test_alias(self):
-        from autogpt.llm.model_router import ModelRegistry
-        from autogpt.llm.model_router.model_spec import ModelSpec, ModelTier
+        from autoai.llm.model_router import ModelRegistry
+        from autoai.llm.model_router.model_spec import ModelSpec, ModelTier
         registry = ModelRegistry()
         spec = ModelSpec(model_id="gpt-4o", provider_name="openai", tier=ModelTier.SMART)
         registry.register_model(spec)
@@ -288,13 +288,13 @@ class TestModelRegistry:
         assert registry.get_model("smart").model_id == "gpt-4o"
 
     def test_load_builtin_specs(self):
-        from autogpt.llm.model_router import ModelRegistry
+        from autoai.llm.model_router import ModelRegistry
         registry = ModelRegistry()
         count = registry.load_builtin_specs()
         assert registry.model_count >= 9  # at least 9 builtin specs
 
     def test_fallback_chain(self):
-        from autogpt.llm.model_router import ModelRegistry
+        from autoai.llm.model_router import ModelRegistry
         registry = ModelRegistry()
         registry.load_builtin_specs()
         chain = registry.get_fallback_chain("gpt-4o")
@@ -302,7 +302,7 @@ class TestModelRegistry:
         assert "gpt-4o-mini" in chain
 
     def test_list_models_filter(self):
-        from autogpt.llm.model_router import ModelRegistry
+        from autoai.llm.model_router import ModelRegistry
         registry = ModelRegistry()
         registry.load_builtin_specs()
         local = registry.list_models(local_only=True)
@@ -311,7 +311,7 @@ class TestModelRegistry:
         assert all(m.tier.value == "smart" for m in smart)
 
     def test_summary(self):
-        from autogpt.llm.model_router import ModelRegistry
+        from autoai.llm.model_router import ModelRegistry
         registry = ModelRegistry()
         registry.load_builtin_specs()
         s = registry.summary()
@@ -322,8 +322,8 @@ class TestModelRegistry:
 
 class TestModelRouter:
     def test_route_smart_tier(self):
-        from autogpt.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
-        from autogpt.llm.model_router.model_spec import ModelTier
+        from autoai.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
+        from autoai.llm.model_router.model_spec import ModelTier
         registry = ModelRegistry()
         registry.load_builtin_specs()
         router = ModelRouter(registry=registry)
@@ -333,9 +333,9 @@ class TestModelRouter:
         assert decision.provider_name
 
     def test_route_cost_optimal(self):
-        from autogpt.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
-        from autogpt.llm.model_router.model_spec import ModelTier
-        from autogpt.llm.model_router.model_router import RoutingStrategy
+        from autoai.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
+        from autoai.llm.model_router.model_spec import ModelTier
+        from autoai.llm.model_router.model_router import RoutingStrategy
         registry = ModelRegistry()
         registry.load_builtin_specs()
         policy = RoutingPolicy(strategy=RoutingStrategy.COST_OPTIMAL)
@@ -345,9 +345,9 @@ class TestModelRouter:
         assert decision.estimated_cost >= 0
 
     def test_route_local_first(self):
-        from autogpt.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
-        from autogpt.llm.model_router.model_spec import ModelTier
-        from autogpt.llm.model_router.model_router import RoutingStrategy
+        from autoai.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
+        from autoai.llm.model_router.model_spec import ModelTier
+        from autoai.llm.model_router.model_router import RoutingStrategy
         registry = ModelRegistry()
         registry.load_builtin_specs()
         policy = RoutingPolicy(strategy=RoutingStrategy.LOCAL_FIRST)
@@ -356,8 +356,8 @@ class TestModelRouter:
         assert decision is not None
 
     def test_route_forced_model(self):
-        from autogpt.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
-        from autogpt.llm.model_router.model_spec import ModelTier
+        from autoai.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
+        from autoai.llm.model_router.model_spec import ModelTier
         registry = ModelRegistry()
         registry.load_builtin_specs()
         policy = RoutingPolicy(forced_model="gpt-4o-mini")
@@ -368,8 +368,8 @@ class TestModelRouter:
         assert decision.reason == "forced_model"
 
     def test_route_budget_limit(self):
-        from autogpt.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
-        from autogpt.llm.model_router.model_spec import ModelTier
+        from autoai.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
+        from autoai.llm.model_router.model_spec import ModelTier
         registry = ModelRegistry()
         registry.load_builtin_specs()
         policy = RoutingPolicy(budget_limit_per_request=0.00001, daily_budget_limit=0.001)
@@ -379,8 +379,8 @@ class TestModelRouter:
         # With very tight budget, may return None or a free model
 
     def test_degradation_chain(self):
-        from autogpt.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
-        from autogpt.llm.model_router.model_spec import ModelTier
+        from autoai.llm.model_router import ModelRegistry, ModelRouter, RoutingPolicy
+        from autoai.llm.model_router.model_spec import ModelTier
         registry = ModelRegistry()
         registry.load_builtin_specs()
         chain = registry.get_fallback_chain("deepseek-reasoner")
@@ -390,7 +390,7 @@ class TestModelRouter:
 
 class TestRoutingPolicy:
     def test_budget_tracking(self):
-        from autogpt.llm.model_router.model_router import RoutingPolicy
+        from autoai.llm.model_router.model_router import RoutingPolicy
         policy = RoutingPolicy(daily_budget_limit=1.0, budget_limit_per_request=0.5)
         assert policy.check_budget(0.3)
         assert not policy.check_budget(0.6)
@@ -400,13 +400,13 @@ class TestRoutingPolicy:
 
 class TestOllamaProvider:
     def test_create_provider(self):
-        from autogpt.llm.model_router import OllamaProvider
+        from autoai.llm.model_router import OllamaProvider
         provider = OllamaProvider(auto_detect=False)
         assert provider.name == "ollama"
         assert provider.base_url == "http://localhost:11434"
 
     def test_list_models_no_server(self):
-        from autogpt.llm.model_router import OllamaProvider
+        from autoai.llm.model_router import OllamaProvider
         provider = OllamaProvider(auto_detect=False)
         models = provider.list_models()
         assert isinstance(models, list)
@@ -414,13 +414,13 @@ class TestOllamaProvider:
 
 class TestOpenAICompatProvider:
     def test_create_provider(self):
-        from autogpt.llm.model_router import OpenAICompatProvider
+        from autoai.llm.model_router import OpenAICompatProvider
         provider = OpenAICompatProvider(name="test", api_key="sk-test")
         assert provider.name == "test"
         assert provider.default_model == "gpt-4o-mini"
 
     def test_from_preset(self):
-        from autogpt.llm.model_router import OpenAICompatProvider
+        from autoai.llm.model_router import OpenAICompatProvider
         preset = {
             "slug": "deepseek",
             "base_url": "https://api.deepseek.com/v1",
@@ -438,7 +438,7 @@ class TestOpenAICompatProvider:
 
 class TestSystemBootstrapIntegration:
     def test_system_config_new_fields(self):
-        from autogpt.agents.system_bootstrap import SystemConfig
+        from autoai.agents.system_bootstrap import SystemConfig
         config = SystemConfig()
         assert config.enable_task_scheduler is True
         assert config.enable_model_router is True
@@ -446,7 +446,7 @@ class TestSystemBootstrapIntegration:
         assert config.routing_strategy == "cost_optimal"
 
     def test_setup_creates_scheduler_and_router(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         from pathlib import Path
         import tempfile
 
@@ -468,7 +468,7 @@ class TestSystemBootstrapIntegration:
             assert system.model_registry.model_count > 0
 
     def test_system_status_includes_new_fields(self):
-        from autogpt.agents.system_bootstrap import MultiAgentSystem, SystemConfig
+        from autoai.agents.system_bootstrap import MultiAgentSystem, SystemConfig
         from pathlib import Path
         import tempfile
 

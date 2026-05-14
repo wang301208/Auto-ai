@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from autogpt.models.command import Command, CommandParameter
-from autogpt.models.command_parameter import ParameterType
-from autogpt.models.command_registry import CommandRegistry
+from autoai.models.command import Command, CommandParameter
+from autoai.models.command_parameter import ParameterType
+from autoai.models.command_registry import CommandRegistry
 
 PARAMETERS = [
     CommandParameter("arg1", ParameterType.NUMBER, description="Argument 1", required=True),

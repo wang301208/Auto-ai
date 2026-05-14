@@ -4,13 +4,13 @@ import numpy
 import pytest
 from pytest_mock import MockerFixture
 
-import autogpt.memory.vector.memory_item as vector_memory_item
-import autogpt.memory.vector.providers.base as memory_provider_base
-import autogpt.memory.vector.providers.chroma as chroma_provider
-from autogpt.config.config import Config
-from autogpt.llm.providers.openai import OPEN_AI_EMBEDDING_MODELS
-from autogpt.memory.vector import VectorMemory, get_memory
-from autogpt.memory.vector.utils import Embedding
+import autoai.memory.vector.memory_item as vector_memory_item
+import autoai.memory.vector.providers.base as memory_provider_base
+import autoai.memory.vector.providers.chroma as chroma_provider
+from autoai.config.config import Config
+from autoai.llm.providers.openai import OPEN_AI_EMBEDDING_MODELS
+from autoai.memory.vector import VectorMemory, get_memory
+from autoai.memory.vector.utils import Embedding
 
 
 @pytest.fixture

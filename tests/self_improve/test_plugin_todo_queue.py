@@ -1,7 +1,7 @@
 from pathlib import Path
 
-from autogpt.event_bus import EventBus, MessageQueue
-from autogpt.self_improve import PluginTodoQueue
+from autoai.event_bus import EventBus, MessageQueue
+from autoai.self_improve import PluginTodoQueue
 
 
 def test_plugin_todo_queue(tmp_path: Path) -> None:

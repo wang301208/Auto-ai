@@ -5,7 +5,7 @@ It coordinates policy evaluation, boundary management, rate limiting,
 and quota enforcement into a single check pattern.
 
 Philosophy: Agent autonomously manages boundaries. No supervised mode.
-Human role: post-hoc audit only via `agpt audit` and `agpt breaks`.
+Human role: post-hoc audit only via `aai audit` and `aai breaks`.
 """
 
 from __future__ import annotations
@@ -53,7 +53,7 @@ class GovernanceGate:
         audit_log: AuditLog | None = None,
         hard_boundaries: set[str] | None = None,
         boundary_manager: BoundaryManager | None = None,
-        agent_id: str = "auto-gpt",
+        agent_id: str = "auto-ai",
     ) -> None:
         self.policy = policy_evaluator or PolicyEvaluator()
         self.rates = rate_limiter or RateLimiter()

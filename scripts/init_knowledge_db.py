@@ -12,9 +12,9 @@ import json
 from pathlib import Path
 from typing import Iterable
 
-from autogpt.config import Config
-from autogpt.memory.vector.utils import get_embedding
-from autogpt.skills.vector_db import ChromaVectorDB
+from autoai.config import Config
+from autoai.memory.vector.utils import get_embedding
+from autoai.skills.vector_db import ChromaVectorDB
 
 
 def _collect_metadata_files(repo: Path, pattern: str) -> Iterable[Path]:

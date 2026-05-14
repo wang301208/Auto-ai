@@ -1,9 +1,9 @@
 import argparse
 import logging
 
-from autogpt.commands.file_operations import ingest_file, list_files
-from autogpt.config import ConfigBuilder
-from autogpt.memory.vector import VectorMemory, get_memory
+from autoai.commands.file_operations import ingest_file, list_files
+from autoai.config import ConfigBuilder
+from autoai.memory.vector import VectorMemory, get_memory
 
 config = ConfigBuilder.build_config_from_env()
 
@@ -18,7 +18,7 @@ def configure_logging():
             logging.StreamHandler(),
         ],
     )
-    return logging.getLogger("AutoGPT-Ingestion")
+    return logging.getLogger("AutoAI-Ingestion")
 
 
 def ingest_directory(directory: str, memory: VectorMemory, config):
@@ -28,7 +28,7 @@ def ingest_directory(directory: str, memory: VectorMemory, config):
     :param directory: The directory containing the files to ingest
     :param memory: An object with an add() method to store the chunks in memory
     """
-    logger = logging.getLogger("AutoGPT-Ingestion")
+    logger = logging.getLogger("AutoAI-Ingestion")
     try:
         files = list_files(directory)
         for file in files:
@@ -90,7 +90,7 @@ def main() -> None:
     else:
         logger.warn(
             "Please provide either a file path (--file) or a directory name (--dir)"
-            " inside the auto_gpt_workspace directory as input."
+            " inside the auto_ai_workspace directory as input."
         )
 
 

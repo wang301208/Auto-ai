@@ -16,9 +16,9 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from autogpt.agents.async_agent import AsyncAgent, CommandRepetitionError
-from autogpt.agents.ability_adapter import AbilityRegistry, AbilityResult
-from autogpt.agents.subsystem_injection import (
+from autoai.agents.async_agent import AsyncAgent, CommandRepetitionError
+from autoai.agents.ability_adapter import AbilityRegistry, AbilityResult
+from autoai.agents.subsystem_injection import (
     EventBusPublishAbility,
     EventBusQueryAbility,
     SelfDevelopAbility,
@@ -27,9 +27,9 @@ from autogpt.agents.subsystem_injection import (
     inject_v1_subsystems,
 )
 
-from autogpt.core.planning.schema import Task, TaskStatus, TaskType
+from autoai.core.planning.schema import Task, TaskStatus, TaskType
 
-from autogpt.event_bus import EventMessage, MessageQueue
+from autoai.event_bus import EventMessage, MessageQueue
 
 
 class _FakePlanner:
@@ -360,7 +360,7 @@ class TestSubsystemInjection:
     @pytest.mark.asyncio
     async def test_skill_search_ability(self):
         ability = SkillSearchAbility(library=None)
-        with patch("autogpt.agents.subsystem_injection.get_library") as mock_get:
+        with patch("autoai.agents.subsystem_injection.get_library") as mock_get:
             mock_lib = MagicMock()
             mock_lib.search.return_value = []
             mock_get.return_value = mock_lib
@@ -375,7 +375,7 @@ class TestSubsystemInjection:
         mock_skill.version = "1.0"
         mock_skill.description = "A test skill"
         ability = SkillSearchAbility(library=None)
-        with patch("autogpt.agents.subsystem_injection.get_library") as mock_get:
+        with patch("autoai.agents.subsystem_injection.get_library") as mock_get:
             mock_lib = MagicMock()
             mock_lib.search.return_value = [mock_skill]
             mock_get.return_value = mock_lib
@@ -387,7 +387,7 @@ class TestSubsystemInjection:
     @pytest.mark.asyncio
     async def test_skill_execute_ability_not_found(self):
         ability = SkillExecuteAbility()
-        with patch("autogpt.agents.subsystem_injection.get_library") as mock_get:
+        with patch("autoai.agents.subsystem_injection.get_library") as mock_get:
             mock_lib = MagicMock()
             mock_lib.get_skill.return_value = None
             mock_get.return_value = mock_lib

@@ -13,7 +13,7 @@ from pathlib import Path
 import json
 
 from black import FileMode, format_str
-from autogpt.plugins.loader import load_plugin_meta
+from autoai.plugins.loader import load_plugin_meta
 
 try:
     from openai import OpenAI

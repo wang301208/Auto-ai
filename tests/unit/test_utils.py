@@ -4,10 +4,10 @@ from unittest.mock import MagicMock, patch
 import pytest
 import requests
 
-from autogpt.app.utils import get_bulletin_from_web, get_latest_bulletin
-from autogpt.config import Config
-from autogpt.json_utils.utilities import extract_dict_from_response, validate_dict
-from autogpt.utils import validate_yaml_file
+from autoai.app.utils import get_bulletin_from_web, get_latest_bulletin
+from autoai.config import Config
+from autoai.json_utils.utilities import extract_dict_from_response, validate_dict
+from autoai.utils import validate_yaml_file
 
 
 @pytest.fixture
@@ -81,7 +81,7 @@ def test_get_bulletin_from_web_success(mock_get: MagicMock) -> None:
 
     assert expected_content in bulletin
     mock_get.assert_called_with(
-        "https://raw.githubusercontent.com/Significant-Gravitas/Auto-GPT/master/BULLETIN.md"
+        "https://raw.githubusercontent.com/Significant-Gravitas/Auto-AI/master/BULLETIN.md"
     )
 
 
@@ -104,7 +104,7 @@ def test_get_bulletin_from_web_exception(mock_get: MagicMock) -> None:
 def test_get_latest_bulletin_no_file() -> None:
     if os.path.exists("data/CURRENT_BULLETIN.md"):
         os.remove("data/CURRENT_BULLETIN.md")
-    with patch("autogpt.app.utils.get_bulletin_from_web", return_value="bulletin"):
+    with patch("autoai.app.utils.get_bulletin_from_web", return_value="bulletin"):
         bulletin, is_new = get_latest_bulletin()
         assert is_new
 
@@ -114,7 +114,7 @@ def test_get_latest_bulletin_with_file() -> None:
     with open("data/CURRENT_BULLETIN.md", "w", encoding="utf-8") as f:
         f.write(expected_content)
 
-    with patch("autogpt.app.utils.get_bulletin_from_web", return_value=""):
+    with patch("autoai.app.utils.get_bulletin_from_web", return_value=""):
         bulletin, is_new = get_latest_bulletin()
         assert expected_content in bulletin
         assert is_new == False
@@ -128,7 +128,7 @@ def test_get_latest_bulletin_with_new_bulletin() -> None:
 
     expected_content = "New bulletin from web"
     with patch(
-        "autogpt.app.utils.get_bulletin_from_web", return_value=expected_content
+        "autoai.app.utils.get_bulletin_from_web", return_value=expected_content
     ):
         bulletin, is_new = get_latest_bulletin()
         assert "::NEW BULLETIN::" in bulletin
@@ -144,7 +144,7 @@ def test_get_latest_bulletin_new_bulletin_same_as_old_bulletin() -> None:
         f.write(expected_content)
 
     with patch(
-        "autogpt.app.utils.get_bulletin_from_web", return_value=expected_content
+        "autoai.app.utils.get_bulletin_from_web", return_value=expected_content
     ):
         bulletin, is_new = get_latest_bulletin()
         assert expected_content in bulletin

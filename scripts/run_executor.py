@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import argparse
 
-from autogpt.agents.executor import Executor
-from autogpt.config import Config
-from autogpt.event_bus import MessageQueue
+from autoai.agents.executor import Executor
+from autoai.config import Config
+from autoai.event_bus import MessageQueue
 
 
 def main() -> None:

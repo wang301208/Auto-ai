@@ -4,14 +4,14 @@ import types
 from pathlib import Path
 import json
 
-from autogpt.event_bus import CODE_FIX_PROPOSED, DIAGNOSIS_COMPLETE, EventMessage
+from autoai.event_bus import CODE_FIX_PROPOSED, DIAGNOSIS_COMPLETE, EventMessage
 
-# Avoid importing autogpt.agents package initializer with heavy dependencies
-agents_pkg = types.ModuleType("autogpt.agents")
-agents_pkg.__path__ = ["autogpt/agents"]
-sys.modules.setdefault("autogpt.agents", agents_pkg)
+# Avoid importing autoai.agents package initializer with heavy dependencies
+agents_pkg = types.ModuleType("autoai.agents")
+agents_pkg.__path__ = ["autoai/agents"]
+sys.modules.setdefault("autoai.agents", agents_pkg)
 
-agent_stub = types.ModuleType("autogpt.agents.agent")
+agent_stub = types.ModuleType("autoai.agents.agent")
 
 
 class Agent:  # minimal stub to satisfy imports
@@ -19,11 +19,11 @@ class Agent:  # minimal stub to satisfy imports
 
 
 agent_stub.Agent = Agent
-sys.modules.setdefault("autogpt.agents.agent", agent_stub)
+sys.modules.setdefault("autoai.agents.agent", agent_stub)
 
 # Stub memory and text processing modules to avoid heavy dependencies
-memory_pkg = types.ModuleType("autogpt.memory")
-vector_stub = types.ModuleType("autogpt.memory.vector")
+memory_pkg = types.ModuleType("autoai.memory")
+vector_stub = types.ModuleType("autoai.memory.vector")
 
 
 class MemoryItem:  # minimal stub
@@ -37,31 +37,31 @@ class VectorMemory:  # minimal stub
 vector_stub.MemoryItem = MemoryItem
 vector_stub.VectorMemory = VectorMemory
 memory_pkg.vector = vector_stub
-sys.modules.setdefault("autogpt.memory", memory_pkg)
-sys.modules.setdefault("autogpt.memory.vector", vector_stub)
+sys.modules.setdefault("autoai.memory", memory_pkg)
+sys.modules.setdefault("autoai.memory.vector", vector_stub)
 sys.modules.setdefault(
-    "autogpt.memory.vector.providers",
-    types.ModuleType("autogpt.memory.vector.providers"),
+    "autoai.memory.vector.providers",
+    types.ModuleType("autoai.memory.vector.providers"),
 )
 
-processing_stub = types.ModuleType("autogpt.processing.text")
+processing_stub = types.ModuleType("autoai.processing.text")
 processing_stub.chunk_content = lambda *a, **k: []
 processing_stub.split_text = lambda *a, **k: []
 processing_stub.summarize_text = lambda *a, **k: ""
-sys.modules.setdefault("autogpt.processing.text", processing_stub)
+sys.modules.setdefault("autoai.processing.text", processing_stub)
 
-testing_stub = types.ModuleType("autogpt.commands.testing")
+testing_stub = types.ModuleType("autoai.commands.testing")
 testing_stub.create_test_file = lambda *a, **k: ""
 testing_stub.run_tests = lambda *a, **k: ""
-sys.modules.setdefault("autogpt.commands.testing", testing_stub)
+sys.modules.setdefault("autoai.commands.testing", testing_stub)
 
-git_ops_stub = types.ModuleType("autogpt.commands.git_operations")
+git_ops_stub = types.ModuleType("autoai.commands.git_operations")
 git_ops_stub.git_create_branch = lambda *a, **k: ""
 git_ops_stub.git_checkout = lambda *a, **k: ""
 git_ops_stub.git_commit = lambda *a, **k: ""
-sys.modules.setdefault("autogpt.commands.git_operations", git_ops_stub)
+sys.modules.setdefault("autoai.commands.git_operations", git_ops_stub)
 
-tdd_module = importlib.import_module("autogpt.agents.tdd_developer")
+tdd_module = importlib.import_module("autoai.agents.tdd_developer")
 TDDDeveloper = tdd_module.TDDDeveloper
 
 

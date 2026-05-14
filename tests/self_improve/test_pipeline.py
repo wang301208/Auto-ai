@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from autogpt.self_improve import (
+from autoai.self_improve import (
     CriticAgent,
     DatabaseManager,
     PatchAgent,

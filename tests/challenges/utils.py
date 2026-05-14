@@ -7,8 +7,8 @@ from typing import Any, Generator
 import pytest
 
 from benchmarks import run_task
-from autogpt.logs import LogCycleHandler
-from autogpt.workspace import Workspace
+from autoai.logs import LogCycleHandler
+from autoai.workspace import Workspace
 from tests.challenges.schema import Task
 
 
@@ -39,7 +39,7 @@ def setup_mock_input(monkeypatch: pytest.MonkeyPatch, cycle_count: int) -> None:
 
     gen = input_generator()
     monkeypatch.setattr(
-        "autogpt.app.utils.session.prompt", lambda _, **kwargs: next(gen)
+        "autoai.app.utils.session.prompt", lambda _, **kwargs: next(gen)
     )
 
 

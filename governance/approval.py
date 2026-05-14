@@ -16,7 +16,7 @@ import tempfile
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Any, Iterable
@@ -51,7 +51,7 @@ class ApprovalRequest:
 
     def __post_init__(self) -> None:
         if not self.created_at:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = datetime.now(timezone.utc).isoformat()
         if isinstance(self.status, str):
             self.status = ApprovalStatus(self.status)
 
@@ -64,7 +64,7 @@ class ApprovalRequest:
     def is_expired(self) -> bool:
         if self.expires_at is None:
             return False
-        return datetime.utcnow().isoformat() > self.expires_at
+        return datetime.now(timezone.utc).isoformat() > self.expires_at
 
     def to_dict(self) -> dict[str, Any]:
         d = {
@@ -124,7 +124,7 @@ class ApprovalStore:
         risk_level: str = "medium",
         ttl_seconds: float | None = None,
     ) -> ApprovalRequest:
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         request_id = f"approval_{now.strftime('%Y%m%d_%H%M%S')}_{now.microsecond}"
         expires_at = None
         if ttl_seconds is not None:
@@ -158,7 +158,7 @@ class ApprovalStore:
         if req.is_decided():
             raise RuntimeError(f"Request already decided: {req.status.value}")
         req.status = decision
-        req.decided_at = datetime.utcnow().isoformat()
+        req.decided_at = datetime.now(timezone.utc).isoformat()
         req.decided_by = decided_by
         req.comments = comments
         self._save(req)

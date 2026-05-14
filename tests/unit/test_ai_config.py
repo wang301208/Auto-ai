@@ -1,4 +1,4 @@
-from autogpt.config.ai_config import AIConfig
+from autoai.config.ai_config import AIConfig
 
 """
 Test cases for the AIConfig class, which handles loads the AI configuration

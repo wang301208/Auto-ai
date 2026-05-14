@@ -4,8 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from autogpt.agents.sentry import SentryAgent
-from autogpt.event_bus import ISSUE_DETECTED, EventMessage, MessageQueue
+from autoai.agents.sentry import SentryAgent
+from autoai.event_bus import ISSUE_DETECTED, EventMessage, MessageQueue
 
 
 class DummyResponse:

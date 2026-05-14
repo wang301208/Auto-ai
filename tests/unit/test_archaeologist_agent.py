@@ -8,11 +8,11 @@ from unittest.mock import patch
 
 import pytest
 
-import autogpt.skills.librarian as librarian_module
-import autogpt.skills.library as library_module
-from autogpt.app.i18n import _
-from autogpt.config import Config
-from autogpt.event_bus import (
+import autoai.skills.librarian as librarian_module
+import autoai.skills.library as library_module
+from autoai.app.i18n import _
+from autoai.config import Config
+from autoai.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
     DiagnosisComplete,
@@ -20,13 +20,13 @@ from autogpt.event_bus import (
     MessageQueue,
 )
 
-# Avoid importing autogpt.agents package initializer with heavy dependencies
-agents_pkg = types.ModuleType("autogpt.agents")
-agents_pkg.__path__ = ["autogpt/agents"]
-sys.modules.setdefault("autogpt.agents", agents_pkg)
+# Avoid importing autoai.agents package initializer with heavy dependencies
+agents_pkg = types.ModuleType("autoai.agents")
+agents_pkg.__path__ = ["autoai/agents"]
+sys.modules.setdefault("autoai.agents", agents_pkg)
 
-arch_module = importlib.import_module("autogpt.agents.archaeologist")
-dep_module = importlib.import_module("autogpt.agents.archaeologist_dependency")
+arch_module = importlib.import_module("autoai.agents.archaeologist")
+dep_module = importlib.import_module("autoai.agents.archaeologist_dependency")
 Archaeologist = arch_module.Archaeologist
 
 
@@ -91,7 +91,7 @@ def test_archaeologist_agent_diagnosis_complete(
         return SimpleNamespace(stdout="", stderr="")
 
     with (
-        patch("autogpt.skills.library.get_embedding", lambda _t, _c: [0.1, 0.2, 0.3]),
+        patch("autoai.skills.library.get_embedding", lambda _t, _c: [0.1, 0.2, 0.3]),
         patch.object(arch_module.subprocess, "run", side_effect=fake_run) as mock_run,
         patch.object(dep_module.metadata, "version", return_value="1.0"),
         patch.object(
@@ -193,7 +193,7 @@ def test_archaeologist_agent_uses_dependency_new_version(
         return ""
 
     with (
-        patch("autogpt.skills.library.get_embedding", lambda _t, _c: [0.1, 0.2, 0.3]),
+        patch("autoai.skills.library.get_embedding", lambda _t, _c: [0.1, 0.2, 0.3]),
         patch.object(arch_module.subprocess, "run", side_effect=fake_run),
         patch.object(dep_module.metadata, "version", return_value="1.0"),
         patch.object(dep_module, "fetch_release_notes", side_effect=fake_fetch),
@@ -429,11 +429,11 @@ def test_on_issue_detected_with_missing_index(
     message_queue.subscribe(DIAGNOSIS_COMPLETE, lambda msg: received.append(msg))
 
     monkeypatch.setattr(
-        "autogpt.skills.library.get_embedding", lambda _text, _cfg: [0.1, 0.2, 0.3]
+        "autoai.skills.library.get_embedding", lambda _text, _cfg: [0.1, 0.2, 0.3]
     )
     storage = tmp_path / "skills"
     monkeypatch.setattr(
-        "autogpt.skills.librarian.SkillLibrary",
+        "autoai.skills.librarian.SkillLibrary",
         lambda config: library_module.SkillLibrary(config, storage_path=storage),
     )
 

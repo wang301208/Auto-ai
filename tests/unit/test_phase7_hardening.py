@@ -13,7 +13,7 @@ class TestAgentHealthMonitor:
     """Test health monitoring, heartbeat, and eviction."""
 
     def test_register_and_heartbeat(self):
-        from autogpt.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
+        from autoai.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
         monitor = AgentHealthMonitor()
         monitor.register("a1", role="coder")
         assert monitor.get_status("a1") == AgentHealthStatus.HEALTHY
@@ -23,7 +23,7 @@ class TestAgentHealthMonitor:
         assert status["a1"]["heartbeat_count"] == 1
 
     def test_consecutive_misses_detection(self):
-        from autogpt.agents.health_monitor import (
+        from autoai.agents.health_monitor import (
             AgentHealthMonitor, HealthCheckConfig, AgentHealthStatus,
         )
         config = HealthCheckConfig(
@@ -43,7 +43,7 @@ class TestAgentHealthMonitor:
         assert status in {AgentHealthStatus.UNHEALTHY, AgentHealthStatus.DEGRADED}
 
     def test_recovery_after_heartbeat(self):
-        from autogpt.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
+        from autoai.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
         monitor = AgentHealthMonitor()
         monitor.register("a1")
         monitor._records["a1"].status = AgentHealthStatus.DEGRADED
@@ -52,7 +52,7 @@ class TestAgentHealthMonitor:
         assert monitor.get_status("a1") == AgentHealthStatus.HEALTHY
 
     def test_healthy_agents_filter(self):
-        from autogpt.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
+        from autoai.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
         monitor = AgentHealthMonitor()
         monitor.register("a1", role="coder")
         monitor.register("a2", role="reviewer")
@@ -64,8 +64,8 @@ class TestAgentHealthMonitor:
         assert coders == ["a1"]
 
     def test_eviction_removes_from_comm_bus(self):
-        from autogpt.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
-        from autogpt.agents.agent_comm import AgentCommunicationBus
+        from autoai.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
+        from autoai.agents.agent_comm import AgentCommunicationBus
         bus = AgentCommunicationBus()
         bus.register_agent("a1", "coder")
         monitor = AgentHealthMonitor(comm_bus=bus)
@@ -75,7 +75,7 @@ class TestAgentHealthMonitor:
         assert "a1" not in bus._mailboxes
 
     def test_restart_callback(self):
-        from autogpt.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
+        from autoai.agents.health_monitor import AgentHealthMonitor, AgentHealthStatus
         restart_log = []
         def on_restart(agent_id, role):
             restart_log.append(agent_id)
@@ -91,7 +91,7 @@ class TestWorkflowCheckpoint:
     """Test workflow checkpoint save/load/restore."""
 
     def test_save_and_load(self):
-        from autogpt.agents.workflow_checkpoint import WorkflowCheckpoint, CheckpointManager
+        from autoai.agents.workflow_checkpoint import WorkflowCheckpoint, CheckpointManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = CheckpointManager(checkpoint_dir=tmpdir)
             ckpt = WorkflowCheckpoint(
@@ -109,7 +109,7 @@ class TestWorkflowCheckpoint:
             assert loaded.task_results["t1"]["output"] == "done"
 
     def test_delete(self):
-        from autogpt.agents.workflow_checkpoint import WorkflowCheckpoint, CheckpointManager
+        from autoai.agents.workflow_checkpoint import WorkflowCheckpoint, CheckpointManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = CheckpointManager(checkpoint_dir=tmpdir)
             ckpt = WorkflowCheckpoint(workflow_id="w1")
@@ -118,7 +118,7 @@ class TestWorkflowCheckpoint:
             assert mgr.load("w1") is None
 
     def test_list_checkpoints(self):
-        from autogpt.agents.workflow_checkpoint import WorkflowCheckpoint, CheckpointManager
+        from autoai.agents.workflow_checkpoint import WorkflowCheckpoint, CheckpointManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = CheckpointManager(checkpoint_dir=tmpdir)
             mgr.save(WorkflowCheckpoint(workflow_id="w1", workflow_name="a"))
@@ -127,8 +127,8 @@ class TestWorkflowCheckpoint:
             assert len(listing) == 2
 
     def test_snapshot_and_restore_workflow(self):
-        from autogpt.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask, TaskState
-        from autogpt.agents.workflow_checkpoint import CheckpointManager
+        from autoai.agents.workflow_orchestrator import WorkflowDAG, WorkflowTask, TaskState
+        from autoai.agents.workflow_checkpoint import CheckpointManager
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = CheckpointManager(checkpoint_dir=tmpdir)
             dag = WorkflowDAG("test", workflow_id="w1")
@@ -153,7 +153,7 @@ class TestWorkflowCheckpoint:
             assert t1b.result["output"] == "done"
 
     def test_round_trip_serialization(self):
-        from autogpt.agents.workflow_checkpoint import WorkflowCheckpoint
+        from autoai.agents.workflow_checkpoint import WorkflowCheckpoint
         ckpt = WorkflowCheckpoint(
             workflow_id="w1",
             workflow_name="test",
@@ -174,9 +174,9 @@ class TestAgentPool:
     """Test agent pool management and elastic scaling."""
 
     def test_add_and_remove_agent(self):
-        from autogpt.agents.agent_pool import AgentPool
-        from autogpt.agents.workflow_orchestrator import WorkflowOrchestrator
-        from autogpt.agents.agent_comm import AgentCommunicationBus
+        from autoai.agents.agent_pool import AgentPool
+        from autoai.agents.workflow_orchestrator import WorkflowOrchestrator
+        from autoai.agents.agent_comm import AgentCommunicationBus
         bus = AgentCommunicationBus()
         orch = WorkflowOrchestrator(comm_bus=bus)
         pool = AgentPool(orchestrator=orch, comm_bus=bus)
@@ -188,9 +188,9 @@ class TestAgentPool:
         assert status["total_agents"] == 0
 
     def test_permanent_agent_not_removed(self):
-        from autogpt.agents.agent_pool import AgentPool
-        from autogpt.agents.workflow_orchestrator import WorkflowOrchestrator
-        from autogpt.agents.agent_comm import AgentCommunicationBus
+        from autoai.agents.agent_pool import AgentPool
+        from autoai.agents.workflow_orchestrator import WorkflowOrchestrator
+        from autoai.agents.agent_comm import AgentCommunicationBus
         bus = AgentCommunicationBus()
         orch = WorkflowOrchestrator(comm_bus=bus)
         pool = AgentPool(orchestrator=orch, comm_bus=bus)
@@ -200,7 +200,7 @@ class TestAgentPool:
         assert pool.get_pool_status()["total_agents"] == 1
 
     def test_default_capabilities(self):
-        from autogpt.agents.agent_pool import AgentPool
+        from autoai.agents.agent_pool import AgentPool
         caps = AgentPool._default_capabilities("coder")
         assert "plan" in caps
         assert "execute" in caps
@@ -208,9 +208,9 @@ class TestAgentPool:
         assert "review" in caps_reviewer
 
     def test_pool_status_includes_role_counts(self):
-        from autogpt.agents.agent_pool import AgentPool
-        from autogpt.agents.workflow_orchestrator import WorkflowOrchestrator
-        from autogpt.agents.agent_comm import AgentCommunicationBus
+        from autoai.agents.agent_pool import AgentPool
+        from autoai.agents.workflow_orchestrator import WorkflowOrchestrator
+        from autoai.agents.agent_comm import AgentCommunicationBus
         bus = AgentCommunicationBus()
         orch = WorkflowOrchestrator(comm_bus=bus)
         pool = AgentPool(orchestrator=orch, comm_bus=bus)

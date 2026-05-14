@@ -46,9 +46,9 @@
       "status": "ready",
       "missing": [],
       "required": [
-        "G:\\项目\\AutoGPT-0.4.7\\ui-tui\\package.json",
-        "G:\\项目\\AutoGPT-0.4.7\\ui-tui\\src\\entry.tsx",
-        "G:\\项目\\AutoGPT-0.4.7\\tui_gateway\\entry.py"
+        "G:\\项目\\AutoAI-0.4.7\\ui-tui\\package.json",
+        "G:\\项目\\AutoAI-0.4.7\\ui-tui\\src\\entry.tsx",
+        "G:\\项目\\AutoAI-0.4.7\\tui_gateway\\entry.py"
       ]
     },
     "external_services": {
@@ -70,14 +70,14 @@
           "--pids-limit",
           "256",
           "-v",
-          "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace:/workspace:rw",
+          "G:\\项目\\AutoAI-0.4.7\\.dual_ring_runtime\\workspace:/workspace:rw",
           "-w",
           "/workspace",
           "python:3.12-slim",
           "python",
           "--version"
         ],
-        "workspace_mount": "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace:/workspace"
+        "workspace_mount": "G:\\项目\\AutoAI-0.4.7\\.dual_ring_runtime\\workspace:/workspace"
       },
       "ollama": {
         "status": "unavailable",
@@ -95,7 +95,7 @@
         "status": "failed",
         "command": [
           "whisper",
-          "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace\\__health__.wav",
+          "G:\\项目\\AutoAI-0.4.7\\.dual_ring_runtime\\workspace\\__health__.wav",
           "--model",
           "base",
           "--output_format",
@@ -109,7 +109,7 @@
           "--text",
           "health check",
           "--out_path",
-          "G:\\项目\\AutoGPT-0.4.7\\.dual_ring_runtime\\workspace\\__health__.wav",
+          "G:\\项目\\AutoAI-0.4.7\\.dual_ring_runtime\\workspace\\__health__.wav",
           "--language",
           "zh-cn"
         ]

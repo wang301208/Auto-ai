@@ -7,8 +7,8 @@ from unittest.mock import patch
 
 import pytest
 
-from autogpt.config import Config
-from autogpt.event_bus import (
+from autoai.config import Config
+from autoai.event_bus import (
     DIAGNOSIS_COMPLETE,
     ISSUE_DETECTED,
     DiagnosisComplete,
@@ -17,12 +17,12 @@ from autogpt.event_bus import (
     MessageQueue,
 )
 
-# Avoid importing autogpt.agents package initializer with heavy dependencies
-agents_pkg = types.ModuleType("autogpt.agents")
-agents_pkg.__path__ = ["autogpt/agents"]
-sys.modules.setdefault("autogpt.agents", agents_pkg)
+# Avoid importing autoai.agents package initializer with heavy dependencies
+agents_pkg = types.ModuleType("autoai.agents")
+agents_pkg.__path__ = ["autoai/agents"]
+sys.modules.setdefault("autoai.agents", agents_pkg)
 
-arch_module = importlib.import_module("autogpt.agents.archaeologist")
+arch_module = importlib.import_module("autoai.agents.archaeologist")
 Archaeologist = arch_module.Archaeologist
 
 
@@ -43,7 +43,7 @@ def test_archaeologist_handles_issue(
             "plugin": "test_plugin",
             "error_log": "traceback",
             "commit": "HEAD",
-            "file": "autogpt/agents/agent.py",
+            "file": "autoai/agents/agent.py",
             "line": 10,
             "extra": "meta",
             "description": "traceback",
@@ -85,7 +85,7 @@ def test_archaeologist_parses_python_traceback(
             "plugin": "test_plugin",
             "error_log": (
                 "Traceback (most recent call last):\n"
-                '  File "autogpt/agents/agent.py", line 42, in <module>\n'
+                '  File "autoai/agents/agent.py", line 42, in <module>\n'
                 "    raise Exception()\n"
             ),
             "description": "traceback",
@@ -96,7 +96,7 @@ def test_archaeologist_parses_python_traceback(
             EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
-    assert "autogpt/agents/agent.py:42" in received[0].summary
+    assert "autoai/agents/agent.py:42" in received[0].summary
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
@@ -114,7 +114,7 @@ def test_archaeologist_parses_plugin_log(
 
         payload = {
             "plugin": "test_plugin",
-            "error_log": "ERROR at autogpt/agents/agent.py:50 something went wrong",
+            "error_log": "ERROR at autoai/agents/agent.py:50 something went wrong",
             "description": "plugin log error",
             "issue_type": "bug",
         }
@@ -123,7 +123,7 @@ def test_archaeologist_parses_plugin_log(
             EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
-    assert "autogpt/agents/agent.py:50" in received[0].summary
+    assert "autoai/agents/agent.py:50" in received[0].summary
 
 
 @pytest.mark.parametrize("event_type", [ISSUE_DETECTED])
@@ -150,4 +150,4 @@ def test_archaeologist_parsing_fails_gracefully(
             EventMessage(event_type=event_type, payload=payload, source_agent="tester")
         )
 
-    assert "autogpt/agents/agent.py" not in received[0].summary
+    assert "autoai/agents/agent.py" not in received[0].summary
