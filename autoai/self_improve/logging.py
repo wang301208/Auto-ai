@@ -1,4 +1,4 @@
-"""Exception and logging utilities."""
+"""异常和日志工具."""
 
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from .database import DatabaseManager
 def install_exception_logger(
     db: DatabaseManager, log_path: Path | str | None = None
 ) -> None:
-    """Install a global exception hook that stores exceptions in the DB."""
+    """安装全局异常钩子，将异常存储到数据库."""
 
     log_file = Path(log_path or "self_improve.log")
     logging.basicConfig(

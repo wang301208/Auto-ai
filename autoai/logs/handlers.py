@@ -15,7 +15,7 @@ class ConsoleHandler(logging.StreamHandler):
 
 
 class TypingConsoleHandler(logging.StreamHandler):
-    """Output stream to console using simulated typing"""
+    """使用模拟打字输出到控制台"""
 
     def emit(self, record: logging.LogRecord):
         min_typing_speed = 0.05
@@ -30,7 +30,7 @@ class TypingConsoleHandler(logging.StreamHandler):
                     print(" ", end="", flush=True)
                 typing_speed = random.uniform(min_typing_speed, max_typing_speed)
                 time.sleep(typing_speed)
-                # type faster after each word
+                # type faster 之后每个词
                 min_typing_speed = min_typing_speed * 0.95
                 max_typing_speed = max_typing_speed * 0.95
             print()

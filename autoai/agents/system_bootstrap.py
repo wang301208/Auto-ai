@@ -17,9 +17,9 @@ Usage:
     from autoai.agents.system_bootstrap import MultiAgentSystem
 
     system = MultiAgentSystem(workspace_path=Path("workspace"))
-    system.setup()        # create all infrastructure
-    system.start()        # start background threads
-    # ... run workflows ...
+    system.setup()        # create 所有infrastructure
+    system.start()        # start background 线程s
+    # ... run 工作流s ...
     system.stop()         # graceful shutdown
 """
 
@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SystemConfig:
-    """Configuration for the multi-agent system."""
+    """多代理系统配置。"""
 
     autonomous: bool = True
     multi_agent: bool = True
@@ -66,7 +66,7 @@ class SystemConfig:
 
 
 class MultiAgentSystem:
-    """Complete multi-agent system with one-call setup/teardown."""
+    """具有一键设置/拆卸的完整多代理系统。"""
 
     def __init__(
         self,
@@ -101,7 +101,7 @@ class MultiAgentSystem:
         self._checkpoint_thread: threading.Thread | None = None
 
     def setup(self) -> None:
-        """Create and wire all infrastructure components."""
+        """创建并连接所有基础设施组件。"""
         from autoai.agents.agent_comm import AgentCommunicationBus
         from autoai.agents.workflow_orchestrator import WorkflowOrchestrator
         from autoai.agents.health_monitor import AgentHealthMonitor, HealthCheckConfig
@@ -110,10 +110,10 @@ class MultiAgentSystem:
         from governance import GovernanceGate, PolicyEvolver
 
         self.comm_bus = AgentCommunicationBus(message_queue=self._mq)
-        logger.info("[system] Communication bus created")
+        logger.info("[system] Communicati在bus created")
 
         self.orchestrator = WorkflowOrchestrator(comm_bus=self.comm_bus)
-        logger.info("[system] Workflow orchestrator created")
+        logger.info("[system] Workflow orchestrat或created")
 
         if self.config.enable_health_monitor:
             health_config = HealthCheckConfig(
@@ -128,7 +128,7 @@ class MultiAgentSystem:
                 config=health_config,
                 restart_callback=self._agent_restart_cb,
             )
-            logger.info("[system] Health monitor created")
+            logger.info("[system] 治愈th monit或created")
 
         if self.config.enable_agent_pool:
             pool_config = PoolConfig(
@@ -141,7 +141,7 @@ class MultiAgentSystem:
                 agent_factory=self._agent_factory_cb,
                 config=pool_config,
             )
-            logger.info("[system] Agent pool created")
+            logger.info("[system] Agent 池 created")
 
         self.agent_factory = AgentFactory(
             orchestrator=self.orchestrator,
@@ -156,11 +156,11 @@ class MultiAgentSystem:
         self.governance_gate = GovernanceGate(
             hard_boundaries=self.config.hard_boundaries,
         )
-        logger.info("[system] Governance gate created (autonomous boundary management)")
+        logger.info("[system] Governance gate created (autonomous 边界ary management)")
 
         if self.config.enable_policy_evolver:
             self.policy_evolver = PolicyEvolver(gate=self.governance_gate)
-            logger.info("[system] Policy evolver created")
+            logger.info("[system] 策略 evolver created")
 
         if self.config.enable_tui:
             from autoai.app.multi_agent_tui import create_multi_agent_tui
@@ -168,13 +168,13 @@ class MultiAgentSystem:
                 comm_bus=self.comm_bus,
                 orchestrator=self.orchestrator,
             )
-            logger.info("[system] Multi-agent TUI created")
+            logger.info("[system] Multi-代理 TUI created")
 
         if self.config.enable_checkpoint:
             from autoai.agents.workflow_checkpoint import CheckpointManager
             ckpt_dir = self.workspace / "governance" / "checkpoints"
             self.checkpoint_mgr = CheckpointManager(checkpoint_dir=ckpt_dir)
-            logger.info("[system] Checkpoint manager created")
+            logger.info("[system] 检查point manager created")
 
         if self.config.enable_task_scheduler:
             from autoai.agents.unified_task import TaskScheduler
@@ -212,7 +212,7 @@ class MultiAgentSystem:
                         )
                         if not self.model_registry.get_model(m):
                             self.model_registry.register_model(spec)
-                    logger.info("[system] Ollama detected, registered %d local models", len(ollama.list_models()))
+                    logger.info("[system] Ollama detected, 已注册 %d local 模型", len(ollama.list_models()))
 
             routing_strategy = RoutingStrategy(self.config.routing_strategy)
             policy = RoutingPolicy(
@@ -224,7 +224,7 @@ class MultiAgentSystem:
             self.model_registry.add_alias("fast", self._resolve_model_alias("fast"))
             self.model_registry.add_alias("smart", self._resolve_model_alias("smart"))
             self.model_registry.add_alias("embedding", "text-embedding-ada-002")
-            logger.info("[system] Model router created (strategy=%s, models=%d, aliases=fast/smart/embedding)", routing_strategy.value, self.model_registry.model_count)
+            logger.info("[system] Model router created (strategy=%s, 模型=%d, aliases=fast/smart/embedding)", routing_strategy.value, self.model_registry.model_count)
 
         if self.config.enable_sandbox:
             from autoai.sandbox import SubprocessSandbox, SandboxConfig
@@ -235,7 +235,7 @@ class MultiAgentSystem:
                     self.sandbox = SeccompSandbox(sandbox_config)
                 except ImportError:
                     self.sandbox = SubprocessSandbox(sandbox_config)
-                    logger.info("[system] Seccomp unavailable, using subprocess sandbox")
+                    logger.info("[system] Seccomp unavailable, using sub进程 沙箱")
             else:
                 self.sandbox = SubprocessSandbox(sandbox_config)
             logger.info("[system] Sandbox created (type=%s)", self.config.sandbox_type)
@@ -245,20 +245,20 @@ class MultiAgentSystem:
                 try:
                     from autoai.distributed import RayBackend
                     self.distributed = RayBackend(num_workers=self.config.distributed_workers)
-                    logger.info("[system] Ray distributed backend created (%d workers)", self.config.distributed_workers)
+                    logger.info("[system] Ray 分布式 backend created (%d 工作者s)", self.config.distributed_workers)
                 except ImportError:
                     from autoai.distributed import LocalBackend
                     self.distributed = LocalBackend(max_concurrent=self.config.distributed_workers)
-                    logger.info("[system] Ray unavailable, using local backend")
+                    logger.info("[system] Ray unavailable, using 本地 backend")
             else:
                 from autoai.distributed import LocalBackend
                 self.distributed = LocalBackend(max_concurrent=self.config.distributed_workers)
-                logger.info("[system] Local distributed backend created (%d slots)", self.config.distributed_workers)
+                logger.info("[system] Local 分布式 backend created (%d slots)", self.config.distributed_workers)
 
-        logger.info("[system] Setup complete")
+        logger.info("[system] 设置up complete")
 
     def start(self) -> None:
-        """Start all background threads."""
+        """启动所有后台线程。"""
         if self._running:
             return
         self._running = True
@@ -268,10 +268,10 @@ class MultiAgentSystem:
         if self.agent_pool:
             self.agent_pool.start()
 
-        logger.info("[system] Started")
+        logger.info("[system] 启动ed")
 
     def stop(self) -> None:
-        """Gracefully stop all background threads."""
+        """优雅地停止所有后台线程。"""
         if not self._running:
             return
         self._running = False
@@ -282,12 +282,12 @@ class MultiAgentSystem:
             self.agent_pool.stop()
         if self.agent_factory:
             count = self.agent_factory.destroy_all()
-            logger.info("[system] Destroyed %d agents", count)
+            logger.info("[system] Destroyed %d 代理", count)
 
-        logger.info("[system] Stopped")
+        logger.info("[system] 停止ped")
 
     def attach_to_agent(self, agent: Any) -> None:
-        """Attach the system to an AsyncAgent instance."""
+        """Attach the system to an AsyncAgent 实例."""
         agent.attach_comm_bus(self.comm_bus)
         agent._governance_gate = self.governance_gate
         if self.policy_evolver:
@@ -300,10 +300,10 @@ class MultiAgentSystem:
             from autoai.llm.model_router.streaming import StreamBuffer
             buf = StreamBuffer()
             agent.attach_stream_buffer(buf)
-        logger.info("[system] Attached to agent: %s", agent.ai_config.ai_name)
+        logger.info("[system] Attached 到代理: %s", agent.ai_config.ai_name)
 
     def _resolve_model_alias(self, tier: str) -> str:
-        """Resolve Config.fast_llm/smart_llm to a model_id in registry."""
+        """将Config.fast_llm/smart_llm解析为注册表中的model_id。"""
         if not self.model_registry:
             return "gpt-4o-mini"
         config_model = getattr(self.config, f"{tier}_llm", None)
@@ -319,7 +319,7 @@ class MultiAgentSystem:
         return models[0].model_id if models else fallback
 
     def get_system_status(self) -> dict[str, Any]:
-        """Get a summary of the entire system state."""
+        """获取整个系统状态的摘要。"""
         status: dict[str, Any] = {"running": self._running}
         if self.comm_bus:
             status["comm"] = self.comm_bus.get_stats()
@@ -371,7 +371,7 @@ def bootstrap_multi_agent_system(
     autonomous: bool = True,
     message_queue: Any | None = None,
 ) -> MultiAgentSystem:
-    """Convenience function: create and setup a multi-agent system in one call."""
+    """便捷函数：一键创建并设置多代理系统。"""
     config = SystemConfig(autonomous=autonomous, multi_agent=True)
     system = MultiAgentSystem(
         workspace_path=workspace_path,

@@ -1,6 +1,6 @@
-"""Inter-agent communication protocol.
+"""代理间通信协议.
 
-Extends the existing MessageQueue with Agent-to-Agent routing:
+扩展现有MessageQueue，支持 Agent-to-Agent routing:
 - Point-to-point messages (send to specific agent)
 - Request/Response pattern with correlation IDs and timeout
 - Broadcast messages (publish to all agents of a role)
@@ -40,7 +40,7 @@ class AgentMessageType(Enum):
 
 @dataclass
 class AgentMessage:
-    """A structured message between agents."""
+    """A structured 消息 between agents."""
 
     message_type: AgentMessageType
     sender_id: str
@@ -98,7 +98,7 @@ class AgentMessage:
 
 @dataclass
 class AgentMailbox:
-    """Inbox for a single agent with priority ordering."""
+    """Inbox for a single 代理 with priority ordering."""
 
     agent_id: str
     role: str = ""
@@ -108,7 +108,7 @@ class AgentMailbox:
     def deliver(self, message: AgentMessage) -> None:
         with self._lock:
             if message.is_expired():
-                return
+                回报
             self._inbox.append(message)
             self._inbox.sort(key=lambda m: -m.priority)
 
@@ -133,7 +133,7 @@ class AgentMailbox:
 
 
 class AgentChannel:
-    """Topic-based communication channel for group messaging."""
+    """基于主题的群组消息通信通道."""
 
     def __init__(self, channel_id: str) -> None:
         self.channel_id = channel_id
@@ -171,7 +171,7 @@ class AgentChannel:
 
 
 class AgentCommunicationBus:
-    """Central communication hub for multi-agent coordination.
+    """Central communication hub for multi-代理 coordination.
 
     Manages:
       - Agent mailboxes (point-to-point)
@@ -210,16 +210,16 @@ class AgentCommunicationBus:
                 channel.unsubscribe(agent_id)
 
     def send(self, message: AgentMessage) -> bool:
-        """Send a direct point-to-point message."""
+        """发送 a 指导 point-to-point 消息."""
         if message.target_id is None:
-            logger.warning("Direct message without target_id: %s", message.correlation_id)
+            logger.warning("Direct message 无target_id: %s", message.correlation_id)
             return False
 
         with self._lock:
             mailbox = self._mailboxes.get(message.target_id)
 
         if mailbox is None:
-            logger.warning("Target agent not registered: %s", message.target_id)
+            logger.warning("Target agent not 已注册: %s", message.target_id)
             return False
 
         mailbox.deliver(message)
@@ -235,7 +235,7 @@ class AgentCommunicationBus:
         priority: int = 0,
         ttl_seconds: float | None = None,
     ) -> int:
-        """Broadcast a message to all agents or agents of a specific role."""
+        """广播 a 消息 to all agents or agents of a specific 角色."""
         message = AgentMessage(
             message_type=AgentMessageType.BROADCAST,
             sender_id=sender_id,
@@ -267,9 +267,9 @@ class AgentCommunicationBus:
         timeout_seconds: float = 30.0,
         priority: int = 0,
     ) -> AgentMessage:
-        """Send a request and wait for the response.
+        """发送 a 请求 and 等待 for the 响应.
 
-        Raises asyncio.TimeoutError if no response within timeout.
+        Raises asyncio.TimeoutError if no 响应 within 超时.
         """
         correlation_id = uuid.uuid4().hex[:16]
         message = AgentMessage(
@@ -296,7 +296,7 @@ class AgentCommunicationBus:
             with self._lock:
                 self._pending_requests.pop(correlation_id, None)
             self._stats["requests_timed_out"] += 1
-            raise
+            抛出
 
     def respond(
         self,
@@ -304,7 +304,7 @@ class AgentCommunicationBus:
         sender_id: str,
         payload: dict[str, Any],
     ) -> bool:
-        """Send a response to a previous request."""
+        """发送 a 响应 to a previous 请求."""
         if request.target_id is None:
             request_target = request.sender_id
         else:

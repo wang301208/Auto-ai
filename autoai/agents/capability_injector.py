@@ -53,7 +53,7 @@ class InjectionRecord:
 
 
 class CapabilityInjector:
-    """Injects new capabilities into Agent classes at runtime.
+    """Injects new capabilities into 代理 classes at runtime.
 
     Usage:
         injector = CapabilityInjector(autonomy=manager, chain=chain)
@@ -87,7 +87,7 @@ class CapabilityInjector:
 
     def inject(self, spec: CapabilitySpec) -> InjectionRecord:
         if self.autonomy.level < spec.requires_level:
-            logger.info(f"[CapInject] Autonomy {self.autonomy.level.name} < {spec.requires_level.name}, skipping {spec.name}")
+            logger.info(f"[CapInject] Autonomy {self.autonomy.级别.名称} < {spec.requires_级别.名称}, skipping {spec.名称}")
             return InjectionRecord(spec=spec, success=False)
 
         target_cls = self._resolve_class(spec.target_class)
@@ -143,7 +143,7 @@ class CapabilityInjector:
                             setattr(target_cls, method_name, original)
                     record.success = False
                     self._injections[i] = record
-                    logger.info(f"[CapInject] Rolled back mixin: {capability_name}")
+                    logger.info(f"[CapInject] Rolled back mixin: {capability_名称}")
                     return True
 
                 if record.spec.injection_type == InjectionType.DECORATOR:
@@ -151,7 +151,7 @@ class CapabilityInjector:
                         setattr(target_cls, method_name, original)
                     record.success = False
                     self._injections[i] = record
-                    logger.info(f"[CapInject] Rolled back decorator: {capability_name}")
+                    logger.info(f"[CapInject] Rolled back 装饰器: {capability_名称}")
                     return True
 
         return False
@@ -169,7 +169,7 @@ class CapabilityInjector:
 
         record.success = True
         self._injected_classes[spec.target_class] = target_cls
-        logger.info(f"[CapInject] Mixin {spec.name}: {len(spec.methods)} methods → {spec.target_class}")
+        logger.info(f"[CapInject] Mix在{spec.名称}: {len(spec.methods)} methods → {spec.target_class}")
         return record
 
     def _inject_decorator(self, spec: CapabilitySpec, target_cls: type) -> InjectionRecord:
@@ -186,7 +186,7 @@ class CapabilityInjector:
 
         record.success = len(record.original_methods) > 0
         if record.success:
-            logger.info(f"[CapInject] Decorator {spec.name}: {len(record.original_methods)} methods wrapped on {spec.target_class}")
+            logger.info(f"[CapInject] Decorat或{spec.名称}: {len(record.original_methods)} methods wrapped 在{spec.target_class}")
         return record
 
     def _inject_protocol(self, spec: CapabilitySpec, target_cls: type) -> InjectionRecord:
@@ -200,7 +200,7 @@ class CapabilityInjector:
             setattr(target_cls, method_name, bound_method)
 
         record.success = True
-        logger.info(f"[CapInject] Protocol {spec.name}: {len(spec.methods)} methods added to {spec.target_class}")
+        logger.info(f"[CapInject] Protocol {spec.名称}: {len(spec.methods)} methods added 到{spec.target_class}")
         return record
 
     def _inject_plugin(self, spec: CapabilitySpec, target_cls: type) -> InjectionRecord:
@@ -226,7 +226,7 @@ class CapabilityInjector:
             record.module_path = ""
 
         if record.success:
-            logger.info(f"[CapInject] Plugin {spec.name} loaded into {spec.target_class}")
+            logger.info(f"[CapInject] Plug在{spec.名称} loaded 到{spec.target_class}")
         return record
 
     @staticmethod

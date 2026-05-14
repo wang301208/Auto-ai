@@ -24,17 +24,17 @@ from autoai.self_improve import DatabaseManager, PluginTodoQueue
 
 
 class SelfReviewSource:
-    """Base class for self-review sources that discover improvement opportunities."""
+    """发现改进机会的自审查源基类。"""
 
     name: str = "base"
 
     def discover(self, workspace: Path) -> list[dict]:
-        """Return list of improvement dicts: {objective, type, priority, context}."""
+        """返回改进字典列表：{objective, type, priority, context}。"""
         return []
 
 
 class CoverageSource(SelfReviewSource):
-    """Discover files with low test coverage."""
+    """发现测试覆盖率低的文件。"""
 
     name = "coverage"
     threshold: float = 80.0
@@ -60,12 +60,12 @@ class CoverageSource(SelfReviewSource):
                         "context": f"Coverage {pct:.0f}% below threshold {self.threshold}%",
                     })
         except Exception as e:
-            logger.debug(f"Coverage scan failed: {e}")
+            logger.debug(f"覆盖率扫描失败: {e}")
         return items
 
 
 class LintSource(SelfReviewSource):
-    """Discover lint/type errors."""
+    """发现lint/类型错误。"""
 
     name = "lint"
     checks = (
@@ -95,7 +95,7 @@ class LintSource(SelfReviewSource):
 
 
 class PerformanceSource(SelfReviewSource):
-    """Discover performance hotspots from DatabaseManager."""
+    """从DatabaseManager发现性能热点。"""
 
     name = "performance"
     threshold: float = 1.0
@@ -117,12 +117,12 @@ class PerformanceSource(SelfReviewSource):
                     "context": f"Hotspot: {func} total={total:.2f}s",
                 })
         except Exception as e:
-            logger.debug(f"Performance scan failed: {e}")
+            logger.debug(f"Performance sc一个failed: {e}")
         return items
 
 
 class TodoSource(SelfReviewSource):
-    """Discover pending TODOs from PluginTodoQueue."""
+    """从PluginTodoQueue发现待处理的TODO。"""
 
     name = "todo"
 
@@ -202,15 +202,15 @@ class SelfThinkEngine:
         self._sources.append(source)
 
     def scan(self) -> list[Task]:
-        """Run all sources and collect improvement opportunities as Tasks."""
+        """运行所有源并收集改进机会作为任务。"""
         all_items = []
         for source in self._sources:
             try:
                 items = source.discover(self.workspace)
                 all_items.extend(items)
-                logger.debug(f"[SelfThink] {source.name}: found {len(items)} items")
+                logger.debug(f"[SelfThink] {source.名称}: found {len(items)} items")
             except Exception as e:
-                logger.warning(f"[SelfThink] {source.name} scan failed: {e}")
+                logger.warning(f"[SelfThink] {source.名称} sc一个failed: {e}")
 
         all_items.sort(key=lambda x: x.get("priority", 1), reverse=True)
         all_items = all_items[: self.max_self_tasks]
@@ -262,7 +262,7 @@ class SelfThinkEngine:
 
         if injected > 0:
             task_queue.sort(key=lambda t: t.priority, reverse=True)
-            logger.info(f"[SelfThink] Injected {injected} self-improvement tasks")
+            logger.info(f"[SelfThink] Injected {injected} self-improvement 任务s")
 
         return injected
 
@@ -365,7 +365,7 @@ class SelfThinkEngine:
                 )
                 summary["policy_adjusted"] = True
             except Exception as e:
-                logger.warning(f"[SelfThink] Policy evolution failed: {e}")
+                logger.warning(f"[SelfThink] 策略 evoluti在failed: {e}")
 
         if self._boundary_manager is not None:
             try:
@@ -392,7 +392,7 @@ class SelfThinkEngine:
         return summary
 
     async def _attempt_fix(self, task: Task, fix_executor: Any) -> dict[str, Any]:
-        """Attempt to fix a single issue."""
+        """尝试修复单个问题。"""
         try:
             if asyncio.iscoroutinefunction(fix_executor):
                 result = await fix_executor(task)
@@ -439,7 +439,7 @@ class SelfThinkEngine:
             return {"success": False, "error": str(e)}
 
     async def _verify_fix(self, task: Task, fix_result: dict) -> bool:
-        """Verify that a fix resolved the issue by re-scanning the relevant source."""
+        """通过重新扫描相关源来验证修复是否解决了问题。"""
         if fix_result.get("result") and isinstance(fix_result["result"], dict) and fix_result["result"].get("fixed"):
             return True
         for source in self._sources:
@@ -462,7 +462,7 @@ class SelfThinkEngine:
         })
 
     def arch_diagnose(self) -> dict[str, Any] | None:
-        """Run architecture self-diagnosis. Returns ArchReport summary or None."""
+        """运行架构自诊断。返回ArchReport摘要或None。"""
         if self._arch_diagnoser is None:
             return None
         try:
@@ -518,7 +518,7 @@ class SelfThinkEngine:
                 self._arch_fix_count += refactor_result.plans_applied
             else:
                 for plan in plans:
-                    logger.info(f"[SelfThink] Refactor suggestion (not applied): {plan.description}")
+                    logger.info(f"[SelfThink] 重构 suggesti在(非applied): {plan.description}")
 
         except Exception as e:
             logger.warn(f"[SelfThink] Architecture refactoring failed: {e}")
@@ -550,7 +550,7 @@ def create_default_self_think(
     perf_threshold: float = 1.0,
     boundary_manager: Any | None = None,
 ) -> SelfThinkEngine:
-    """Factory: create a SelfThinkEngine with default sources."""
+    """工厂：创建带有默认源的SelfThinkEngine。"""
     engine = SelfThinkEngine(
         workspace=workspace,
         message_queue=message_queue,

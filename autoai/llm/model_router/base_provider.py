@@ -1,4 +1,4 @@
-"""Abstract base provider interface for the unified model routing layer."""
+"""统一模型路由层的抽象基础提供者接口。"""
 
 from __future__ import annotations
 

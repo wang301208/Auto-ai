@@ -18,19 +18,19 @@ def to_numbered_list(
 
 
 def json_loads(json_str: str) -> Any:
-    """Parse a JSON string, falling back to ``ast.literal_eval`` on failure.
+    """解析JSON字符串, 回退到 ``ast.literal_eval`` on failure.
 
-    Args:
-        json_str: The string to parse.
+        Args:
+            json_str: 要解析的字符串.
 
-    Raises:
-        ValueError: If both ``json.loads`` and ``ast.literal_eval`` fail.
-    """
+        Raises:
+            ValueError: If both ``json.loads`` and ``ast.literal_eval`` fail.
+"""
 
     try:
         return json.loads(json_str)
     except json.JSONDecodeError as e:
-        logger.debug("json.loads failed: %s; trying ast.literal_eval", e)
+        logger.debug("json.loads失败: %s; 尝试ast.literal_eval", e)
         try:
             return ast.literal_eval(json_str)
         except (ValueError, SyntaxError) as literal_error:
@@ -39,4 +39,4 @@ def json_loads(json_str: str) -> Any:
                 e,
                 literal_error,
             )
-            raise ValueError("Failed to parse string as JSON") from literal_error
+            raise ValueError("无法将字符串解析为JSON") from literal_error

@@ -86,7 +86,7 @@ def create_text_completion(
         temperature=temperature,
         max_tokens=max_output_tokens,
     )
-    logger.debug(f"Response: {response}")
+    logger.debug(f"响应: {response}")
 
     return response.choices[0].text
 
@@ -120,12 +120,12 @@ def create_chat_completion(
         prompt_tlength = prompt.token_length
         max_tokens = (
             OPEN_AI_CHAT_MODELS[model].max_tokens - prompt_tlength - 1
-        )  # the -1 is just here because we have a bug and we don't know how to fix it. When using gpt-4-0314 we get a token error.
-        logger.debug(f"Prompt length: {prompt_tlength} tokens")
+        )  # -1 is 仅here 因为we have 一个bug 和we don't know how 到fix it. When using gpt-4-0314 we get 一个令牌 error.
+        logger.debug(f"Prompt 长度: {prompt_t长度} 令牌s")
         if functions:
             functions_tlength = count_openai_functions_tokens(functions, model)
             max_tokens -= functions_tlength
-            logger.debug(f"Functions take up {functions_tlength} tokens in API call")
+            logger.debug(f"函数s take up {functions_t长度} 令牌s 在API call")
 
     logger.debug(
         f"{Fore.GREEN}Creating chat completion with model {model}, temperature {temperature}, max_tokens {max_tokens}{Fore.RESET}"
@@ -162,7 +162,7 @@ def create_chat_completion(
         messages=prompt.raw(),
         **chat_completion_kwargs,
     )
-    logger.debug(f"Response: {response}")
+    logger.debug(f"响应: {response}")
 
     if hasattr(response, "error"):
         logger.error(response.error)

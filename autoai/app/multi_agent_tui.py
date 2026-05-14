@@ -32,7 +32,7 @@ from autoai.core.planning.schema import TaskStatus
 
 @dataclass
 class AgentViewData:
-    """Data snapshot for one agent in the multi-agent view."""
+    """多代理视图中单个代理的数据快照。"""
 
     agent_id: str
     name: str = ""
@@ -51,7 +51,7 @@ class AgentViewData:
 
 @dataclass
 class WorkflowViewData:
-    """Data snapshot for workflow orchestration."""
+    """工作流编排的数据快照。"""
 
     workflow_id: str = ""
     workflow_name: str = ""
@@ -65,7 +65,7 @@ class WorkflowViewData:
 
 @dataclass
 class CommViewData:
-    """Data snapshot for inter-agent communication."""
+    """代理间通信的数据快照。"""
 
     total_direct: int = 0
     total_broadcast: int = 0
@@ -79,7 +79,7 @@ class CommViewData:
 
 
 class MultiAgentTUI:
-    """Terminal UI for monitoring multiple autonomous agents."""
+    """用于监控多个自主代理的终端UI。"""
 
     TAB_OVERVIEW = "overview"
     TAB_WORKFLOW = "workflow"
@@ -353,7 +353,7 @@ class MultiAgentTUI:
         return layout
 
     def run(self) -> None:
-        """Start the live multi-agent TUI display (blocking)."""
+        """启动实时多代理TUI显示（阻塞）。"""
         with Live(
             self.render(),
             console=self._console,
@@ -365,7 +365,7 @@ class MultiAgentTUI:
                 live.update(self.render())
 
     def render_once(self) -> None:
-        """Render a single frame (non-blocking)."""
+        """渲染单帧（非阻塞）。"""
         self._console.print(self.render())
 
 
@@ -373,7 +373,7 @@ def create_multi_agent_tui(
     comm_bus: Any | None = None,
     orchestrator: Any | None = None,
 ) -> MultiAgentTUI:
-    """Factory: create a MultiAgentTUI from a communication bus and orchestrator."""
+    """工厂：从通信总线和编排器创建MultiAgentTUI。"""
     tui = MultiAgentTUI()
 
     if comm_bus is not None:

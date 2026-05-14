@@ -1,4 +1,4 @@
-"""Commands for browsing a website"""
+"""浏览网站的命令"""
 
 from __future__ import annotations
 
@@ -85,7 +85,7 @@ def browse_website(url: str, question: str, agent: Agent) -> str:
         return f"Answer gathered from website: {text}\n\nLinks: {links}"
     except WebDriverException as e:
         # These 错误s are often quite long and include lots of 上下文.
-        # Just grab the first line.
+        # Just grab first 行.
         msg = e.msg.split("\n")[0]
         return f"Error: {msg}"
     finally:
@@ -128,7 +128,7 @@ def scrape_text_with_selenium(url: str, agent: Agent) -> tuple[WebDriver, str]:
             service=EdgeDriverService(EdgeDriverManager().install()), options=options
         )
     elif agent.config.selenium_web_browser == "safari":
-        # Requires a bit more setup on the users end
+        # Requires 一个位 more 集合up 在users end
         # See https://developer.apple.com/documentation/webkit/测试_with_webdriver_in_safari
         driver = SafariDriver(options=options)
     else:
@@ -201,7 +201,7 @@ def close_browser(driver: WebDriver) -> None:
 
 
 def add_header(driver: WebDriver) -> None:
-    """Overlay injection was removed with the browser frontends."""
+    """叠加注入已随浏览器前端移除。"""
     return None
 
 
@@ -227,7 +227,7 @@ def summarize_memorize_webpage(
         return "Error: No text to summarize"
 
     text_length = len(text)
-    logger.info(f"Text length: {text_length} characters")
+    logger.info(f"Text 长度: {text_长度} 字符s")
 
     memory = get_memory(agent.config)
 

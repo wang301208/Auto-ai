@@ -40,20 +40,20 @@ class PromptStrategiesConfiguration(SystemConfiguration):
 
 
 class PlannerConfiguration(SystemConfiguration):
-    """Configuration for the Planner subsystem."""
+    """规划器子系统配置。"""
 
     models: dict[LanguageModelClassification, LanguageModelConfiguration]
     prompt_strategies: PromptStrategiesConfiguration
 
 
 class PlannerSettings(SystemSettings):
-    """Settings for the Planner subsystem."""
+    """规划器子系统设置。"""
 
     configuration: PlannerConfiguration
 
 
 class SimplePlanner(Configurable):
-    """Manages the agent's planning and goal-setting by constructing language model prompts."""
+    """通过构建语言模型提示词来管理代理的规划和目标设定。"""
 
     default_settings = PlannerSettings(
         name="planner",
@@ -84,7 +84,7 @@ class SimplePlanner(Configurable):
         settings: PlannerSettings,
         logger: logging.Logger,
         model_providers: dict[ModelProviderName, LanguageModelProvider],
-        workspace: Workspace = None,  # Workspace is not available during bootstrapping.
+        workspace: Workspace = None,  # Workspace is 非available 期间bootstrapping.
     ) -> None:
         self._configuration = settings.configuration
         self._logger = logger
@@ -145,7 +145,7 @@ class SimplePlanner(Configurable):
     ) -> LanguageModelResponse:
         model_classification = prompt_strategy.model_classification
         model_configuration = self._configuration.models[model_classification].dict()
-        self._logger.debug(f"Using model configuration: {model_configuration}")
+        self._logger.debug(f"Using 模型 configu比率n: {模型_configu比率n}")
         del model_configuration["provider_name"]
         provider = self._providers[model_classification]
 

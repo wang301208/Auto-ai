@@ -44,12 +44,12 @@ class LocalBackend(DistributedBackend):
         )
         self.register_worker(local_worker)
         self._running = True
-        logger.info("[distributed:local] Started with %d concurrent slots", self._max_concurrent)
+        logger.info("[分布式:本地] 启动ed 带%d 并发 slots", self._max_concurrent)
 
     async def stop(self) -> None:
         self._running = False
         self._workers.clear()
-        logger.info("[distributed:local] Stopped")
+        logger.info("[分布式:本地] 停止ped")
 
     async def dispatch(
         self,
@@ -58,7 +58,7 @@ class LocalBackend(DistributedBackend):
         preferred_worker: str | None = None,
     ) -> DispatchFuture:
         if not self._running:
-            raise RuntimeError("Backend not started")
+            raise RuntimeError("后端end 非started")
 
         worker = self.select_worker(
             required_roles=agent_spec.role if agent_spec else None,
@@ -119,7 +119,7 @@ class LocalBackend(DistributedBackend):
         except Exception as e:
             future.set_error(str(e))
             worker.tasks_failed += 1
-            logger.error("[distributed:local] Task %s failed: %s", future.task_id, e)
+            logger.error("[分布式:本地] Task %s failed: %s", future.task_id, e)
 
         finally:
             worker.status = WorkerStatus.IDLE

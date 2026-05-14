@@ -1,6 +1,6 @@
-"""Agent factory for batch creation from configuration.
+"""从配置批量创建代理的工厂.
 
-Enables declarative multi-agent setup from a YAML/JSON config file,
+启用声明式多代理设置 from a YAML/JSON config file,
 creating AgentProfile, registering with orchestrator, comm_bus,
 health monitor, and agent pool in one step.
 """
@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class AgentSpec:
-    """Specification for a single agent to be created."""
+    """规范 for a single 代理 to be 已创建."""
 
     agent_id: str
     name: str = ""
@@ -71,7 +71,7 @@ class AgentSpec:
 
 @dataclass
 class AgentFleetConfig:
-    """Full fleet configuration."""
+    """满 fleet 配置."""
 
     fleet_name: str = "default"
     agents: list[AgentSpec] = field(default_factory=list)
@@ -94,7 +94,7 @@ class AgentFleetConfig:
                 import yaml
                 data = yaml.safe_load(text)
             except ImportError:
-                raise ImportError("PyYAML required for YAML config files")
+                raise ImportError("YAML配置文件需要PyYAML")
         else:
             data = json.loads(text)
         return cls.from_dict(data)
@@ -121,10 +121,10 @@ class AgentFleetConfig:
 
 
 class AgentFactory:
-    """Create and register agents from fleet configuration.
+    """创建 and 注册 agents from fleet 配置.
 
     One-call setup: parse config → create profiles → register with
-    orchestrator, comm_bus, health_monitor, and agent_pool.
+    编排器, comm_bus, health_monitor, and agent_pool.
     """
 
     def __init__(
@@ -141,16 +141,16 @@ class AgentFactory:
         self._created: list[str] = []
 
     def create_fleet(self, config: AgentFleetConfig) -> list[str]:
-        """Create all agents from a fleet config. Returns list of agent IDs."""
+        """创建 all agents from a fleet config. Returns 列表 of 代理 IDs."""
         created = []
         for spec in config.agents:
             try:
                 self._create_one(spec)
                 created.append(spec.agent_id)
             except Exception as e:
-                logger.error("[factory] Failed to create agent %s: %s", spec.agent_id, e)
+                logger.error("[工厂] Failed 到create 代理 %s: %s", spec.agent_id, e)
         self._created.extend(created)
-        logger.info("[factory] Fleet '%s' created: %d agents", config.fleet_name, len(created))
+        logger.info("[factory] Fleet '%s' created: %d 代理", config.fleet_name, len(created))
         return created
 
     def _create_one(self, spec: AgentSpec) -> None:
@@ -172,7 +172,7 @@ class AgentFactory:
         )
 
     def destroy_all(self) -> int:
-        """Remove all created agents. Returns count removed."""
+        """移除 all 已创建 agents. Returns 计数 已移除."""
         count = 0
         for agent_id in self._created:
             try:
@@ -194,7 +194,7 @@ class AgentFactory:
 
 
 def create_default_fleet_config() -> AgentFleetConfig:
-    """Create a sensible default fleet configuration."""
+    """创建 a sensible default fleet 配置."""
     return AgentFleetConfig(
         fleet_name="default",
         agents=[

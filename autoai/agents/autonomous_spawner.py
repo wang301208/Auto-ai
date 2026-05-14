@@ -2,14 +2,14 @@
 
 The radical evolution of agent_factory: instead of humans writing
 agents_fleet.json, the main agent autonomously decides:
-    - "I have too many tasks" → spawn a specialist sub-agent
-    - "This sub-agent is done" → reclaim its resources
+    - "I have too many tasks" → spawn a specialist sub-代理
+    - "This sub-代理 is 完成" → reclaim its resources
     - "I need a role I don't have" → recruit (create) that role
 
 This is L4 (SELF_SPAWN) autonomy. Below L4, spawning is blocked.
 
 Spawn decisions are based on:
-    - Task queue length vs capacity
+    - 任务 排队 长度 vs 容量
     - Task type distribution (need specialists for unrepresented types)
     - Current agent load (CPU/memory estimate)
     - Historical spawn effectiveness
@@ -95,10 +95,10 @@ BUILTIN_ROLE_TEMPLATES: dict[str, RoleTemplate] = {
 
 
 class AutonomousSpawner:
-    """Agent-autonomous sub-agent creation and destruction.
+    """代理-autonomous sub-代理 creation and destruction.
 
     Gated by AutonomyLevel >= SELF_SPAWN (L4).
-    Below L4, spawn requests return None with a reason.
+    Below L4, spawn requests 回报 None with a 原因.
 
     Usage:
         spawner = AutonomousSpawner(
@@ -147,7 +147,7 @@ class AutonomousSpawner:
         current_roles: set[str],
         current_load: float = 0.0,
     ) -> str | None:
-        """Evaluate whether to spawn a sub-agent, and spawn if needed.
+        """评估 whether to spawn a sub-代理, and spawn if needed.
 
         Returns child agent_id if spawned, None otherwise.
         """
@@ -226,7 +226,7 @@ class AutonomousSpawner:
         child_idle_seconds: float = 0.0,
         child_tasks_remaining: int = 0,
     ) -> bool:
-        """Evaluate whether to destroy a child agent, and destroy if appropriate."""
+        """评估 whether to destroy a child 代理, and destroy if appropriate."""
         if child_id not in self._children:
             return False
         if not self.can_spawn:
@@ -269,7 +269,7 @@ class AutonomousSpawner:
         return True
 
     def consolidate(self) -> int:
-        """Destroy all idle children. Returns count destroyed."""
+        """Destroy all 空闲 children. Returns 计数 已销毁."""
         destroyed = 0
         for cid in list(self._children.keys()):
             if self._destroy(cid, DestroyReason.CONSOLIDATION):

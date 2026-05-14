@@ -1,4 +1,4 @@
-""" MacOS TTS Voice. """
+""" MacOS TTS语音。"""
 import os
 
 from autoai.config import Config
@@ -6,13 +6,13 @@ from autoai.speech.base import VoiceBase
 
 
 class MacOSTTS(VoiceBase):
-    """MacOS TTS Voice."""
+    """MacOS TTS语音。"""
 
     def _setup(self, config: Config) -> None:
         pass
 
     def _speech(self, text: str, voice_index: int = 0) -> bool:
-        """Play the given text."""
+        """播放给定文本."""
         if voice_index == 0:
             os.system(f'say "{text}"')
         elif voice_index == 1:

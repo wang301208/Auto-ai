@@ -25,7 +25,7 @@ class CommandRegistry:
     commands: dict[str, Command]
     commands_aliases: dict[str, Command]
 
-    # Alternative way to structure the registry; currently redundant with self.commands
+    # Alternative way 到structure registry; 当前redundant 带self.命令s
     categories: dict[str, CommandCategory]
 
     @dataclass
@@ -74,7 +74,7 @@ class CommandRegistry:
             raise KeyError(f"Command '{command.name}' not found in registry.")
 
     def reload_commands(self) -> None:
-        """Reloads all loaded command plugins."""
+        """重新加载所有已加载的命令插件。"""
         for cmd_name in self.commands:
             cmd = self.commands[cmd_name]
             module = self._import_module(cmd.__module__)

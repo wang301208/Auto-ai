@@ -1,4 +1,4 @@
-"""Helpers for interacting with Git repositories."""
+"""与Git仓库交互的辅助函数。"""
 
 from __future__ import annotations
 
@@ -10,15 +10,14 @@ from git.exc import GitCommandError, InvalidGitRepositoryError, NoSuchPathError
 
 
 class GitError(RuntimeError):
-    """Raised when a git operation cannot be completed."""
+    """当git操作无法完成时引发。"""
 
 
 def _get_repo(repo_path: Path) -> Repo:
-    """Load a Git repository from ``repo_path``.
+    """从``repo_path``加载Git仓库。
 
-    Raises:
-        FileNotFoundError: If the path does not exist or is not a git repository.
-    """
+    异常：
+        FileNotFoundError：如果路径不存在或不是git仓库。"""
 
     try:
         return Repo(repo_path)
@@ -92,7 +91,7 @@ def git_blame(file_path: str | Path, line_number: int) -> Dict[str, str]:
     """
 
     if line_number < 1:
-        raise ValueError("line_number must be greater than zero")
+        raise ValueError("line_number必须大于零")
 
     path = Path(file_path)
     if not path.exists():  # pragma: no cover - error path

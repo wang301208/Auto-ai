@@ -37,7 +37,7 @@ from autoai.logs import logger
 
 
 class SandboxWorkspace:
-    """Temporary copy of workspace for safe patch testing."""
+    """用于安全补丁测试的临时工作区副本。"""
 
     def __init__(self, source: Path) -> None:
         self._source = source
@@ -60,14 +60,14 @@ class SandboxWorkspace:
 class SelfModifyPipeline:
     """Full self-modification pipeline: generate → apply → test → commit/revert → reload.
 
-    Args:
-        workspace: Project root directory
-        agent_id: Agent identifier for audit trail
-        autonomy: AutonomyManager instance
-        chain: ModificationChain for immutable logging
-        test_command: Shell command to run tests (default: pytest)
-        git_auto_push: Whether to git push after commit (requires L3+)
-    """
+        Args:
+            workspace: Project root directory
+            agent_id: Agent identifier for audit trail
+            autonomy: AutonomyManager 实例
+            chain: ModificationChain for immutable logging
+            test_command: Shell command to run tests (default: pytest)
+            git_auto_push: Whether to git push after commit (requires L3+)
+"""
 
     def __init__(
         self,
@@ -117,7 +117,7 @@ class SelfModifyPipeline:
         }
 
         if not self.can_modify:
-            logger.info("[self-modify] Autonomy level too low for code modification. Suggestion only.")
+            logger.info("[self-modify] Autonomy 级别 too low 用于代码 modification. Suggesti在only.")
             result["suggestion"] = patch_diff
             return result
 
@@ -174,7 +174,7 @@ class SelfModifyPipeline:
                 timeout=30,
             )
             if proc.returncode == 0:
-                logger.info("[self-modify] Patch applied successfully")
+                logger.info("[self-modify] 补丁 applied successfully")
                 return True
             logger.warn(f"[self-modify] git apply failed: {proc.stderr[:200]}")
             return False

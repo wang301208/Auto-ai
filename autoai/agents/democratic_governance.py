@@ -1,4 +1,4 @@
-"""Democratic Governance: Proposal/vote/veto/impeachment for agent collectives.
+"""民主治理：代理集体的提案/投票/否决/弹劾机制。
 
 Phase 19.4: Full democratic governance layer:
   - Proposals (any agent can propose changes)
@@ -97,7 +97,7 @@ class AgentTerm:
 
 
 class DemocraticGovernance:
-    """Full democratic governance for agent collectives.
+    """代理集体的完整民主治理。
 
     Usage:
         gov = DemocraticGovernance()
@@ -234,7 +234,7 @@ class DemocraticGovernance:
         motion.vetoed_by = vetoer_id
         self._veto_count[vetoer_id] += 1
 
-        logger.info(f"[DemGov] Motion {motion_id} vetoed by {vetoer_id}")
+        logger.info(f"[DemGov] Moti在{motion_id} vetoed 通过{vetoer_id}")
         return True
 
     def override_veto(
@@ -254,7 +254,7 @@ class DemocraticGovernance:
 
         if motion.override_votes / total_members >= self._veto_override_majority:
             motion.status = MotionStatus.OVERRIDDEN
-            logger.info(f"[DemGov] Veto overridden for motion {motion_id}")
+            logger.info(f"[DemGov] Ve到overridden 用于moti在{motion_id}")
             return True
 
         return False

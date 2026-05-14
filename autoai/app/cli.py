@@ -1,4 +1,4 @@
-"""Main script for the autoai package."""
+"""autoai包的主脚本。"""
 import importlib.util
 import sys
 from pathlib import Path
@@ -10,13 +10,13 @@ from .i18n import _
 
 
 def _check_python_version() -> None:
-    """Ensure the running Python version is supported."""
+    """确保运行的Python版本受支持。"""
     if sys.version_info < (3, 12):
         raise click.ClickException(_("Python 3.12 or higher is required to run AutoAI."))
 
 
 def _require_packages(packages: tuple[str, ...]) -> None:
-    """Verify that required packages are installed."""
+    """验证所需包是否已安装。"""
     missing = [p for p in packages if importlib.util.find_spec(p) is None]
     if missing:
         raise click.ClickException(_("Required packages missing: ") + ", ".join(missing))
@@ -176,7 +176,7 @@ def main(
     from autoai.app.i18n import init_locale
     init_locale(language)
 
-    # Put imports inside function to avoid importing everything when starting the CLI
+    # Put im端口s inside functi在到avoid im端口ing everything when starting CLI
     from autoai.app.main import run_auto_ai
 
     if ctx.invoked_subcommand is None:
@@ -280,7 +280,7 @@ def stop(pid: int | None, force: bool) -> None:
 )
 @click.pass_context
 def alphaevolve(ctx: click.Context) -> None:
-    """Run AlphaEvolve workflows."""
+    """运行AlphaEvolve工作流。"""
     _require_packages(("flask",))
     from openevolve import cli as oe_cli
 

@@ -24,15 +24,15 @@ def build_default_prompt_generator(config: Config) -> PromptGenerator:
     # 初始化 the PromptConfig object and 加载 the file 集合 in the main config (default: prompts_settings.yaml)
     prompt_config = PromptConfig(config.prompt_settings_file)
 
-    # Add constraints to the PromptGenerator object
+    # 添加 constraints 到PromptGenerat或对象
     for constraint in prompt_config.constraints:
         prompt_generator.add_constraint(constraint)
 
-    # Add resources to the PromptGenerator object
+    # 添加 资源s 到PromptGenerat或对象
     for resource in prompt_config.resources:
         prompt_generator.add_resource(resource)
 
-    # Add best practices to the PromptGenerator object
+    # 添加 best practices 到PromptGenerat或对象
     for best_practice in prompt_config.best_practices:
         prompt_generator.add_best_practice(best_practice)
 

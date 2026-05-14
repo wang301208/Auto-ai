@@ -1,4 +1,4 @@
-"""Simple performance profiling."""
+"""简单的性能分析."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from .database import DatabaseManager
 
 
 class Profiler:
-    """Context manager to time code sections."""
+    """计时代码段的上下文管理器."""
 
     def __init__(self, db: DatabaseManager, name: str) -> None:
         self.db = db

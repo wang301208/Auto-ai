@@ -39,13 +39,13 @@ class Telemetry:
 
     # ------------------------------------------------------------------
     def get_counts(self) -> Dict[str, int]:
-        """Return a snapshot of all counters."""
+        """返回所有计数器的快照。"""
 
         return dict(self._counters)
 
     # ------------------------------------------------------------------
     def reset(self, names: Iterable[str] | None = None) -> None:
-        """Reset counters for ``names`` or all counters if ``names`` is None."""
+        """重置``names``的计数器，如``names``为None则重置所有。"""
 
         if names is None:
             self._counters.clear()
@@ -55,7 +55,7 @@ class Telemetry:
 
     # ------------------------------------------------------------------
     def register_hook(self, hook: Callable[[str, int], None]) -> None:
-        """Register a hook to be called when counters are incremented."""
+        """注册计数器递增时调用的钩子。"""
 
         self._hooks.append(hook)
 

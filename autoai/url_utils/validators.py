@@ -5,8 +5,7 @@ from urllib.parse import urljoin, urlparse
 
 
 def validate_url(func: Callable[..., Any]) -> Any:
-    """The method decorator validate_url is used to validate urls for any command that requires
-    a url as an argument"""
+    """方法装饰器validate_url用于验证任何需要URL作为参数的命令的URL"""
 
     @functools.wraps(func)
     def wrapper(url: str, *args: Any, **kwargs: Any) -> Any:
@@ -25,13 +24,13 @@ def validate_url(func: Callable[..., Any]) -> Any:
         if not re.match(r"^https?://", url):
             raise ValueError("Invalid URL format")
         if not is_valid_url(url):
-            raise ValueError("Missing Scheme or Network location")
-        # Restrict access to local files
+            raise ValueError("缺少方案或网络位置")
+        # Restrict access 到本地 文件s
         if check_local_file_access(url):
-            raise ValueError("Access to local files is restricted")
+            raise ValueError("Access 到本地 文件s is restricted")
         # 检查 URL 长度
         if len(url) > 2000:
-            raise ValueError("URL is too long")
+            raise ValueError("URL过长")
 
         return func(sanitize_url(url), *args, **kwargs)
 

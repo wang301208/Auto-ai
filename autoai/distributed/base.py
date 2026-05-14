@@ -1,4 +1,4 @@
-"""Distributed execution base types and abstract interface."""
+"""分布式执行基础类型和抽象接口。"""
 
 from __future__ import annotations
 
@@ -82,7 +82,7 @@ class AgentSpec:
 
 
 class DistributedBackend(abc.ABC):
-    """Abstract distributed execution backend."""
+    """抽象分布式执行后端."""
 
     def __init__(self) -> None:
         self._workers: dict[str, WorkerInfo] = {}

@@ -1,4 +1,4 @@
-"""ElevenLabs speech module"""
+"""ElevenLabs语音模块"""
 from __future__ import annotations
 
 import os
@@ -9,7 +9,7 @@ try:
 except ImportError:
     requests = None
 def _play_sound(filepath: str, block: bool = True) -> None:
-    """Play a sound file using the system default player. Replaces playsound."""
+    """使用系统默认播放器播放音频文件. 替代playsound."""
     import subprocess, sys
     try:
         if sys.platform == "win32":
@@ -29,14 +29,14 @@ PLACEHOLDERS = {"your-voice-id"}
 
 
 class ElevenLabsSpeech(VoiceBase):
-    """ElevenLabs speech class"""
+    """ElevenLabs语音类"""
 
     def _setup(self, config: Config) -> None:
-        """Set up the voices, API key, etc.
+        """设置语音、API密钥等.
 
-        Returns:
-            None: None
-        """
+                Returns:
+                    None: None
+"""
 
         default_voices = ["ErXwobaYiN019PkySvjV", "EXAVITQu4vr4xnSDxMaL"]
         voice_options = {
@@ -63,33 +63,33 @@ class ElevenLabsSpeech(VoiceBase):
         self._use_custom_voice(config.elevenlabs_voice_2_id, 1)
 
     def _use_custom_voice(self, voice, voice_index) -> None:
-        """Use a custom voice if provided and not a placeholder
+        """如果提供了自定义语音且不是占位符则使用
 
-        Args:
-            voice (str): The voice ID
-            voice_index (int): The voice index
+                Args:
+                    voice (str): The voice ID
+                    voice_index (int): The voice index
 
-        Returns:
-            None: None
-        """
+                Returns:
+                    None: None
+"""
         # 占位符 values that should be treated as 空
         if voice and voice not in PLACEHOLDERS:
             self._voices[voice_index] = voice
 
     def _speech(self, text: str, voice_index: int = 0) -> bool:
-        """Speak text using elevenlabs.io's API
+        """使用elevenlabs.io的API朗读文本
 
-        Args:
-            text (str): The text to speak
-            voice_index (int, optional): The voice to use. Defaults to 0.
+                Args:
+                    text (str): The text to speak
+                    voice_index (int, optional): The voice to use. Defaults to 0.
 
-        Returns:
-            bool: True if the request was successful, False otherwise
-        """
+                Returns:
+                    bool: True if the request was successful, False otherwise
+"""
         from autoai.logs import logger
 
         if requests is None:
-            raise ImportError("requests is not installed")
+            raise ImportError("requests未安装")
         tts_url = (
             f"https://api.elevenlabs.io/v1/text-to-speech/{self._voices[voice_index]}"
         )
@@ -103,5 +103,5 @@ class ElevenLabsSpeech(VoiceBase):
             return True
         else:
             logger.warn("Request failed with status code:", response.status_code)
-            logger.info("Response content:", response.content)
+            logger.info("响应 content:", response.content)
             return False

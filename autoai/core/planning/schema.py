@@ -27,7 +27,7 @@ class LanguageModelClassification(str, enum.Enum):
 
 
 class LanguageModelConfiguration(SystemConfiguration):
-    """Struct for model configuration."""
+    """模型配置结构。"""
 
     model_name: str = UserConfigurable()
     provider_name: ModelProviderName = UserConfigurable()
@@ -43,7 +43,7 @@ class LanguageModelPrompt(BaseModel):
 
 
 class LanguageModelResponse(LanguageModelProviderModelResponse):
-    """Standard response struct for a response from a language model."""
+    """语言模型响应的标准响应结构。"""
 
 
 class TaskType(str, enum.Enum):

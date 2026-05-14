@@ -21,7 +21,7 @@ class AuditEntry:
 
 
 def log_denied_access(plugin: str, agent: str) -> None:
-    """Record a denied access attempt to the audit log."""
+    """记录被拒绝的访问尝试到审计日志。"""
     entry = AuditEntry(
         timestamp=datetime.now(timezone.utc).isoformat(),
         plugin=plugin,
@@ -36,7 +36,7 @@ def log_denied_access(plugin: str, agent: str) -> None:
 
 
 def load_log() -> List[Dict[str, Any]]:
-    """Load audit log entries as a list of dictionaries."""
+    """将审计日志条目作为字典列表加载。"""
     if not AUDIT_LOG_FILE.is_file():
         return []
     with AUDIT_LOG_FILE.open("r", encoding="utf-8") as f:

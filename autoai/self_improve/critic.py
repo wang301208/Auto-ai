@@ -1,4 +1,4 @@
-"""Critic agent producing diagnostic reports from the improvement DB."""
+"""从改进数据库生成诊断报告的评论代理。"""
 
 from __future__ import annotations
 

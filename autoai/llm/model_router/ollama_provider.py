@@ -75,7 +75,7 @@ class OllamaProvider(BaseProvider):
                     self._health.status = ProviderStatus.UNAVAILABLE
         except Exception:
             self._health.status = ProviderStatus.UNAVAILABLE
-            logger.debug("Ollama not detected at %s", self.base_url)
+            logger.debug("在%s未检测到Ollama", self.base_url)
 
     async def chat(
         self,
@@ -159,12 +159,12 @@ class OllamaProvider(BaseProvider):
                 ) as resp:
                     if resp.status_code == 200:
                         self._models_cache = None
-                        logger.info("Pulled model: %s", model_name)
+                        logger.info("拉取ed 模型: %s", model_name)
                         return True
-                    logger.error("Failed to pull model %s: %s", model_name, resp.status_code)
+                    logger.error("Failed 到pull 模型 %s: %s", model_name, resp.status_code)
                     return False
         except Exception as e:
-            logger.error("Error pulling model %s: %s", model_name, e)
+            logger.error("拉取模型%s出错：%s", model_name, e)
             return False
 
     def is_model_pulled(self, model_name: str) -> bool:

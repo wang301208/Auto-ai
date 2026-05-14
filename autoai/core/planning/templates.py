@@ -1,9 +1,9 @@
-# Rules of thumb:
-# - Templates don't add new lines at the end of the string.  This is the
+# 规则s 的thumb:
+# - Templates don't add new 行s 在end 的字符串.  This is the
 #   responsibility of the or a consuming 模板.
 
 ####################
-# Planner defaults #
+# Planner 默认s #
 ####################
 
 
@@ -98,5 +98,5 @@ PLAN_PROMPT_MAIN = (
 
 
 ###########################
-# Parameterized templates #
+# 参数ized 模板s #
 ###########################

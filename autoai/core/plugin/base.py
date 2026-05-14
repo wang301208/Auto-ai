@@ -14,14 +14,14 @@ if TYPE_CHECKING:
         LanguageModelProvider,
     )
 
-    # Expand to other types as needed
+    # Exp和到other types 作为needed
     PluginType = (
-        Type[Ability]  # Swappable now
-        | Type[AbilityRegistry]  # Swappable maybe never
-        | Type[LanguageModelProvider]  # Swappable soon
-        | Type[EmbeddingModelProvider]  # Swappable soon
-        | Type[Memory]  # Swappable now
-        #    | Type[Planner]  # Swappable soon
+        Type[Ability]  # 交换pable now
+        | Type[AbilityRegistry]  # 交换pable maybe never
+        | Type[LanguageModelProvider]  # 交换pable soon
+        | Type[EmbeddingModelProvider]  # 交换pable soon
+        | Type[Memory]  # 交换pable now
+        # | 类型[Planner]  # 交换pable soon
     )
 
 
@@ -32,11 +32,11 @@ class PluginStorageFormat(str, enum.Enum):
 
     """
 
-    INSTALLED_PACKAGE = "installed_package"  # Required now, loads system defaults
+    INSTALLED_PACKAGE = "installed_package"  # Required now, loads system 默认s
     WORKSPACE = "workspace"  # Required now
     # OPENAPI_URL = "打开_api_url"           # Soon (requires some tooling we don't have yet).
-    # OTHER_FILE_PATH = "other_file_path"    # Maybe later (maybe now)
-    # GIT = "git"                            # Maybe later (or soon)
+    # OTHER_FILE_PATH = "other_文件_路径"    # Maybe 稍后(maybe now)
+    # GIT = "git"                            # Maybe 稍后(或soon)
     # PYPI = "pypi"                          # Maybe later
     # AUTOAI_PLUGIN_SERVICE = "autoai_plugin_service"  # Long term 方案, requires design
     # AUTO = "auto"                          # 特性 for later maybe, automatically 查找 插件.
@@ -45,11 +45,11 @@ class PluginStorageFormat(str, enum.Enum):
 # 已安装 包 example
 # PluginLocation(
 #     storage_format='installed_package',
-#     storage_route='autoai_plugins.twitter.SendTwitterMessage'
+# storage_路由='autoai_plugins.twitter.发送Twitter消息'
 # )
 # Workspace example
 # PluginLocation(
-#     storage_format='workspace',
+# storage_format='工作区',
 #     storage_route='relative/路径/to/插件.pkl'
 #     OR
 #     storage_route='relative/路径/to/插件.py'
@@ -58,18 +58,18 @@ class PluginStorageFormat(str, enum.Enum):
 # PluginLocation(
 #     storage_format='git',
 #     Exact 格式化 TBD.
-#     storage_route='https://github.com/gravelBridge/AutoAI-WolframAlpha/blob/main/autoai-wolframalpha/wolfram_alpha.py'
+# storage_路由='https://github.com/gravelBridge/AutoAI-WolframAlpha/blob/main/autoai-wolframalpha/wolfram_alpha.py'
 # )
 # PyPI
 # PluginLocation(
 #     storage_format='pypi',
-#     storage_route='package_name'
+# storage_路由='package_名称'
 # )
 
 
 # PluginLocation(
 #     storage_format='installed_package',
-#     storage_route='autoai_plugins.twitter.SendTwitterMessage'
+# storage_路由='autoai_plugins.twitter.发送Twitter消息'
 # )
 
 
@@ -93,7 +93,7 @@ class PluginLocation(SystemConfiguration):
 
 
 class PluginMetadata(BaseModel):
-    """Metadata about a plugin."""
+    """关于插件的元数据。"""
 
     name: str
     description: str
@@ -111,7 +111,7 @@ class PluginService(abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def get_plugin(plugin_location: PluginLocation) -> "PluginType":
-        """Get a plugin from a plugin location."""
+        """从插件位置获取插件。"""
         ...
 
     ####################################
@@ -120,14 +120,14 @@ class PluginService(abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def load_from_file_path(plugin_route: PluginStorageRoute) -> "PluginType":
-        """Load a plugin from a file path."""
+        """从文件路径加载插件。"""
 
         ...
 
     @staticmethod
     @abc.abstractmethod
     def load_from_import_path(plugin_route: PluginStorageRoute) -> "PluginType":
-        """Load a plugin from an import path."""
+        """从导入路径加载插件。"""
         ...
 
     @staticmethod
@@ -135,7 +135,7 @@ class PluginService(abc.ABC):
     def resolve_name_to_path(
         plugin_route: PluginStorageRoute, path_type: str
     ) -> PluginStorageRoute:
-        """Resolve a plugin name to a plugin path."""
+        """将插件名称解析为插件路径。"""
         ...
 
     #####################################
@@ -145,11 +145,11 @@ class PluginService(abc.ABC):
     @staticmethod
     @abc.abstractmethod
     def load_from_workspace(plugin_route: PluginStorageRoute) -> "PluginType":
-        """Load a plugin from the workspace."""
+        """从工作区加载插件。"""
         ...
 
     @staticmethod
     @abc.abstractmethod
     def load_from_installed_package(plugin_route: PluginStorageRoute) -> "PluginType":
-        """Load a plugin from an installed package."""
+        """从已安装的包加载插件。"""
         ...

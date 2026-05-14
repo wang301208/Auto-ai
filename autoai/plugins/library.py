@@ -1,4 +1,4 @@
-"""Library for discovering and searching plugin specifications."""
+"""发现和搜索插件规格的库。"""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ Embedding = List[float]
 
 @dataclass
 class PluginSpec:
-    """Representation of a plugin specification with optional embedding."""
+    """带有可选嵌入的插件规格表示。"""
 
     id: str
     description: str
@@ -31,7 +31,7 @@ class PluginSpec:
 
 
 class PluginLibrary:
-    """Persist and index plugin specifications for semantic search."""
+    """持久化并索引插件规格以支持语义搜索。"""
 
     def __init__(
         self,
@@ -51,7 +51,7 @@ class PluginLibrary:
 
     # ------------------------------------------------------------------
     def _load(self) -> None:
-        """Load all ``*.spec.json`` files from ``repo_path``."""
+        """从``repo_path``加载所有``*.spec.json``文件。"""
 
         if not self.repo_path.exists():
             return
@@ -80,7 +80,7 @@ class PluginLibrary:
 
     # ------------------------------------------------------------------
     def reindex(self) -> None:
-        """Clear and rebuild the in-memory index and vector database."""
+        """清除并重建内存索引和向量数据库."""
 
         self._plugins.clear()
         try:
@@ -91,19 +91,19 @@ class PluginLibrary:
 
     # ------------------------------------------------------------------
     def get_plugin(self, plugin_id: str) -> Optional[PluginSpec]:
-        """Return plugin specification by identifier if present."""
+        """如存在则按标识符返回插件规格。"""
 
         return self._plugins.get(plugin_id)
 
     # ------------------------------------------------------------------
     def list_plugins(self) -> List[PluginSpec]:
-        """Return all loaded plugin specifications."""
+        """返回所有已加载的插件规格。"""
 
         return list(self._plugins.values())
 
     # ------------------------------------------------------------------
     def search(self, query: str, top_k: int = 5) -> List[str]:
-        """Search for plugins semantically matching ``query`` and return their IDs."""
+        """Search for plugins semantically 匹配 ``query`` and return their IDs."""
 
         embedding = get_embedding(query, self.config)
         results = self.vector_db.query(list(map(float, embedding)), top_k=top_k)

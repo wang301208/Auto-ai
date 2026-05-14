@@ -1,4 +1,4 @@
-"""Configurator module."""
+"""配置器模块。"""
 from __future__ import annotations
 
 from typing import Literal
@@ -83,7 +83,7 @@ def create_config(
     # 集合 the default LLM models
     if gpt3only:
         logger.typewriter_log("GPT3.5 Only Mode: ", Fore.GREEN, "ENABLED")
-        # --gpt3only should always use gpt-3.5-turbo, despite user's FAST_LLM config
+        # --gpt3仅should 总是use gpt-3.5-turbo, despite user's FAST_LLM config
         config.fast_llm = GPT_3_MODEL
         config.smart_llm = GPT_3_MODEL
     elif (
@@ -92,7 +92,7 @@ def create_config(
         == GPT_4_MODEL
     ):
         logger.typewriter_log("GPT4 Only Mode: ", Fore.GREEN, "ENABLED")
-        # --gpt4only should always use gpt-4, despite user's SMART_LLM config
+        # --gpt4仅should 总是use gpt-4, despite user's SMART_LLM config
         config.fast_llm = GPT_4_MODEL
         config.smart_llm = GPT_4_MODEL
     else:
@@ -170,7 +170,7 @@ def check_model(
     model_type: Literal["smart_llm", "fast_llm"],
     config: Config,
 ) -> str:
-    """Check if model is available for use. If not, return gpt-3.5-turbo."""
+    """检查模型是否可用。如不可用则返回gpt-3.5-turbo。"""
     openai_credentials = config.get_openai_credentials(model_name)
     api_manager = ApiManager()
     models = api_manager.get_models(**openai_credentials)

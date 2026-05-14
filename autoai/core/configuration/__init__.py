@@ -1,4 +1,4 @@
-"""The configuration encapsulates settings for all Agent subsystems."""
+"""配置封装了所有代理子系统的设置。"""
 from autoai.core.configuration.schema import (
     Configurable,
     SystemConfiguration,

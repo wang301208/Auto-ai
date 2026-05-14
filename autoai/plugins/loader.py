@@ -12,17 +12,17 @@ from autoai.plugins.models import PluginMeta, PluginMetaValidationError
 def load_plugin_meta(path: str | Path) -> PluginMeta:
     """Load and validate plugin metadata from ``path``.
 
-    Args:
-        path: Path to a JSON metadata file.
+        Args:
+            path: Path to a JSON metadata file.
 
-    Returns:
-        Parsed :class:`PluginMeta` instance.
+        Returns:
+            Parsed :class:`PluginMeta` 实例.
 
-    Raises:
-        PluginMetaValidationError: If the metadata is missing required
-            fields, has invalid values, or references a non-existent
-            ``local_source_path``.
-    """
+        Raises:
+            PluginMetaValidationError: If the metadata is missing required
+                fields, has invalid values, or references a non-existent
+                ``local_source_path``.
+"""
 
     metadata_path = Path(path)
     try:

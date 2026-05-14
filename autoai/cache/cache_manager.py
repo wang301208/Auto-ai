@@ -1,4 +1,4 @@
-"""Artifact caching utilities."""
+"""制品缓存工具。"""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ Embedding = List[float]
 
 @dataclass
 class Artifact:
-    """Representation of a stored artifact."""
+    """存储制品的表示。"""
 
     task_signature: str
     artifact_type: str
@@ -26,7 +26,7 @@ class Artifact:
 
 
 class CacheBackend:
-    """Abstract cache backend."""
+    """抽象缓存后端。"""
 
     def save(self, artifact: Artifact) -> None:  # pragma: no cover - interface
         raise NotImplementedError
@@ -39,7 +39,7 @@ class CacheBackend:
 
 
 class DiskCacheBackend(CacheBackend):
-    """Persist artifacts as JSON files on disk."""
+    """将制品作为JSON文件持久化到磁盘。"""
 
     def __init__(self, storage_dir: Path) -> None:
         self.storage_dir = storage_dir
@@ -51,7 +51,7 @@ class DiskCacheBackend(CacheBackend):
         fname = f"{safe_ts}_{artifact.artifact_type}.json"
         return self.storage_dir / fname
 
-    # CacheBackend methods ------------------------------------------------------
+    # Cache后端end methods ------------------------------------------------------
     def save(self, artifact: Artifact) -> None:
         path = self._artifact_path(artifact)
         with path.open("w", encoding="utf-8") as f:
@@ -70,7 +70,7 @@ class DiskCacheBackend(CacheBackend):
 
 
 class SQLiteCacheBackend(CacheBackend):
-    """Store artifacts in a SQLite database."""
+    """在SQLite数据库中存储制品。"""
 
     def __init__(self, db_path: Path) -> None:
         self.conn = sqlite3.connect(db_path)
@@ -132,14 +132,14 @@ class SQLiteCacheBackend(CacheBackend):
 
 @dataclass
 class RetentionPolicy:
-    """Retention policy for stored artifacts."""
+    """存储制品的保留策略。"""
 
     max_entries: Optional[int] = None
     max_age_seconds: Optional[int] = None
 
 
 class CacheManager:
-    """High level cache interface for storing and retrieving artifacts."""
+    """用于存储和检索制品的高级缓存接口。"""
 
     def __init__(
         self,
@@ -178,12 +178,12 @@ class CacheManager:
         return artifact
 
     def lookup_by_signature(self, task_signature: str) -> List[Artifact]:
-        """Return all artifacts matching ``task_signature``."""
+        """Return all artifacts 匹配 ``task_signature``."""
 
         return [a for a in self._artifacts if a.task_signature == task_signature]
 
     def lookup_by_similarity(self, query: str, top_k: int = 5) -> List[Artifact]:
-        """Return artifacts most similar to ``query``."""
+        """返回与``query``最相似的制品。"""
 
         results: List[Tuple[float, Artifact]] = []
         if self.embedding_func:
@@ -203,7 +203,7 @@ class CacheManager:
 
     # Internal -----------------------------------------------------------------
     def _prune(self) -> None:
-        """Apply retention policy."""
+        """应用保留策略。"""
 
         if self.retention.max_entries is None and self.retention.max_age_seconds is None:
             return

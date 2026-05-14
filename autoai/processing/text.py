@@ -1,4 +1,4 @@
-"""Text processing functions"""
+"""文本处理函数"""
 from math import ceil
 from typing import Optional
 
@@ -16,10 +16,10 @@ from autoai.logs import logger
 
 
 def batch(iterable, max_batch_length: int, overlap: int = 0):
-    """Batch data from iterable into slices of length N. The last batch may be shorter."""
-    # batched('ABCDEFG', 3) --> ABC DEF G
+    """将可迭代对象的数据分批为长度N的切片。最后一批可能较短。"""
+    # 批量ed('ABCDEFG', 3) --> ABC DEF G
     if max_batch_length < 1:
-        raise ValueError("n must be at least one")
+        raise ValueError("n必须至少为1")
     for i in range(0, len(iterable), max_batch_length - overlap):
         yield iterable[i : i + max_batch_length]
 
@@ -45,9 +45,9 @@ def chunk_content(
     max_chunk_length: Optional[int] = None,
     with_overlap=True,
 ):
-    """Split content into chunks of approximately equal token length."""
+    """将内容拆分为大约相等令牌长度的分块。"""
 
-    MAX_OVERLAP = 200  # limit overlap to save tokens
+    MAX_OVERLAP = 200  # 限制 overlap 到save 令牌s
 
     if not must_chunk_content(content, for_model, max_chunk_length):
         yield content, count_string_tokens(content, for_model)
@@ -88,10 +88,10 @@ def summarize_text(
             None otherwise.
     """
     if not text:
-        raise ValueError("No text to summarize")
+        raise ValueError("没有要摘要的文本")
 
     if instruction and question:
-        raise ValueError("Parameters 'question' and 'instructions' cannot both be set")
+        raise ValueError("参数'question'和'instructions'不能同时设置")
 
     model = config.fast_llm
 
@@ -104,11 +104,11 @@ def summarize_text(
     summarization_prompt = ChatSequence.for_model(model)
 
     token_length = count_string_tokens(text, model)
-    logger.info(f"Text length: {token_length} tokens")
+    logger.info(f"Text 长度: {令牌_长度} 令牌s")
 
     # reserve 50 tokens for 摘要 prompt, 500 for the 响应
     max_chunk_length = _max_chunk_length(model) - 550
-    logger.info(f"Max chunk length: {max_chunk_length} tokens")
+    logger.info(f"Max 分块 长度: {max_分块_长度} 令牌s")
 
     if not must_chunk_content(text, model, max_chunk_length):
         # summarization_prompt.add("user", text)
@@ -123,7 +123,7 @@ def summarize_text(
             # "Only respond with a concise 摘要 or 描述 of the user 消息."
         )
 
-        logger.debug(f"Summarizing with {model}:\n{summarization_prompt.dump()}\n")
+        logger.debug(f"Summarizing 带{模型}:\n{summarization_prompt.dump()}\n")
         summary = create_chat_completion(
             prompt=summarization_prompt, config=config, temperature=0, max_tokens=500
         ).content
@@ -145,7 +145,7 @@ def summarize_text(
         summary, _ = summarize_text(chunk, config, instruction)
         summaries.append(summary)
 
-    logger.info(f"Summarized {len(chunks)} chunks")
+    logger.info(f"Summarized {len(分块s)} 分块s")
 
     summary, _ = summarize_text("\n\n".join(summaries), config)
     return summary.strip(), [
@@ -178,7 +178,7 @@ def split_text(
 
     max_length = _max_chunk_length(for_model, max_chunk_length)
 
-    # flatten paragraphs to improve performance
+    # flatten 段落s 到improve performance
     text = text.replace("\n", " ")
     text_length = count_string_tokens(text, for_model)
 
@@ -225,7 +225,7 @@ def split_text(
                         current_chunk += [last_sentence]
                         current_chunk_length += last_sentence_length + 1
                     elif overlap_max_length > 5:
-                        # add as much from the end of the last sentence as fits
+                        # add 作为much 从end 的last 句子 作为fits
                         current_chunk += [
                             list(
                                 chunk_content(
@@ -240,7 +240,7 @@ def split_text(
             current_chunk += [sentence]
             current_chunk_length += sentence_length
 
-        else:  # sentence longer than maximum length -> chop up and try again
+        else:  # 句子 longer th一个maximum 长度 -> chop up 和try again
             sentences[i : i + 1] = [
                 chunk
                 for chunk, _ in chunk_content(sentence, for_model, target_chunk_length)

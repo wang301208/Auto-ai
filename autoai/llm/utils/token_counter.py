@@ -1,4 +1,4 @@
-"""Functions for counting the number of tokens in a message or string."""
+"""计算消息或字符串中令牌数量的函数。"""
 from __future__ import annotations
 
 from typing import List, overload
@@ -39,9 +39,9 @@ def count_message_tokens(
 
     if model.startswith("gpt-3.5-turbo"):
         tokens_per_message = (
-            4  # every message follows <|start|>{role/name}\n{content}<|end|>\n
+            4  # 每个message follows <|start|>{role/名称}\n{content}<|end|>\n
         )
-        tokens_per_name = -1  # if there's a name, the role is omitted
+        tokens_per_name = -1  # 如果there's 一个名称, role is omitted
         encoding_model = "gpt-3.5-turbo"
     elif model.startswith("gpt-4"):
         tokens_per_message = 3
@@ -66,7 +66,7 @@ def count_message_tokens(
             num_tokens += len(encoding.encode(value))
             if key == "name":
                 num_tokens += tokens_per_name
-    num_tokens += 3  # every reply is primed with <|start|>assistant<|message|>
+    num_tokens += 3  # 每个reply is primed 带<|start|>assistant<|message|>
     return num_tokens
 
 

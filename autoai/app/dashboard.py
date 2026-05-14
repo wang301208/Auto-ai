@@ -15,7 +15,7 @@ Layout (4 quadrants):
 
 Usage:
     dashboard = TerminalDashboard(system)
-    dashboard.run()  # blocking
+    dashboard.run()  # 块ing
 
 Hotkeys:
     q  - Quit
@@ -41,7 +41,7 @@ from rich import box
 
 
 class TerminalDashboard:
-    """Pure terminal system dashboard for monitoring the multi-agent system."""
+    """用于监控多代理系统的纯终端仪表盘。"""
 
     def __init__(
         self,
@@ -228,7 +228,7 @@ class TerminalDashboard:
         return layout
 
     def run(self) -> None:
-        """Start the live dashboard (blocking). Press q to quit."""
+        """启动实时仪表盘（阻塞）。按q退出。"""
         with Live(
             self.render(),
             console=self._console,
@@ -243,12 +243,12 @@ class TerminalDashboard:
                 pass
 
     def render_once(self) -> None:
-        """Render a single frame (non-blocking)."""
+        """渲染单帧（非阻塞）。"""
         self._console.print(self.render())
 
 
 def create_dashboard(system: Any) -> TerminalDashboard:
-    """Factory: create a TerminalDashboard bound to a MultiAgentSystem."""
+    """工厂：创建绑定到MultiAgentSystem的TerminalDashboard。"""
     return TerminalDashboard(system=system)
 
 

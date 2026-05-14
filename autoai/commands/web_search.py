@@ -1,4 +1,4 @@
-"""Commands to search the web with"""
+"""用于网页搜索的命令"""
 
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ def web_search(query: str, agent: Agent, num_results: int = 8) -> str:
             return json.dumps(search_results)
 
         if DDGS is None:
-            raise ImportError("duckduckgo-search is not installed")
+            raise ImportError("duckduckgo-search未安装")
         results = DDGS().text(query)
         search_results = list(islice(results, num_results))
 

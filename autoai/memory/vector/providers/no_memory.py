@@ -1,4 +1,4 @@
-"""A class that does not store any data. This is the default memory provider."""
+"""不存储任何数据的类。这是默认的记忆提供者。"""
 from __future__ import annotations
 
 from typing import Iterator, Optional
@@ -10,9 +10,7 @@ from .base import VectorMemoryProvider
 
 
 class NoMemory(VectorMemoryProvider):
-    """
-    A class that does not store any data. This is the default memory provider.
-    """
+    """不存储任何数据的类。这是默认的记忆提供者。"""
 
     def __init__(self, config: Optional[Config] = None):
         pass

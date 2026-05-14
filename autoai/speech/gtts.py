@@ -1,4 +1,4 @@
-""" GTTS Voice. """
+""" GTTS语音。"""
 import os
 
 try:
@@ -6,7 +6,7 @@ try:
 except ImportError:
     gtts = None
 def _play_sound(filepath: str, block: bool = True) -> None:
-    """Play a sound file using the system default player. Replaces playsound."""
+    """使用系统默认播放器播放音频文件. 替代playsound."""
     import subprocess, sys
     try:
         if sys.platform == "win32":
@@ -23,15 +23,15 @@ from autoai.speech.base import VoiceBase
 
 
 class GTTSVoice(VoiceBase):
-    """GTTS Voice."""
+    """GTTS语音。"""
 
     def _setup(self, config: Config) -> None:
         pass
 
     def _speech(self, text: str, _: int = 0) -> bool:
-        """Play the given text."""
+        """播放给定文本."""
         if gtts is None:
-            raise ImportError("gTTS is not installed")
+            raise ImportError("gTTS未安装")
         tts = gtts.gTTS(text)
         tts.save("speech.mp3")
         _play_sound("speech.mp3")

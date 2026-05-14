@@ -166,7 +166,7 @@ Latest Development:
                         del content_dict["thoughts"]
                     event.content = json.dumps(content_dict)
                 except (json.JSONDecodeError, ValueError) as e:
-                    logger.error(f"Error: Invalid JSON: {e}")
+                    logger.error(f"错误：无效的JSON: {e}")
                     if config.debug_mode:
                         logger.error(f"{event.content}")
 
@@ -175,7 +175,7 @@ Latest Development:
 
         summ_model = OPEN_AI_CHAT_MODELS[config.fast_llm]
 
-        # Determine token lengths for use in batching
+        # De项ine 令牌 长度s 用于use 在批量ing
         prompt_template_length = len(
             MessageHistory.SUMMARIZATION_PROMPT.format(summary="", new_events="")
         )
@@ -203,7 +203,7 @@ Latest Development:
                 batch_tlength += event_tlength
 
         if batch:
-            # There's an unprocessed batch. Summarize it.
+            # There's 一个un进程ed 批量. Summarize it.
             self._update_summary_with_batch(batch, config, max_summary_length)
 
         return self.summary_message()

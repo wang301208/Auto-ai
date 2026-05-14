@@ -33,7 +33,7 @@ from autoai.core.planning.schema import TaskStatus
 
 
 class TUIObservationWindow:
-    """Terminal observation window for monitoring autonomous agent execution."""
+    """用于监控自主代理执行的终端观察窗口。"""
 
     def __init__(
         self,
@@ -289,7 +289,7 @@ class TUIObservationWindow:
         return layout
 
     def run(self) -> None:
-        """Start the live TUI display (blocking)."""
+        """启动实时TUI显示（阻塞）。"""
         with Live(
             self.render(),
             console=self._console,
@@ -301,12 +301,12 @@ class TUIObservationWindow:
                 live.update(self.render())
 
     def render_once(self) -> None:
-        """Render a single frame (non-blocking, for integration into external loops)."""
+        """渲染单帧（非阻塞，用于集成到外部循环）。"""
         self._console.print(self.render())
 
 
 def create_tui_for_agent(agent: Any) -> TUIObservationWindow:
-    """Factory: create a TUI window bound to an AsyncAgent."""
+    """工厂：创建绑定到AsyncAgent的TUI窗口。"""
     window = TUIObservationWindow(agent_name=agent.ai_config.ai_name)
     window.set_autonomous(agent.autonomous_mode)
     return window

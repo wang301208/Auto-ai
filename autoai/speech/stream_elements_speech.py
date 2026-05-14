@@ -6,7 +6,7 @@ try:
 except ImportError:
     requests = None
 def _play_sound(filepath: str, block: bool = True) -> None:
-    """Play a sound file using the system default player. Replaces playsound."""
+    """使用系统默认播放器播放音频文件. 替代playsound."""
     import subprocess, sys
     try:
         if sys.platform == "win32":
@@ -23,10 +23,10 @@ from autoai.speech.base import VoiceBase
 
 
 class StreamElementsSpeech(VoiceBase):
-    """Streamelements speech module for autoai"""
+    """autoai的Streamelements语音模块"""
 
     def _setup(self, config: Config) -> None:
-        """Setup the voices, API key, etc."""
+        """设置语音、API密钥等."""
 
     def _speech(self, text: str, voice: str, _: int = 0) -> bool:
         """Speak text using the streamelements API
@@ -39,7 +39,7 @@ class StreamElementsSpeech(VoiceBase):
             bool: True if the request was successful, False otherwise
         """
         if requests is None:
-            raise ImportError("requests is not installed")
+            raise ImportError("requests未安装")
         tts_url = (
             f"https://api.streamelements.com/kappa/v2/speech?voice={voice}&text={text}"
         )

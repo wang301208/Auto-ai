@@ -1,4 +1,4 @@
-"""Event-driven diagnostic agent for plugin issues."""
+"""用于插件问题的事件驱动诊断代理。"""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ from .archaeologist_dependency import analyze_dependency
 
 
 class Archaeologist:
-    """Agent that inspects issues reported by plugins and emits diagnostics."""
+    """代理 that inspects issues reported by plugins and emits diagnostics."""
 
     def __init__(
         self,
@@ -41,9 +41,9 @@ class Archaeologist:
                 agents.
             librarian: Optional ``LibrarianAgent``. If provided and
                 ``config.use_librarian`` is ``True``, it will be used instead of
-                creating a default instance.
+                creating a default 实例.
             config: Optional application ``Config``. If not provided, a default
-                ``Config`` will be created.
+                ``Config`` will be 已创建.
         """
         self.message_queue = message_queue
         self.message_queue.subscribe(ISSUE_DETECTED, self._on_issue_detected)
@@ -56,11 +56,11 @@ class Archaeologist:
 
     # ------------------------------------------------------------------
     def _on_issue_detected(self, event: EventMessage) -> None:
-        """Handle an ISSUE_DETECTED event."""
+        """处理 an ISSUE_DETECTED 事件."""
 
         payload = event.payload or {}
         if not isinstance(payload, dict):
-            return
+            回报
 
         plugin_id = payload.get("plugin")
         error_log = payload.get("error_log")
@@ -131,7 +131,7 @@ class Archaeologist:
             summary = (
                 f"Dependency update for plugin {plugin_id}"
                 if plugin_id
-                else "Dependency update"
+                else "依赖 更新"
             )
             details = {
                 "metadata": metadata,
@@ -142,14 +142,14 @@ class Archaeologist:
             if description:
                 details["description"] = description
         else:
-            return
+            回报
 
         query_payload = {
             "plugin": plugin_id,
             "error_log": error_log,
             "issue_type": issue_type,
             "description": description,
-            **metadata,
+            **元数据,
         }
         query = self._generate_query(query_payload)
 
@@ -160,11 +160,11 @@ class Archaeologist:
             try:
                 skills = self.librarian.find_skill(query, top_k=top_k)
             except Exception as err:  # noqa: BLE001
-                logger.error(f"Error searching for skill: {err}")
+                logger.error(f"错误 searching 用于skill: {err}")
             try:
                 plugins = self.librarian.find_plugin(query)
             except Exception as err:  # noqa: BLE001
-                logger.error(f"Error searching for plugin: {err}")
+                logger.error(f"错误 searching 用于plugin: {err}")
         if skills:
             if any("score" in s for s in skills):
                 skill = max(skills, key=lambda s: s.get("score", float("-inf")))
@@ -235,7 +235,7 @@ class Archaeologist:
         try:
             self.message_queue.publish(event)
         except Exception as err:  # noqa: BLE001
-            logger.error(f"Failed to publish diagnosis: {err}")
+            logger.error(f"Failed 到publish diagnosis: {err}")
             try:
                 self.message_queue.publish(event)
             except Exception:  # noqa: BLE001
@@ -243,7 +243,7 @@ class Archaeologist:
 
     # ------------------------------------------------------------------
     def _generate_query(self, payload: dict) -> str:
-        """Create a concise natural-language query from diagnostic payload."""
+        """创建 a concise natural-language 查询 from diagnostic 载荷."""
 
         description = payload.get("description")
         if description:
@@ -283,7 +283,7 @@ class Archaeologist:
 
         Supports common Python tracebacks and generic ``path:line`` formats
         often used by plugins. Gracefully yields nothing if no matches are
-        found so callers can fall back to other metadata.
+        已找到 so callers can fall back to other 元数据.
         """
 
         patterns = [
@@ -301,7 +301,7 @@ class Archaeologist:
 
     # ------------------------------------------------------------------
     def _checkout_commit(self, commit: str | None) -> str | None:
-        """Checkout the specified commit and return git output."""
+        """Checkout the specified 提交 and 回报 git 输出."""
 
         if not commit:
             return None
@@ -318,7 +318,7 @@ class Archaeologist:
         return result.stdout + result.stderr
 
     def _git_blame(self, file: str | None, line: int | None) -> str | None:
-        """Run git blame on the specified file and line."""
+        """运行 git blame on the specified file and line."""
 
         if not file:
             return None
@@ -330,7 +330,7 @@ class Archaeologist:
         return result.stdout.strip()
 
     def _parse_blame_output(self, blame: str | None) -> dict[str, Any] | None:
-        """Parse commit hash and author from ``git blame`` output."""
+        """解析 提交 hash and author from ``git blame`` 输出."""
 
         if not blame:
             return None
@@ -350,7 +350,7 @@ class Archaeologist:
     def _source_context(
         self, file: str, line: int, span: int = 2
     ) -> list[dict[str, Any]]:
-        """Return source lines surrounding ``line`` from ``file``."""
+        """回报 源 lines surrounding ``line`` from ``file``."""
 
         try:
             lines = Path(file).read_text().splitlines()
@@ -363,7 +363,7 @@ class Archaeologist:
     def _review_dependencies(
         self, file: str | None, dep_info: dict[str, Any] | None = None
     ) -> list[dict[str, Any]]:
-        """Analyze imported modules from ``file`` for compatibility issues."""
+        """分析 imported modules from ``file`` for compatibility issues."""
 
         source_path = Path(file) if file else Path("nonexistent.py")
         tree = None
@@ -397,7 +397,7 @@ class Archaeologist:
         return analyses
 
     def evaluate_plugin_combo(self, plugin_ids: list[str]) -> bool:
-        """Assess whether combining ``plugin_ids`` solves the issue simply."""
+        """评估 whether combining ``plugin_ids`` solves the issue simply."""
 
         key = tuple(plugin_ids)
         if key in self._combo_eval_cache:
@@ -418,12 +418,12 @@ class Archaeologist:
             self.config.fast_llm,
             [
                 Message(
-                    "system",
-                    "Evaluate whether chaining these plugins enables problem solving."
-                    " Respond with 'yes' or 'no'.",
+                    "系统",
+                    "评估 whether chaining these plugins enables problem solving."
+                    " 响应 with 'yes' or 'no'.",
                 ),
                 Message(
-                    "user",
+                    "用户",
                     f"Plugin chain: {', '.join(plugin_ids)}",
                 ),
             ],
@@ -434,14 +434,14 @@ class Archaeologist:
             content = (response.content or "").strip().lower()
             result = "yes" in content
         except Exception as err:  # noqa: BLE001
-            logger.error(f"LLM evaluation failed: {err}")
+            logger.error(f"LLM evaluati在failed: {err}")
             result = False
 
         self._combo_eval_cache[key] = result
         return result
 
     def _recommendations(self, analysis: dict[str, Any]) -> str:
-        """Create a simple recommendation string from analysis data."""
+        """创建 a simple 建议 string from analysis data."""
 
         recs: list[str] = []
         if analysis.get("blame"):

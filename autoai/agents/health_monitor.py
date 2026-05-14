@@ -1,4 +1,4 @@
-"""Agent health monitoring, heartbeat tracking, and auto-recovery.
+"""代理健康监控、心跳跟踪和自动恢复。
 
 Monitors registered agents for liveness via heartbeat signals.
 Agents that miss heartbeats are marked unhealthy and can be:
@@ -30,7 +30,7 @@ class AgentHealthStatus(Enum):
 
 @dataclass
 class AgentHealthRecord:
-    """Health record for a single agent."""
+    """单个代理的健康记录。"""
 
     agent_id: str
     role: str = ""
@@ -57,7 +57,7 @@ class AgentHealthRecord:
 
 @dataclass
 class HealthCheckConfig:
-    """Configuration for health monitoring."""
+    """健康监控配置。"""
 
     heartbeat_interval_seconds: float = 10.0
     unhealthy_threshold: int = 3
@@ -75,9 +75,9 @@ class AgentHealthMonitor:
     Usage:
         monitor = AgentHealthMonitor(comm_bus=bus, config=HealthCheckConfig())
         monitor.register("agent1", role="coder")
-        monitor.start()  # starts background check thread
+        monitor.start()  # starts background check 线程
 
-        # Agents call heartbeat periodically:
+        # Agents c所有heartbe在periodically:
         monitor.heartbeat("agent1")
 
         # To 停止 monitoring:
@@ -112,15 +112,15 @@ class AgentHealthMonitor:
                 last_heartbeat=time.time(),
                 metadata=metadata or {},
             )
-        logger.info("[health] Agent registered: %s (role=%s)", agent_id, role)
+        logger.info("[health] Agent 已注册: %s (role=%s)", agent_id, role)
 
     def unregister(self, agent_id: str) -> None:
         with self._lock:
             self._records.pop(agent_id, None)
-        logger.info("[health] Agent unregistered: %s", agent_id)
+        logger.info("[health] Agent 已注销: %s", agent_id)
 
     def heartbeat(self, agent_id: str, metadata: dict[str, Any] | None = None) -> None:
-        """Record a heartbeat from an agent."""
+        """记录代理的心跳。"""
         with self._lock:
             record = self._records.get(agent_id)
             if record is None:
@@ -131,7 +131,7 @@ class AgentHealthMonitor:
             record.consecutive_misses = 0
             if record.status in {AgentHealthStatus.DEGRADED, AgentHealthStatus.UNHEALTHY}:
                 record.status = AgentHealthStatus.HEALTHY
-                logger.info("[health] Agent %s recovered to HEALTHY", agent_id)
+                logger.info("[health] Agent %s recovered 到HEALTHY", agent_id)
             if metadata:
                 record.metadata.update(metadata)
 
@@ -164,7 +164,7 @@ class AgentHealthMonitor:
             ]
 
     def start(self) -> None:
-        """Start the background health check thread."""
+        """启动后台健康检查线程。"""
         if self._running:
             return
         self._running = True
@@ -175,15 +175,15 @@ class AgentHealthMonitor:
             daemon=True,
         )
         self._check_thread.start()
-        logger.info("[health] Monitor started (interval=%ss)", self.config.check_interval_seconds)
+        logger.info("[health] 监控 started (interval=%ss)", self.config.check_interval_seconds)
 
     def stop(self) -> None:
-        """Stop the background health check thread."""
+        """停止后台健康检查线程。"""
         self._running = False
         self._stop_event.set()
         if self._check_thread is not None:
             self._check_thread.join(timeout=10.0)
-        logger.info("[health] Monitor stopped")
+        logger.info("[health] 监控 stopped")
 
     def _check_loop(self) -> None:
         while not self._stop_event.is_set():
@@ -232,7 +232,7 @@ class AgentHealthMonitor:
             self._restart_agent(agent_id)
 
     def _evict_agent(self, agent_id: str) -> None:
-        logger.warning("[health] Evicting dead agent: %s", agent_id)
+        logger.warning("[health] Evicting dead 代理: %s", agent_id)
         if self.comm_bus is not None:
             try:
                 self.comm_bus.unregister_agent(agent_id)
@@ -253,7 +253,7 @@ class AgentHealthMonitor:
                 return
             record.restart_count += 1
 
-        logger.info("[health] Attempting restart #%d for agent: %s", record.restart_count, agent_id)
+        logger.info("[health] Attempting restart #%d 用于代理: %s", record.restart_count, agent_id)
         role = record.role if record else ""
         try:
             success = self._restart_callback(agent_id, role)

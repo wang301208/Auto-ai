@@ -61,7 +61,7 @@ class AgentBlueprint:
 
 
 def load_blueprints(directory: str | Path) -> list[AgentBlueprint]:
-    """Load all ``*.yaml`` blueprints from a directory (non-recursive)."""
+    """从目录加载所有``*.yaml``蓝图（非递归）。"""
     dir_path = Path(directory)
     blueprints: list[AgentBlueprint] = []
     for yaml_file in sorted(dir_path.glob("*.yaml")):
@@ -81,7 +81,7 @@ def instantiate_agent(blueprint: AgentBlueprint, *ctor_args: Any, **ctor_kwargs:
     """
 
     agent_cls = blueprint.resolve_class()
-    # Prefer classmethod 'from_blueprint' if present
+    # Prefer classmethod 'from_蓝图' 如果present
     factory = getattr(agent_cls, "from_blueprint", None)
     if callable(factory):
         return factory(blueprint=blueprint, *ctor_args, **ctor_kwargs)  # type: ignore[misc]
@@ -89,7 +89,7 @@ def instantiate_agent(blueprint: AgentBlueprint, *ctor_args: Any, **ctor_kwargs:
     try:
         return agent_cls(*ctor_args, **ctor_kwargs)
     except TypeError:
-        # As a last resort try calling without positional args
+        # As 一个last resort try calling 无positional args
         return agent_cls(**ctor_kwargs)
 
 

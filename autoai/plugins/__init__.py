@@ -1,4 +1,4 @@
-"""Handles loading of plugins."""
+"""处理插件加载。"""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ except ImportError:
     )
 
     class AutoAIPluginTemplate:  # type: ignore
-        """Fallback plugin base class when template is unavailable."""
+        """模板不可用时的回退插件基类。"""
 
         pass
 
@@ -56,7 +56,7 @@ from autoai.models.command_registry import CommandRegistry
 def _write_plugin_registry(
     plugins: list[AutoAIPluginTemplate], config: "Config"
 ) -> None:
-    """Write information about loaded plugins to ``PLUGIN_REGISTRY_FILE``."""
+    """将已加载插件的信息写入``PLUGIN_REGISTRY_FILE``。"""
     registry: list[dict] = []
     loaded_names = set()
 
@@ -86,18 +86,18 @@ def _write_plugin_registry(
         with open(PLUGIN_REGISTRY_FILE, "w", encoding="utf-8") as f:
             json.dump(registry, f, indent=2)
     except Exception as e:  # pragma: no cover - ignore file write errors
-        logger.error(f"Failed to write plugin registry: {e}")
+        logger.error(f"Failed 到write plug在registry: {e}")
 
 
 def load_plugin_commands(command_registry: "CommandRegistry") -> None:
-    """Register placeholder commands for enabled plugins from the registry."""
+    """从注册表为启用的插件注册占位符命令。"""
     if not PLUGIN_REGISTRY_FILE.is_file():
         return
     try:
         with open(PLUGIN_REGISTRY_FILE, "r", encoding="utf-8") as f:
             data = json.load(f)
     except Exception as e:  # pragma: no cover - ignore read errors
-        logger.error(f"Failed to read plugin registry: {e}")
+        logger.error(f"Failed 到read plug在registry: {e}")
         return
 
     from autoai.models.command import Command
@@ -138,10 +138,10 @@ def inspect_zip_for_modules(zip_path: str, debug: bool = False) -> list[str]:
     with zipfile.ZipFile(zip_path, "r") as zfile:
         for name in zfile.namelist():
             if name.endswith("__init__.py") and not name.startswith("__MACOSX"):
-                logger.debug(f"Found module '{name}' in the zipfile at: {name}")
+                logger.debug(f"发现 module '{name}' in the zipfile at: {name}")
                 result.append(name)
     if len(result) == 0:
-        logger.debug(f"Module '__init__.py' not found in the zipfile @ {zip_path}.")
+        logger.debug(f"模块 '__init__.py' 非found 在zip文件 @ {zip_路径}.")
     return result
 
 
@@ -194,7 +194,7 @@ def fetch_openai_plugins_manifest_and_spec(config: Config) -> dict:
             except requests.exceptions.RequestException as e:
                 logger.warn(f"Error while requesting manifest from {url}: {e}")
         else:
-            logger.info(f"Manifest for {url} already exists")
+            logger.info(f"Manifest 用于{URL} 已经exists")
             manifest = json.load(open(f"{openai_plugin_client_dir}/ai-plugin.json"))
         if not os.path.exists(f"{openai_plugin_client_dir}/openapi.json"):
             openapi_spec = openapi_python_client._get_document(
@@ -204,7 +204,7 @@ def fetch_openai_plugins_manifest_and_spec(config: Config) -> dict:
                 openapi_spec, f"{openai_plugin_client_dir}/openapi.json"
             )
         else:
-            logger.info(f"OpenAPI spec for {url} already exists")
+            logger.info(f"打开API spec 用于{URL} 已经exists")
             openapi_spec = json.load(open(f"{openai_plugin_client_dir}/openapi.json"))
         manifests[url] = {"manifest": manifest, "openapi_spec": openapi_spec}
     return manifests
@@ -221,13 +221,13 @@ def create_directory_if_not_exists(directory_path: str) -> bool:
     if not os.path.exists(directory_path):
         try:
             os.makedirs(directory_path)
-            logger.debug(f"Created directory: {directory_path}")
+            logger.debug(f"已创建目录： {directory_path}")
             return True
         except OSError as e:
             logger.warn(f"Error creating directory {directory_path}: {e}")
             return False
     else:
-        logger.info(f"Directory {directory_path} already exists")
+        logger.info(f"Directory {目录_路径} 已经exists")
         return True
 
 
@@ -235,14 +235,14 @@ def initialize_openai_plugins(
     manifests_specs: dict, config: Config, debug: bool = False
 ) -> dict:
     """
-    Initialize OpenAI plugins.
-    Args:
-        manifests_specs (dict): per url dictionary of manifest and spec.
-        config (Config): Config instance including plugins config
-        debug (bool, optional): Enable debug logging. Defaults to False.
-    Returns:
-        dict: per url dictionary of manifest, spec and client.
-    """
+        Initialize OpenAI plugins.
+        Args:
+            manifests_specs (dict): per url dictionary of manifest and spec.
+            config (Config): Config 实例 including plugins config
+            debug (bool, optional): Enable debug logging. Defaults to False.
+        Returns:
+            dict: per url dictionary of manifest, spec and client.
+"""
     openai_plugins_dir = f"{config.plugins_dir}/openai"
     if create_directory_if_not_exists(openai_plugins_dir):
         for url, manifest_spec in manifests_specs.items():
@@ -289,15 +289,15 @@ def instantiate_openai_plugin_clients(
     manifests_specs_clients: dict, config: Config, debug: bool = False
 ) -> dict:
     """
-    Instantiates BaseOpenAIPlugin instances for each OpenAI plugin.
-    Args:
-        manifests_specs_clients (dict): per url dictionary of manifest, spec and client.
-        config (Config): Config instance including plugins config
-        debug (bool, optional): Enable debug logging. Defaults to False.
-    Returns:
-          plugins (dict): per url dictionary of BaseOpenAIPlugin instances.
+        Instantiates BaseOpenAIPlugin 实例s for each OpenAI plugin.
+        Args:
+            manifests_specs_clients (dict): per url dictionary of manifest, spec and client.
+            config (Config): Config 实例 including plugins config
+            debug (bool, optional): Enable debug logging. Defaults to False.
+        Returns:
+              plugins (dict): per url dictionary of BaseOpenAIPlugin 实例s.
 
-    """
+"""
     plugins = {}
     for url, manifest_spec_client in manifests_specs_clients.items():
         plugins[url] = BaseOpenAIPlugin(manifest_spec_client)
@@ -307,20 +307,20 @@ def instantiate_openai_plugin_clients(
 def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTemplate]:
     """Scan the plugins directory for plugins and loads them.
 
-    Args:
-        config (Config): Config instance including plugins config
-        debug (bool, optional): Enable debug logging. Defaults to False.
+        Args:
+            config (Config): Config 实例 including plugins config
+            debug (bool, optional): Enable debug logging. Defaults to False.
 
-    Returns:
-        List[Tuple[str, Path]]: List of plugins.
-    """
+        Returns:
+            List[Tuple[str, Path]]: List of plugins.
+"""
     loaded_plugins = []
     plugin_registry.clear()
     # Generic plugins
     plugins_path = Path(config.plugins_dir)
 
     plugins_config = config.plugins_config
-    # Directory-based plugins
+    # Directory-基d plugins
     for plugin_path in [f.path for f in os.scandir(config.plugins_dir) if f.is_dir()]:
         # Avoid going into __pycache__ or other 隐藏 directories
         if plugin_path.startswith("__"):
@@ -333,7 +333,7 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTempla
         try:
             __import__(qualified_module_name)
         except:
-            logger.error(f"Failed to load {qualified_module_name}")
+            logger.error(f"Failed 到load {qualified_module_名称}")
             continue
         plugin = sys.modules[qualified_module_name]
 
@@ -352,17 +352,17 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTempla
                 loaded_plugins.append(instance)
                 plugin_registry[plugin_path] = instance
 
-    # Zip-based plugins
+    # Zip-基d plugins
     for plugin_path in plugins_path.glob("*.zip"):
         if module_list := inspect_zip_for_modules(str(plugin_path), debug):
             for module_name in module_list:
                 module_path = Path(module_name)
-                logger.debug(f"Zipped Plugin: {plugin_path}, Module: {module_path}")
+                logger.debug(f"Zipped Plugin: {plugin_路径}, 模块: {module_路径}")
                 zipped_package = zipimporter(str(plugin_path))
                 try:
                     zipped_module = zipped_package.load_module(str(module_path.parent))
                 except Exception:
-                    logger.error(f"Failed to load {str(module_path.parent)}")
+                    logger.error(f"Failed 到load {str(module_路径.parent)}")
 
                 for key in dir(zipped_module):
                     if key.startswith("__"):
@@ -404,7 +404,7 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTempla
                                 f"Skipping '{module_name}' because it doesn't subclass AutoAIPluginTemplate."
                             )
 
-    # OpenAI plugins
+    # 打开AI plugins
     if config.plugins_openai:
         manifests_specs = fetch_openai_plugins_manifest_and_spec(config)
         if manifests_specs.keys():
@@ -425,7 +425,7 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTempla
     if loaded_plugins:
         logger.info(f"\nPlugins found: {len(loaded_plugins)}\n" "---------------------")
     for plugin in loaded_plugins:
-        logger.info(f"{plugin._name}: {plugin._version} - {plugin._description}")
+        logger.info(f"{plugin._名称}: {plugin._version} - {plugin._description}")
     _write_plugin_registry(loaded_plugins, config)
     return loaded_plugins
 
@@ -433,12 +433,12 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTempla
 def reload_plugin(path: str) -> AutoAIPluginTemplate | None:
     """Reload an already loaded plugin.
 
-    Args:
-        path: The path or URL identifying the plugin to reload.
+        Args:
+            path: The path or URL identifying the plugin to reload.
 
-    Returns:
-        The reloaded plugin instance or ``None`` if reloading failed.
-    """
+        Returns:
+            The reloaded plugin 实例 or ``None`` if reloading failed.
+"""
     plugin = plugin_registry.get(path)
     if not plugin:
         logger.warn(f"Plugin {path} is not loaded")
@@ -446,7 +446,7 @@ def reload_plugin(path: str) -> AutoAIPluginTemplate | None:
 
     module = inspect.getmodule(plugin)
     if module is None:
-        logger.error(f"Could not find module for plugin {path}")
+        logger.error(f"无法找到插件模块 {path}")
         return None
 
     try:
@@ -460,5 +460,5 @@ def reload_plugin(path: str) -> AutoAIPluginTemplate | None:
             f"Failed to locate plugin class {plugin.__class__.__name__} in reloaded module"
         )
     except Exception as e:
-        logger.error(f"Failed to reload plugin {path}: {e}")
+        logger.error(f"Failed 到reload plug在{路径}: {e}")
     return None

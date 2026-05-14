@@ -1,4 +1,4 @@
-"""Handles loading of plugins."""
+"""处理插件加载。"""
 
 import warnings
 from typing import Any, Dict, List, Optional, Tuple, TypedDict, TypeVar
@@ -13,7 +13,7 @@ except ImportError:
     )
 
     class AutoAIPluginTemplate:  # type: ignore
-        """Fallback plugin base class when template is unavailable."""
+        """模板不可用时的回退插件基类。"""
 
         pass
 
@@ -27,9 +27,7 @@ class Message(TypedDict):
 
 
 class BaseOpenAIPlugin(AutoAIPluginTemplate):
-    """
-    This is a BaseOpenAIPlugin class for generating Auto-AI plugins.
-    """
+    """这是用于生成Auto-AI插件的BaseOpenAIPlugin类。"""
 
     def __init__(self, manifests_specs_clients: dict):
         # super().__init__()
@@ -48,7 +46,7 @@ class BaseOpenAIPlugin(AutoAIPluginTemplate):
         return False
 
     def on_response(self, response: str, *args, **kwargs) -> str:
-        """This method is called when a response is received from the model."""
+        """当收到模型响应时调用此方法。"""
         return response
 
     def can_handle_post_prompt(self) -> bool:

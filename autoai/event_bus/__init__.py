@@ -35,7 +35,7 @@ from .message_types import (
 
 
 class EventBus:
-    """Simple event bus storing events in a SQLite table."""
+    """在SQLite表中存储事件的简单事件总线。"""
 
     def __init__(self, db_path: Path | str) -> None:
         self.db_path = Path(db_path)
@@ -58,7 +58,7 @@ class EventBus:
         self.connection.commit()
 
     def emit(self, event: EventMessage) -> None:
-        """Record a new event."""
+        """记录新事件。"""
         payload = event.payload
         if payload is None:
             payload = json.dumps({})
@@ -72,7 +72,7 @@ class EventBus:
         self.connection.commit()
 
     def get_events(self, limit: int | None = None) -> Iterable[EventMessage]:
-        """Yield events from the bus."""
+        """从总线产出事件。"""
         cur = self.connection.cursor()
         query = "SELECT timestamp, event_type, payload, source_agent FROM events ORDER BY id"
         rows = cur.execute(

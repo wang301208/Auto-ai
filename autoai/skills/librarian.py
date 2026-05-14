@@ -19,7 +19,7 @@ from .library import SkillLibrary, SkillMetadata
 
 
 class LibrarianAgent:
-    """High level interface for managing the skill library."""
+    """管理技能库的高级接口."""
 
     def __init__(self, config: Config | None = None) -> None:
         self.config = config or Config()
@@ -32,18 +32,18 @@ class LibrarianAgent:
                 storage,
             )
         # 缓存 搜索 results to avoid redundant 库 queries for repeated
-        # requests. This keeps ``find_skill`` simple and synchronous while
-        # still improving performance for common lookups.
+        # requests. This keeps ``find_skill`` simple and 同步hronous while
+        # 仍然improving performance 用于comm在lookups.
         self._search_cache: Dict[Tuple[str, int], List[dict]] = {}
         self._plugin_cache: Dict[Tuple[str, int], List[str]] = {}
 
     # ------------------------------------------------------------------
     def find_skill(self, query: str, top_k: int = 3) -> List[dict]:
-        """Search for skills matching ``query`` and return their metadata.
+        """Search for skills 匹配 ``query`` and return their metadata.
 
-        Results are cached by ``query``/``top_k`` combination so repeated
-        invocations avoid hitting the underlying :class:`SkillLibrary`.
-        """
+                Results are cached by ``query``/``top_k`` combination so repeated
+                invocations avoid hitting the underlying :class:`SkillLibrary`.
+"""
 
         cache_key = (query, top_k)
         if cache_key in self._search_cache:
@@ -90,7 +90,7 @@ class LibrarianAgent:
 
     # ------------------------------------------------------------------
     def find_plugin(self, query: str, top_k: int = 3) -> List[str]:
-        """Search for plugins matching ``query`` and return their identifiers."""
+        """Search for plugins 匹配 ``query`` 并返回其标识符."""
 
         cache_key = (query, top_k)
         if cache_key in self._plugin_cache:
@@ -114,27 +114,27 @@ class LibrarianAgent:
         skill_code_path: str,
         repo_path: str | Path | None = None,
     ) -> bool:
-        """Add a new skill to the library.
+        """向库中添加新技能.
 
-        Parameters
-        ----------
-        skill_metadata: dict
-            Metadata describing the skill. Must conform to :class:`SkillMetadata`.
-        skill_code_path: str
-            Path to the Python file containing the skill's code.
-        repo_path: str | None
-            Path to the git repository where the skill should be committed.
-        """
+                Parameters
+                ----------
+                skill_metadata: dict
+                    Metadata describing the skill. Must conform to :class:`SkillMetadata`.
+                skill_code_path: str
+                    Path to the Python file containing the skill's code.
+                repo_path: str | None
+                    Path to the git repository where the skill should be committed.
+"""
 
         try:
             metadata = SkillMetadata(**skill_metadata)
         except TypeError as err:
-            logger.error(f"Invalid skill metadata: {err}")
-            raise ValueError("Invalid skill metadata") from err
+            logger.error(f"无效的技能元数据: {err}")
+            raise ValueError("无效的技能元数据") from err
 
         source = Path(skill_code_path)
         if not source.is_file():
-            logger.error(f"Skill code path is not a file: {source}")
+            logger.error(f"Skill 代码 路径 is 非一个文件: {source}")
             raise FileNotFoundError(f"Skill code path is not a file: {source}")
 
         # 复制 the code into the 技能 库 directory
@@ -172,7 +172,7 @@ class LibrarianAgent:
             )
             return True
         except Exception as err:
-            logger.error(f"Failed to register skill {metadata.skill_name}: {err}")
+            logger.error(f"Failed 到register skill {metadata.skill_名称}: {err}")
             raise RuntimeError(
                 f"Failed to register skill {metadata.skill_name}"
             ) from err
@@ -181,15 +181,15 @@ class LibrarianAgent:
     def get_source_code_path(
         self, plugin_name: str, requester: str | None = None
     ) -> str | None:
-        """Return the local source path for a plugin if access is allowed.
+        """如果允许访问则返回插件的本地源路径.
 
-        Parameters
-        ----------
-        plugin_name: str
-            Name of the plugin whose source path is requested.
-        requester: str | None
-            Name of the agent requesting access, used for audit logging.
-        """
+                Parameters
+                ----------
+                plugin_name: str
+                    Name of the plugin whose source path is requested.
+                requester: str | None
+                    Name of the agent requesting access, used for audit logging.
+"""
 
         plugins_dir = Path(self.skill_library.config.plugins_dir)
         for meta_file in plugins_dir.rglob("*.json"):

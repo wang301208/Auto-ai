@@ -104,7 +104,7 @@ class FullEvolutionLoop:
         return self._last_result
 
     async def run_cycle(self) -> EvolutionCycleResult:
-        """Execute one full self-evolution cycle."""
+        """执行一个完整的自我演化周期。"""
         import uuid
         result = EvolutionCycleResult(
             cycle_id=uuid.uuid4().hex[:12],

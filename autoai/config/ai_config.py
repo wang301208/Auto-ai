@@ -1,4 +1,4 @@
-"""A module that contains the AIConfig class object that contains the configuration"""
+"""包含AIConfig配置类对象的模块"""
 from __future__ import annotations
 
 import platform
@@ -38,16 +38,16 @@ class AIConfig:
         step_sequence: list[str] | None = None,
     ) -> None:
         """
-        Initialize a class instance
+                Initialize a class 实例
 
-        Parameters:
-            ai_name (str): The name of the AI.
-            ai_role (str): The description of the AI's role.
-            ai_goals (list): The list of objectives the AI is supposed to complete.
-            api_budget (float): The maximum dollar value for API calls (0.0 means infinite)
-        Returns:
-            None
-        """
+                Parameters:
+                    ai_name (str): The name of the AI.
+                    ai_role (str): The description of the AI's role.
+                    ai_goals (list): The list of objectives the AI is supposed to complete.
+                    api_budget (float): The maximum dollar value for API calls (0.0 means infinite)
+                Returns:
+                    None
+"""
         self.ai_name = ai_name
         self.ai_role = ai_role
         self.ai_goals = ai_goals
@@ -62,15 +62,15 @@ class AIConfig:
     @staticmethod
     def load(ai_settings_file: str | Path) -> "AIConfig":
         """
-        Returns class object with parameters (ai_name, ai_role, ai_goals, api_budget)
-        loaded from yaml file if yaml file exists, else returns class with no parameters.
+                Returns class object with parameters (ai_name, ai_role, ai_goals, api_budget)
+                loaded from yaml file if yaml file exists, else returns class with no parameters.
 
-        Parameters:
-            ai_settings_file (Path): The path to the config yaml file.
+                Parameters:
+                    ai_settings_file (Path): The path to the config yaml file.
 
-        Returns:
-            cls (object): An instance of given cls object
-        """
+                Returns:
+                    cls (object): An 实例 of given cls object
+"""
 
         try:
             with open(ai_settings_file, encoding="utf-8") as file:

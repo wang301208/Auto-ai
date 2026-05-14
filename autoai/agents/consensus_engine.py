@@ -85,7 +85,7 @@ class ConsensusResult:
 
 
 class ConsensusEngine:
-    """Blockchain-inspired consensus for multi-agent decisions.
+    """Blockchain-inspired 共识 for multi-代理 decisions.
 
     Usage:
         engine = ConsensusEngine()

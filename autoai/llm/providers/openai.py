@@ -17,7 +17,7 @@ from openai import (
 
 try:
     from openai import ServiceUnavailableError
-except ImportError:  # openai>=1 does not expose this error
+except ImportError:  # openai>=1 does 非expose 此error
     from openai import InternalServerError as ServiceUnavailableError
 
 from autoai.utils.ansi_colors import Fore, Style
@@ -129,7 +129,7 @@ OPEN_AI_MODELS: dict[str, ChatModelInfo | EmbeddingModelInfo | TextModelInfo] = 
 
 
 def _get_client(credentials: dict[str, str]) -> OpenAI | AzureOpenAI:
-    """Return a synchronous OpenAI client initialized with the given credentials."""
+    """返回使用给定凭据初始化的同步OpenAI客户端。"""
     creds = credentials.copy()
     api_type = creds.pop("api_type", None)
     api_key = creds.pop("api_key", None)
@@ -145,7 +145,7 @@ def _get_client(credentials: dict[str, str]) -> OpenAI | AzureOpenAI:
 
 
 def _get_async_client(credentials: dict[str, str]) -> AsyncOpenAI | AsyncAzureOpenAI:
-    """Return an asynchronous OpenAI client initialized with the given credentials."""
+    """返回使用给定凭据初始化的异步OpenAI客户端。"""
     creds = credentials.copy()
     api_type = creds.pop("api_type", None)
     api_key = creds.pop("api_key", None)
@@ -161,7 +161,7 @@ def _get_async_client(credentials: dict[str, str]) -> AsyncOpenAI | AsyncAzureOp
 
 
 def meter_api(func: Callable):
-    """Adds ApiManager metering to functions which make OpenAI API calls"""
+    """为进行OpenAI API调用的函数添加ApiManager计量"""
     from autoai.llm.api_manager import ApiManager
 
     api_manager = ApiManager()
@@ -170,7 +170,7 @@ def meter_api(func: Callable):
         response = func(*args, **kwargs)
         try:
             usage = response.usage
-            logger.debug(f"Reported usage from call to model {response.model}: {usage}")
+            logger.debug(f"Re端口ed usage 从c所有到模型 {response.模型}: {usage}")
             api_manager.update_cost(
                 usage.prompt_tokens,
                 getattr(usage, "completion_tokens", 0),
@@ -214,7 +214,7 @@ def retry_api(
         @functools.wraps(func)
         def _wrapped(*args, **kwargs):
             user_warned = not warn_user
-            max_attempts = max_retries + 1  # +1 for the first attempt
+            max_attempts = max_retries + 1  # +1 用于首次尝试
             for attempt in range(1, max_attempts + 1):
                 try:
                     return func(*args, **kwargs)
@@ -232,9 +232,9 @@ def retry_api(
                     logger.warn(error_msg)
                     if not user_warned:
                         logger.double_check(api_key_error_msg)
-                        logger.debug(f"Status: {e.http_status}")
-                        logger.debug(f"Response body: {e.json_body}")
-                        logger.debug(f"Response headers: {e.headers}")
+                        logger.debug(f"状态: {e.http_status}")
+                        logger.debug(f"响应 body: {e.json_body}")
+                        logger.debug(f"响应 headers: {e.headers}")
                         user_warned = True
 
                 except (APIError, APITimeoutError) as e:
@@ -286,7 +286,7 @@ def create_chat_completion(
         **kwargs,
     )
     if not hasattr(completion, "error"):
-        logger.debug(f"Response: {completion}")
+        logger.debug(f"响应: {completion}")
     return completion
 
 
@@ -371,7 +371,7 @@ class OpenAIFunctionCall:
 
 @dataclass
 class OpenAIFunctionSpec:
-    """Represents a "function" in OpenAI, which is mapped to a Command in Auto-AI"""
+    """表示OpenAI中的"function"，映射到Auto-AI中的Command"""
 
     name: str
     description: str
@@ -390,7 +390,7 @@ class OpenAIFunctionSpec:
 
     @property
     def schema(self) -> dict[str, str | dict | list]:
-        """Returns an OpenAI-consumable function specification"""
+        """返回OpenAI可消费的函数规格"""
         return {
             "name": self.name,
             "description": self.description,

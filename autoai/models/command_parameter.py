@@ -3,7 +3,7 @@ import enum
 
 
 class ParameterType(str, enum.Enum):
-    """Enumeration of allowed parameter types for commands."""
+    """命令允许的参数类型枚举。"""
 
     STRING = "string"
     NUMBER = "number"

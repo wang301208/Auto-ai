@@ -19,7 +19,7 @@ class SystemConfiguration(BaseModel):
 
 
 class SystemSettings(BaseModel):
-    """A base class for all system settings."""
+    """所有系统设置的基类."""
 
     name: str
     description: str
@@ -33,7 +33,7 @@ S = TypeVar("S", bound=SystemSettings)
 
 
 class Configurable(abc.ABC, Generic[S]):
-    """A base class for all configurable objects."""
+    """所有可配置对象的基类."""
 
     prefix: str = ""
     default_settings: typing.ClassVar[S]
@@ -44,7 +44,7 @@ class Configurable(abc.ABC, Generic[S]):
 
     @classmethod
     def build_agent_configuration(cls, configuration: dict) -> S:
-        """Process the configuration for this object."""
+        """处理此对象的配置."""
 
         defaults = cls.default_settings.dict()
         final_configuration = deep_update(defaults, configuration)
@@ -54,14 +54,14 @@ class Configurable(abc.ABC, Generic[S]):
 
 def _get_user_config_fields(instance: BaseModel) -> dict[str, Any]:
     """
-    Get the user config fields of a Pydantic model instance.
+        获取用户配置字段 of a Pydantic model 实例.
 
-    Args:
-        instance: The Pydantic model instance.
+        Args:
+            instance: The Pydantic model 实例.
 
-    Returns:
-        The user config fields of the instance.
-    """
+        Returns:
+            The user config fields of the 实例.
+"""
     user_config_fields = {}
 
     for name, value in instance.__dict__.items():
@@ -86,15 +86,15 @@ def _get_user_config_fields(instance: BaseModel) -> dict[str, Any]:
 
 def deep_update(original_dict: dict, update_dict: dict) -> dict:
     """
-    Recursively update a dictionary.
+        递归更新字典.
 
-    Args:
-        original_dict (dict): The dictionary to be updated.
-        update_dict (dict): The dictionary to update with.
+        Args:
+            original_dict (dict): 要更新的字典.
+            update_dict (dict): 用于更新的字典.
 
-    Returns:
-        dict: The updated dictionary.
-    """
+        Returns:
+            dict: 更新后的字典.
+"""
     for key, value in update_dict.items():
         if (
             key in original_dict

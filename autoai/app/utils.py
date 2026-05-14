@@ -64,7 +64,7 @@ def clean_input(config: Config, prompt: str = "", talk: bool = False) -> str:
 
         # handle_sigint must be 集合 to False, so the 信号 处理器 in the
         # autoai/main.py could be employed properly. This referes to
-        # https://github.com/Significant-Gravitas/Auto-AI/pull/4799/files/3966cdfd694c2a80c0333823c3bc3da090f85ed3#r1264278776
+        # https://github.com/Significant-Gravitas/Auto-AI/pull/4799/文件s/3966cdfd694c2a80c0333823c3bc3da090f85ed3#r1264278776
         answer = session.prompt(ANSI(prompt), handle_sigint=False) if _HAS_PROMPT_TOOLKIT else input(prompt)
         return answer
     except KeyboardInterrupt:
@@ -140,10 +140,10 @@ def get_legal_warning() -> str:
 ## 简介
 AutoAI (the "System") is a project that connects a GPT-like artificial intelligence system to the internet and allows it to automate tasks. While the System is designed to be useful and efficient, there may be instances where the System could perform actions that may cause harm or have unintended consequences.
 
-## No Liability for Actions of the System
+# # No Liability 用于Actions 的System
 The developers, contributors, and maintainers of the AutoAI project (collectively, the "Project Parties") make no warranties or representations, express or implied, about the System's performance, accuracy, reliability, or safety. By using the System, you understand and agree that the Project Parties shall not be liable for any actions taken by the System or any consequences resulting from such actions.
 
-## User Responsibility and Respondeat Superior Liability
+# # User Responsibility 和Responde在超i或Liability
 As a user of the System, you are responsible for supervising and monitoring the actions of the System while it is operating on your
 behalf. You acknowledge that using the System could expose you to potential liability including but not limited to respondeat superior and you agree to assume all risks and liabilities associated with such potential liability.
 

@@ -3,7 +3,7 @@ import logging
 
 def get_client_logger():
     # 配置 logging before we do anything else.
-    # Application logs need a place to live.
+    # Applicati在logs need 一个place 到live.
     client_logger = logging.getLogger("autoai_client_application")
     client_logger.setLevel(logging.DEBUG)
 

@@ -9,7 +9,7 @@ from autoai.memory.vector import MemoryItem, VectorMemory
 
 @dataclass
 class LongTermMemory:
-    """Manage long-term vector memories separate from MessageHistory."""
+    """管理与MessageHistory分离的长期向量记忆。"""
 
     provider: VectorMemory
     config: Config
@@ -17,21 +17,21 @@ class LongTermMemory:
     threshold: int = 10
 
     def add(self, text: str) -> None:
-        """Add a piece of text to long-term memory."""
+        """将一段文本添加到长期记忆。"""
         if not self.enabled:
             return
         item = MemoryItem.from_text(text, "agent_history", self.config)
         self.provider.add(item)
 
     def search(self, query: str, k: int = 5) -> list[str]:
-        """Search long-term memory for relevant items."""
+        """在长期记忆中搜索相关项。"""
         if not self.enabled:
             return []
         results = self.provider.get_relevant(query, k, self.config)
         return [r.memory_item.summary for r in results]
 
     def maybe_transfer(self, history: MessageHistory) -> None:
-        """Move short-term summary into long-term memory when threshold exceeded."""
+        """超过阈值时将短期摘要移入长期记忆。"""
         if not self.enabled:
             return
         if len(history) >= self.threshold:

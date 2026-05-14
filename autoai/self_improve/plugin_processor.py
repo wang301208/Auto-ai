@@ -1,4 +1,4 @@
-"""Utilities to process plugin TODO items and apply patches."""
+"""处理插件TODO项并应用补丁的工具."""
 
 from __future__ import annotations
 
@@ -13,16 +13,16 @@ from .yaml_exporter import export_prompt_config
 
 
 def generate_diff(context: str) -> str:
-    """Generate a unified diff for ``context`` using an LLM.
+    """为...生成统一差异 ``context`` 使用LLM.
 
-    ``context`` should outline the desired code modifications, including file
-    paths relative to the project root.  The LLM is prompted to respond with a
-    unified diff.  Any leading ``a/`` or ``b/`` prefixes are stripped so the
-    diff can be applied with ``patch -p0``.
-    """
+        ``context`` should outline the desired code modifications, including file
+        paths relative to the project root.  The LLM is prompted to respond with a
+        unified diff.  Any leading ``a/`` or ``b/`` prefixes are stripped so the
+        diff can be applied with ``patch -p0``.
+"""
 
     # 导入 lazily so heavy LLM dependencies are only loaded when required and
-    # can easily be monkeypatched in tests.
+    # c一个easily be mon键patched 在tests.
     from autoai.config import Config
     from autoai.llm.base import ChatSequence, Message
     from autoai.llm.utils import create_chat_completion
@@ -74,7 +74,7 @@ def generate_diff(context: str) -> str:
 
 
 def _files_from_diff(diff: str, workspace: Path) -> List[Path]:
-    """Extract file paths from a unified diff string."""
+    """从统一差异字符串中提取文件路径."""
 
     files: List[Path] = []
     for line in diff.splitlines():
@@ -96,7 +96,7 @@ def handle_plugin_todo(
     db: DatabaseManager,
     workspace: Path,
 ) -> None:
-    """Process a single plugin TODO item."""
+    """处理单个插件TODO项."""
 
     try:
         diff = generate_diff(todo.context)
@@ -116,7 +116,7 @@ def start_plugin_queue_processor(
     workspace: Path,
     interval: float = 60.0,
 ) -> tuple[Thread, Event]:
-    """Start background thread to consume plugin TODO queue."""
+    """启动后台线程消费插件TODO队列."""
 
     stop_event = Event()
 

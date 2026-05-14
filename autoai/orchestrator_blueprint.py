@@ -97,7 +97,7 @@ class BlueprintOrchestrator:
             # Instantiate the 代理 based on blueprint. We pass minimal args and
             # expect the 代理 class to 接受 消息 队列 / 事件 bus / config.
             agent = instantiate_agent(
-                blueprint,
+                蓝图,
                 # Prefer dual_ring_ai genesis 代理 signature (event_bus, librarian?, config)
                 # If class signature differs, users can adapt 包装器 classes.
                 self.event_bus,  # type: ignore[arg-type]

@@ -9,23 +9,23 @@ from autoai.core.planning.schema import (
 # class Planner(abc.ABC):
 #     """Manages the 代理's planning and 目标-setting by constructing language 模型 prompts."""
 #
-#     @staticmethod
-#     @abc.abstractmethod
+# @静态method
+# @abc.抽象method
 #     异步 def decide_name_and_goals(
-#         user_objective: str,
-#     ) -> LanguageModelResponse:
+# user_对象ive: str,
+# ) -> LanguageModel响应:
 #         """Decide the name and goals of an 代理 from a user-defined 目标.
 #
 #         Args:
 #             user_objective: The user-defined 目标 for the 代理.
 #
-#         Returns:
+# 返回:
 #             The 代理 name and goals as a 响应 from the language 模型.
 #
 #         """
 #         ...
 #
-#     @abc.abstractmethod
+# @abc.抽象method
 #     异步 def 计划(self, 上下文: PlanningContext) -> LanguageModelResponse:
 #         """计划 the next ability for the 代理.
 #
@@ -34,25 +34,25 @@ from autoai.core.planning.schema import (
 #                        进度, 结果, memories, and 反馈.
 #
 #
-#         Returns:
+# 返回:
 #             The next ability the 代理 should take along with thoughts and reasoning.
 #
 #         """
 #         ...
 #
-#     @abc.abstractmethod
+# @abc.抽象method
 #     def reflect(
 #         self,
 #         上下文: ReflectionContext,
-#     ) -> LanguageModelResponse:
-#         """Reflect on a planned ability and provide self-criticism.
+# ) -> LanguageModel响应:
+# """Reflect 在一个planned ability 和provide self-criticism.
 #
 #
 #         Args:
 #             上下文: A 上下文 object containing 信息rmation about the 代理's
 #                        reasoning, 计划, thoughts, and criticism.
 #
-#         Returns:
+# 返回:
 #             Self-criticism about the 代理's 计划.
 #
 #         """

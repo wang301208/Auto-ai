@@ -5,7 +5,7 @@ from pydantic import BaseModel
 
 
 class ContentType(str, enum.Enum):
-    # TBD what these actually are.
+    # 待定这些实际上是什么.
     TEXT = "text"
     CODE = "code"
 
@@ -17,7 +17,7 @@ class Knowledge(BaseModel):
 
 
 class AbilityResult(BaseModel):
-    """The AbilityResult is a standard response struct for an ability."""
+    """AbilityResult是技能的标准响应结构."""
 
     ability_name: str
     ability_args: dict[str, str]

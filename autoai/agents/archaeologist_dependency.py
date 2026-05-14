@@ -11,9 +11,9 @@ import requests
 
 
 def fetch_release_notes(package: str, version: str | None) -> str | None:
-    """Fetch release notes for ``package`` at ``version`` from PyPI.
+    """获取 释放 notes for ``包`` at ``version`` from PyPI.
 
-    ``version`` may be a not-yet-installed release that should be inspected
+    ``version`` may be a not-yet-installed 释放 that should be inspected
     for compatibility. If fetching fails, ``None`` is returned.
     """
 
@@ -31,9 +31,9 @@ def fetch_release_notes(package: str, version: str | None) -> str | None:
 
 
 def scan_for_usage(source: Path, package: str) -> Set[str]:
-    """Scan ``source`` for imports or API calls related to ``package``.
+    """扫描 ``源`` for imports or API calls related to ``包``.
 
-    Returns a set of fully qualified names used in the file.
+    Returns a 集合 of fully qualified names used in the file.
     """
 
     try:
@@ -70,7 +70,7 @@ def scan_for_usage(source: Path, package: str) -> Set[str]:
 def analyze_dependency(
     package: str, source: Path, new_version: str | None = None
 ) -> Dict[str, Any]:
-    """Analyze ``package`` usage within ``source`` and check release notes."""
+    """分析 ``包`` usage within ``源`` and 检查 释放 notes."""
 
     installed: str | None = None
     try:

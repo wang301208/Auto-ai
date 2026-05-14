@@ -32,7 +32,7 @@ from autoai.skills.librarian import LibrarianAgent
 logger = logging.getLogger(__name__)
 
 class QAAgent:
-    """Agent that verifies proposed fixes and merges them after approval."""
+    """验证提议修复并在批准后合并的代理。"""
 
     def __init__(
         self,
@@ -48,7 +48,7 @@ class QAAgent:
 
     # ------------------------------------------------------------------
     def _on_code_fix_proposed(self, event: CodeFixProposed) -> None:
-        """Handle a ``CODE_FIX_PROPOSED`` event."""
+        """处理``CODE_FIX_PROPOSED``事件。"""
 
         payload: dict[str, Any] | None = (
             event.payload if isinstance(event.payload, dict) else None
@@ -99,7 +99,7 @@ class QAAgent:
             )
 
     def _on_approval_granted(self, event: ApprovalGranted) -> None:
-        """Handle an ``APPROVAL_GRANTED`` event."""
+        """处理``APPROVAL_GRANTED``事件。"""
 
         payload: dict[str, Any] | None = (
             event.payload if isinstance(event.payload, dict) else None

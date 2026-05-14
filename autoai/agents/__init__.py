@@ -66,7 +66,7 @@ from .tdd_developer import TDDDeveloper
 
 __all__ = [
     "BaseAgent",
-    "Agent",
+    "代理",
     "AsyncAgent",
     "Ability",
     "AbilityRegistry",
@@ -175,7 +175,7 @@ __all__ = [
     "UnattendedRunner",
     "RunnerState",
     "HealthStatus",
-    "Heartbeat",
+    "心跳",
     "RunJournalEntry",
     "FullEvolutionLoop",
     "EvolutionCycleResult",

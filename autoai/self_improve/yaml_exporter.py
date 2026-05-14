@@ -8,10 +8,10 @@ import yaml
 
 
 def export_prompt_config(workspace: Path) -> None:
-    """Serialize current prompt settings to YAML in the population directory.
+    """将当前提示词设置序列化为YAML in the population directory.
 
-    The export is best-effort; failures are logged but do not raise.
-    """
+        The export is best-effort; failures are logged but do not raise.
+"""
     try:
         prompt_file = workspace / "prompt_settings.yaml"
         if not prompt_file.exists():

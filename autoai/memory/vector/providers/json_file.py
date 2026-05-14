@@ -16,7 +16,7 @@ from .base import VectorMemoryProvider
 
 
 class JSONFileMemory(VectorMemoryProvider):
-    """Memory backend that stores memories in a JSON file"""
+    """在JSON文件中存储记忆的记忆后端"""
 
     SAVE_OPTIONS = orjson.OPT_SERIALIZE_NUMPY | orjson.OPT_SERIALIZE_DATACLASS if orjson is not None else None
 
@@ -24,14 +24,14 @@ class JSONFileMemory(VectorMemoryProvider):
     memories: list[MemoryItem]
 
     def __init__(self, config: Config) -> None:
-        """Initialize a class instance
+        """Initialize a class 实例
 
-        Args:
-            config: Config object
+                Args:
+                    config: Config object
 
-        Returns:
-            None
-        """
+                Returns:
+                    None
+"""
         self.file_path = config.workspace_path / f"{config.memory_index}.json"
         self.file_path.touch()
         logger.debug(
@@ -41,7 +41,7 @@ class JSONFileMemory(VectorMemoryProvider):
         self.memories = []
         try:
             self.load_index()
-            logger.debug(f"Loaded {len(self.memories)} MemoryItems from file")
+            logger.debug(f"加载ed {len(self.memories)} Memory项s 从文件")
         except Exception as e:
             logger.warn(f"Could not load MemoryItems from file: {e}")
             self.save_index()
@@ -57,7 +57,7 @@ class JSONFileMemory(VectorMemoryProvider):
 
     def add(self, item: MemoryItem):
         self.memories.append(item)
-        logger.debug(f"Adding item to memory: {item.dump()}")
+        logger.debug(f"将项添加到记忆: {item.dump()}")
         self.save_index()
         return len(self.memories)
 
@@ -68,23 +68,23 @@ class JSONFileMemory(VectorMemoryProvider):
             pass
 
     def clear(self):
-        """Clears the data in memory."""
+        """清除记忆中的数据。"""
         self.memories.clear()
         self.save_index()
 
     def load_index(self):
-        """Loads all memories from the index file"""
+        """从索引文件加载所有记忆"""
         if not self.file_path.is_file():
-            logger.debug(f"Index file '{self.file_path}' does not exist")
+            logger.debug(f"Index 文件 '{self.文件_路径}' does 非exist")
             return
         with self.file_path.open("r") as f:
-            logger.debug(f"Loading memories from index file '{self.file_path}'")
+            logger.debug(f"加载ing memories 从索引 文件 '{self.文件_路径}'")
             json_index = orjson.loads(f.read()) if orjson is not None else []
             for memory_item_dict in json_index:
                 self.memories.append(MemoryItem(**memory_item_dict))
 
     def save_index(self):
-        logger.debug(f"Saving memory index to file {self.file_path}")
+        logger.debug(f"Saving memory 索引 到文件 {self.文件_路径}")
         with self.file_path.open("wb") as f:
             if orjson is not None:
                 return f.write(orjson.dumps(self.memories, option=self.SAVE_OPTIONS))

@@ -20,7 +20,7 @@ from autoai.logs import logger
 
 
 class Workspace:
-    """A class that represents a workspace for an AutoAI agent."""
+    """表示AutoAI代理工作区的类。"""
 
     NULL_BYTES = ["\0", "\000", "\x00", "\u0000"]
 
@@ -30,12 +30,12 @@ class Workspace:
 
     @property
     def root(self) -> Path:
-        """The root directory of the workspace."""
+        """工作区的根目录。"""
         return self._root
 
     @property
     def restrict_to_workspace(self) -> bool:
-        """Whether to restrict generated paths to the workspace."""
+        """是否将生成的路径限制在工作区内。"""
         return self._restrict_to_workspace
 
     @classmethod
@@ -135,21 +135,21 @@ class Workspace:
 
         """
 
-        # Posix systems disallow null bytes in paths. Windows is agnostic about it.
+        # Posix systems disallow null 字节s 在路径s. Windows is agnostic 关于it.
         # Do an explicit 检查 here for all sorts of null byte representations.
 
         for null_byte in Workspace.NULL_BYTES:
             if null_byte in str(relative_path) or null_byte in str(root):
-                raise ValueError("embedded null byte")
+                raise ValueError("嵌入的空字节")
 
         if root is None:
             return Path(relative_path).resolve()
 
-        logger.debug(f"Resolving path '{relative_path}' in workspace '{root}'")
+        logger.debug(f"Resolving 路径 '{relative_路径}' 在工作区 '{根}'")
 
         root, relative_path = Path(root).resolve(), Path(relative_path)
 
-        logger.debug(f"Resolved root as '{root}'")
+        logger.debug(f"解析根目录为 '{root}'")
 
         # 允许 异常 for absolute paths if they are contained in your workspace directory.
         if (
@@ -163,7 +163,7 @@ class Workspace:
 
         full_path = root.joinpath(relative_path).resolve()
 
-        logger.debug(f"Joined paths as '{full_path}'")
+        logger.debug(f"连接ed 路径s 作为'{full_路径}'")
 
         if restrict_to_root and not full_path.is_relative_to(root):
             raise ValueError(

@@ -21,7 +21,7 @@ _enable_ansi_on_windows()
 
 
 class _AnsiConsts:
-    """Namespace for ANSI escape code string constants."""
+    """ANSI转义码字符串常量的命名空间。"""
 
     RESET_ALL = "\033[0m"
     BRIGHT = "\033[1m"

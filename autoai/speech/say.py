@@ -1,4 +1,4 @@
-""" Text to speech module """
+"""文本转语音模块"""
 from __future__ import annotations
 
 import threading
@@ -16,11 +16,11 @@ from .stream_elements_speech import StreamElementsSpeech
 
 _QUEUE_SEMAPHORE = Semaphore(
     1
-)  # The amount of sounds to queue before blocking the main thread
+)  # The amount 的sounds 到队列 之前块ing ma在线程
 
 
 def say_text(text: str, config: Config, voice_index: int = 0) -> None:
-    """Speak the given text using the given voice index"""
+    """使用给定语音索引朗读给定文本"""
     default_voice_engine, voice_engine = _get_voice_engine(config)
 
     def speak() -> None:

@@ -3,7 +3,7 @@
 Phase 19.2: Agents self-organize into roles based on:
   - Capability profiles (what each agent can do)
   - Current workload (load balancing)
-  - Task requirements (skill matching)
+  - Task requirements (skill 匹配)
   - Emergent role discovery (unsupervised clustering of capabilities)
 
 No central planner — roles emerge from local interactions and capability signals.
@@ -83,7 +83,7 @@ class Assignment:
 
 
 class DivisionEmerger:
-    """Emergent role division and task allocation.
+    """涌现式角色分工和任务分配。
 
     Usage:
         emerger = DivisionEmerger()

@@ -1,4 +1,4 @@
-"""Patch agent capable of applying diffs and verifying with code checks."""
+"""能够应用差异并通过代码检查验证的补丁代理."""
 
 from __future__ import annotations
 
@@ -12,7 +12,7 @@ from .database import DatabaseManager
 
 
 class PatchAgent:
-    """Apply patches and run code quality checks."""
+    """应用补丁并运行代码质量检查."""
 
     def __init__(
         self,
@@ -37,7 +37,7 @@ class PatchAgent:
         self, diff: str, *, cwd: Path | None = None, dry_run: bool = False
     ) -> None:
         if self.is_paused():
-            raise RuntimeError("Self-improvement paused")
+            raise RuntimeError("自我改进已暂停")
 
         workspace_root = cwd.resolve() if cwd else Path().resolve()
         files: set[Path] = set()
@@ -81,7 +81,7 @@ class PatchAgent:
             return
 
         if dry_run:
-            raise RuntimeError("dry_run not supported without system 'patch' command")
+            raise RuntimeError("没有系统'patch'命令不支持dry_run")
 
         try:
             import patch_ng
@@ -98,7 +98,7 @@ class PatchAgent:
             for file_path, content in backups.items():
                 file_path.write_bytes(content)
             self._record_attempt(False)
-            raise RuntimeError("Patch failed using patch-ng library")
+            raise RuntimeError("使用patch-ng库补丁失败")
 
         self._record_attempt(True)
 

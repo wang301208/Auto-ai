@@ -1,7 +1,5 @@
 # sourcery 跳过: do-not-use-staticmethod
-"""
-A module that contains the PromptConfig class object that contains the configuration
-"""
+"""包含PromptConfig配置类对象的模块"""
 import yaml
 from autoai.utils.ansi_colors import Fore
 
@@ -21,17 +19,17 @@ class PromptConfig:
 
     def __init__(self, prompt_settings_file: str) -> None:
         """
-        Initialize a class instance with parameters (constraints, resources, performance_evaluations) loaded from
-          yaml file if yaml file exists,
-        else raises error.
+                Initialize a class 实例 with parameters (constraints, resources, performance_evaluations) loaded from
+                  yaml file if yaml file exists,
+                else raises error.
 
-        Parameters:
-            constraints (list): Constraints list for the prompt generator.
-            resources (list): Resources list for the prompt generator.
-            performance_evaluations (list): Performance evaluation list for the prompt generator.
-        Returns:
-            None
-        """
+                Parameters:
+                    constraints (list): Constraints list for the prompt generator.
+                    resources (list): Resources list for the prompt generator.
+                    performance_evaluations (list): Performance evaluation list for the prompt generator.
+                Returns:
+                    None
+"""
         # 验证 file
         (validated, message) = utils.validate_yaml_file(prompt_settings_file)
         if not validated:

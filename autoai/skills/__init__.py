@@ -15,7 +15,7 @@ _default_library: SkillLibrary | None = None
 
 
 def get_library() -> SkillLibrary:
-    """Return a default :class:`SkillLibrary` instance."""
+    """返回默认的 :class:`SkillLibrary` 实例."""
 
     global _default_library
     if _default_library is None:
@@ -40,7 +40,7 @@ def add(
     approval_timestamp: str | None = None,
     repo_path: str | Path | None = None,
 ) -> Skill:
-    """Add a new skill to the library."""
+    """向库中添加新技能."""
 
     return get_library().add_skill(
         name,
@@ -61,7 +61,7 @@ def add(
 
 
 def get(name: str, version: str) -> Optional[Skill]:
-    """Return a skill by name/version if it exists."""
+    """按名称/版本返回技能（如存在）."""
 
     return get_library().get_skill(name, version)
 
@@ -82,7 +82,7 @@ def update(
     approval_timestamp: str | None = None,
     repo_path: str | Path | None = None,
 ) -> Optional[Skill]:
-    """Update an existing skill."""
+    """更新现有技能."""
 
     return get_library().update_skill(
         name,
@@ -103,25 +103,25 @@ def update(
 
 
 def delete(name: str, version: str, repo_path: str | Path | None = None) -> None:
-    """Remove a skill from the library."""
+    """从库中移除技能."""
 
     get_library().delete_skill(name, version, repo_path=repo_path)
 
 
 def reindex() -> None:
-    """Rebuild the skill library index from disk."""
+    """从磁盘重建技能库索引."""
 
     get_library().reindex()
 
 
 def list_skills() -> List[Skill]:
-    """Return all stored skills."""
+    """返回所有存储的技能."""
 
     return get_library().list_skills()
 
 
 def search(query: str, top_k: int = 5) -> List[Skill]:
-    """Search for skills semantically matching ``query``."""
+    """语义搜索匹配的技能 ``query``."""
 
     return get_library().search(query, top_k=top_k)
 

@@ -37,7 +37,7 @@ class FounderConfig:
 
 
 class Plugin_SystemAnalytics:
-    """Lightweight analytics plugin stub.
+    """轻量级分析插件存根。
 
     In a full implementation, this would connect to Redis/Prometheus. Here we
     compute statistics from the SQLite-backed EventBus if available.
@@ -77,7 +77,7 @@ class FounderAgent:
         events_db: str | Path = "events.db",
         **kwargs,
     ) -> "FounderAgent":
-        """Factory used by the blueprint orchestrator.
+        """蓝图编排器使用的工厂。
 
         Expects blueprint.config to contain 'charter_repo_url'.
         """
@@ -86,7 +86,7 @@ class FounderAgent:
         config_dict: Dict[str, Any] = dict(getattr(blueprint, "config", {}) or {})
         repo_url = config_dict.get("charter_repo_url")
         if not repo_url:
-            raise ValueError("Founder blueprint requires config.charter_repo_url")
+            raise ValueError("Fo低于蓝图 requires config.charter_repo_URL")
         workdir = config_dict.get("workdir", "./founder_workspace")
         interval = int(config_dict.get("run_interval_sec", 24 * 60 * 60))
         cfg = FounderConfig(charter_repo_url=repo_url, run_interval_sec=interval, workdir=workdir)

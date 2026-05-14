@@ -1,4 +1,4 @@
-"""The application entry point.  Can be invoked by a CLI or any other front end application."""
+"""应用入口点。可通过CLI或任何其他前端应用调用。"""
 
 import enum
 import logging
@@ -80,7 +80,7 @@ def run_auto_ai(
     # 配置 logging before we do anything else.
     logger.set_level(logging.DEBUG if debug else logging.INFO)
 
-    # Resolve paths early to prevent surprises later on.
+    # 解析 路径s early 到prevent surprises 稍后on.
     working_directory = working_directory.resolve()
     workspace_directory = workspace_directory.resolve() if workspace_directory else None
 
@@ -143,7 +143,7 @@ def run_auto_ai(
 
     # 待办: have this directory live outside the repository (e.g. in a user's
     #   home directory) and have it come in as a command line 参数 or part of
-    #   the env file.
+    # env 文件.
     config.workspace_path = Workspace.init_workspace_directory(
         config, workspace_directory
     )
@@ -201,7 +201,7 @@ def run_auto_ai(
     if config.chat_messages_enabled:
         for plugin in config.plugins:
             if hasattr(plugin, "can_handle_report") and plugin.can_handle_report():
-                logger.info(f"Loaded plugin into logger: {plugin.__class__.__name__}")
+                logger.info(f"加载ed plug在到logger: {plugin.__class__.__名称__}")
                 logger.chat_plugins.append(plugin)
 
     # 初始化 内存 and make sure it is 空.
@@ -317,7 +317,7 @@ def run_auto_ai(
 
 
 def _get_cycle_budget(continuous_mode: bool, continuous_limit: int | None) -> float:
-    # Translate from the continuous_mode/continuous_limit config
+    # Translate 从continuous_mode/continuous_限制 config
     # to a cycle_budget (maximum number of cycles to 运行 without checking in with the
     # user) and a count of cycles_remaining before we 检查 in..
     if continuous_mode:
@@ -326,7 +326,7 @@ def _get_cycle_budget(continuous_mode: bool, continuous_limit: int | None) -> fl
 
 
 class UserFeedback(str, enum.Enum):
-    """Enum for user feedback."""
+    """用户反馈的枚举。"""
 
     AUTHORIZE = "GENERATE NEXT COMMAND JSON"
     EXIT = "EXIT"
@@ -347,7 +347,7 @@ def run_interaction_loop(
     # These contain both application config and 代理 config, so grab them here.
     config = agent.config
     ai_config = agent.ai_config
-    logger.debug(f"{ai_config.ai_name} System Prompt: {agent.system_prompt}")
+    logger.debug(f"{ai_config.ai_名称} System Prompt: {代理.system_prompt}")
 
     cycle_budget = cycles_remaining = _get_cycle_budget(
         config.continuous_mode, config.continuous_limit
@@ -385,7 +385,7 @@ def run_interaction_loop(
     #########################
 
     while cycles_remaining > 0:
-        logger.debug(f"Cycle budget: {cycle_budget}; remaining: {cycles_remaining}")
+        logger.debug(f"周期预算: {cycle_budget}; 剩余: {cycles_剩余}")
 
         ########
         # 计划 #
@@ -407,7 +407,7 @@ def run_interaction_loop(
         ##################
         # 获取 user 输入 #
         ##################
-        if cycles_remaining == 1:  # Last cycle
+        if cycles_remaining == 1:  # 最后一个 周期
             user_feedback, user_input, new_cycles_remaining = get_user_feedback(
                 config,
                 ai_config,
@@ -436,7 +436,7 @@ def run_interaction_loop(
             elif user_feedback == UserFeedback.EXIT:
                 logger.typewriter_log(_("Exiting..."), Fore.YELLOW)
                 exit()
-            else:  # user_feedback == UserFeedback.TEXT
+            else:  # user_费用dback == UserFeedback.TEXT
                 command_name = "human_feedback"
         else:
             user_input = None
@@ -455,7 +455,7 @@ def run_interaction_loop(
         # 执行 Command #
         ###################
         # Decrement the 循环 counter first to reduce the likelihood of a SIGINT
-        # happening during command execution, setting the cycles remaining to 1,
+        # happening 期间命令 execution, 集合ting 周期s remaining 到1,
         # and then having the decrement 集合 it to 0, exiting the application.
         if command_name != "human_feedback":
             cycles_remaining -= 1
@@ -537,7 +537,7 @@ def get_user_feedback(
     """
     # ### 获取 USER AUTHORIZATION TO 执行 COMMAND ###
     # 获取 键 press: Prompt the user to press enter to continue or escape
-    # to exit
+    # 到exit
     logger.info(
         _(
             "Enter '{authorise}' to authorise command, '{authorise} -N' to run N continuous commands, '{exit}' to exit program, or enter feedback for {name}..."
@@ -680,7 +680,7 @@ Continue ({authorise}/{exit}): """
     logger.typewriter_log("Name:", Fore.GREEN, ai_config.ai_name, speak_text=False)
     # Role
     logger.typewriter_log("Role:", Fore.GREEN, ai_config.ai_role, speak_text=False)
-    # Goals
+    # 目标
     logger.typewriter_log("Goals:", Fore.GREEN, "", speak_text=False)
     for goal in ai_config.ai_goals:
         logger.typewriter_log("-", Fore.GREEN, goal, speak_text=False)
@@ -735,7 +735,7 @@ def print_assistant_thoughts(
         Fore.YELLOW,
         f"{assistant_thoughts_criticism}",
     )
-    # Speak the assistant's thoughts
+    # 朗读 assistant's thoughts
     if assistant_thoughts_speak:
         if config.speak_mode:
             say_text(assistant_thoughts_speak, config)

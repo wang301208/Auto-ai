@@ -1,4 +1,4 @@
-"""Configuration class to store the state of bools for different scripts access."""
+"""存储不同脚本访问布尔状态的配置类。"""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ except ImportError:
     )
 
     class AutoAIPluginTemplate:  # type: ignore
-        """Fallback plugin base class when template is unavailable."""
+        """模板不可用时的回退插件基类。"""
 
         pass
 
@@ -49,7 +49,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     name: str = "Auto-AI configuration"
     description: str = "Default configuration for the Auto-AI application."
     ########################
-    # Application Settings #
+    # Applicati在设置s #
     ########################
     skip_news: bool = False
     skip_reprompt: bool = False
@@ -59,7 +59,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     plain_output: bool = False
     chat_messages_enabled: bool = True
     language: str = DEFAULT_LANGUAGE
-    # TTS configuration
+    # TTS configu比率n
     speak_mode: bool = False
     text_to_speech_provider: str = "gtts"
     streamelements_voice: str = "Brian"
@@ -116,20 +116,20 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     # File ops
     restrict_to_workspace: bool = True
     allow_downloads: bool = False
-    # Shell commands
+    # Shell 命令s
     shell_command_control: str = "denylist"
     execute_local_commands: bool = False
     shell_denylist: list[str] = Field(default_factory=lambda: ["sudo", "su"])
     shell_allowlist: list[str] = Field(default_factory=list)
-    # Text to image
+    # Text 到image
     image_provider: Optional[str] = None
     huggingface_image_model: str = "CompVis/stable-diffusion-v1-4"
     sd_webui_url: Optional[str] = "http://localhost:7860"
     image_size: int = 256
-    # Audio to text
+    # Audio 到text
     audio_to_text_provider: str = "huggingface"
     huggingface_audio_to_text_model: str = "openai/whisper-large-v2"
-    # Web browsing
+    # Web b行sing
     selenium_web_browser: str = "chrome"
     selenium_headless: bool = True
     user_agent: str = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/83.0.4103.97 Safari/537.36"
@@ -150,7 +150,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     ###############
     # Credentials #
     ###############
-    # OpenAI
+    # 打开AI
     openai_api_key: Optional[str] = None
     openai_api_type: Optional[str] = None
     openai_api_base: Optional[str] = None
@@ -169,7 +169,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     google_custom_search_engine_id: Optional[str] = None
     # Huggingface
     huggingface_api_token: Optional[str] = None
-    # Stable Diffusion
+    # S表 Diffusion
     sd_webui_auth: Optional[str] = None
 
     @validator("plugins", each_item=True)
@@ -233,13 +233,13 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
             fast_llm: self.azure_model_to_deployment_id_map.get(
                 "fast_llm_deployment_id",
                 self.azure_model_to_deployment_id_map.get(
-                    "fast_llm_model_deployment_id"  # backwards compatibility
+                    "fast_llm_model_deployment_id"  # 向后兼容
                 ),
             ),
             smart_llm: self.azure_model_to_deployment_id_map.get(
                 "smart_llm_deployment_id",
                 self.azure_model_to_deployment_id_map.get(
-                    "smart_llm_model_deployment_id"  # backwards compatibility
+                    "smart_llm_model_deployment_id"  # 向后兼容
                 ),
             ),
             self.embedding_model: self.azure_model_to_deployment_id_map.get(
@@ -259,7 +259,7 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
         return kwargs
 
     def apply_overlay(self, file: Path | str) -> None:
-        """Apply overrides from a JSON configuration overlay."""
+        """应用JSON配置覆盖的覆盖值。"""
         overlay_path = Path(file)
         if not overlay_path.is_file():
             raise FileNotFoundError(file)
@@ -275,7 +275,7 @@ class ConfigBuilder(Configurable[Config]):
 
     @classmethod
     def build_config_from_env(cls, workdir: Path) -> Config:
-        """Initialize the Config class"""
+        """初始化Config类"""
         config_dict: dict[str, Any] = {
             "workdir": workdir,
             "authorise_key": os.getenv("AUTHORISE_COMMAND_KEY"),
@@ -440,7 +440,7 @@ class ConfigBuilder(Configurable[Config]):
 
 
 def check_openai_api_key(config: Config) -> None:
-    """Check if the OpenAI API key is set in config.py or as an environment variable."""
+    """检查OpenAI API密钥是否在config.py或环境变量中设置。"""
     if not config.openai_api_key:
         print(
             Fore.RED
@@ -470,7 +470,7 @@ def check_openai_api_key(config: Config) -> None:
 
 
 def _safe_split(s: Union[str, None], sep: str = ",") -> list[str]:
-    """Split a string by a separator. Return an empty list if the string is None."""
+    """按分隔符拆分字符串。如字符串为None则返回空列表。"""
     if s is None:
         return []
     return s.split(sep)

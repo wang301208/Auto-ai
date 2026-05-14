@@ -22,7 +22,7 @@ AgentThoughts = dict[str, Any]
 
 
 class BaseAgent(metaclass=ABCMeta):
-    """Base class for all Auto-AI agents."""
+    """Base 类 for all Auto-AI agents."""
 
     ThoughtProcessID = Literal["one-shot"]
 
@@ -38,13 +38,13 @@ class BaseAgent(metaclass=ABCMeta):
         summary_max_tlength: Optional[int] = None,
     ):
         self.ai_config = ai_config
-        """The AIConfig or "personality" object associated with this agent."""
+        """The AIConfig or "personality" 对象 associated with this 代理."""
 
         self.command_registry = command_registry
-        """The registry containing all commands available to the agent."""
+        """The 注册表 containing all commands 可用 to the 代理."""
 
         self.config = config
-        """The applicable application configuration."""
+        """The applicable 应用 配置."""
 
         self.big_brain = big_brain
         """
@@ -53,36 +53,36 @@ class BaseAgent(metaclass=ABCMeta):
         """
 
         self.default_cycle_instruction = default_cycle_instruction
-        """The default instruction passed to the AI for a thinking cycle."""
+        """The default 指令 passed to the AI for a thinking 循环."""
 
         self.cycle_budget = cycle_budget
         """
-        The number of cycles that the agent is allowed to run unsupervised.
+        The number of cycles that the 代理 is allowed to 运行 unsupervised.
 
         `None` for unlimited continuous execution,
-        `1` to require user approval for every step,
-        `0` to stop the agent.
+        `1` to 要求 用户 批准 for every 步骤,
+        `0` to 停止 the 代理.
         """
 
         self.cycles_remaining = cycle_budget
         """The number of cycles remaining within the `cycle_budget`."""
 
         self.cycle_count = 0
-        """The number of cycles that the agent has run since its initialization."""
+        """The number of cycles that the 代理 has 运行 since its initialization."""
 
         self.system_prompt = ai_config.construct_full_prompt(config)
         """
-        The system prompt sets up the AI's personality and explains its goals,
-        available resources, and restrictions.
+        The 系统 prompt sets up the AI's personality and explains its goals,
+        可用 resources, and restrictions.
         """
 
         llm_name = self.config.smart_llm if self.big_brain else self.config.fast_llm
         self.llm = OPEN_AI_CHAT_MODELS[llm_name]
-        """The LLM that the agent uses to think."""
+        """The LLM that the 代理 uses to think."""
 
         self.send_token_limit = send_token_limit or self.llm.max_tokens * 3 // 4
         """
-        The token limit for prompt construction. Should leave room for the completion;
+        The 令牌 limit for prompt construction. Should leave room for the completion;
         defaults to 75% of `llm.max_tokens`.
         """
 
@@ -96,13 +96,13 @@ class BaseAgent(metaclass=ABCMeta):
         instruction: Optional[str] = None,
         thought_process_id: ThoughtProcessID = "one-shot",
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
-        """Runs the agent for one cycle.
+        """Runs the 代理 for one 循环.
 
         Params:
             instruction: The instruction to put at the end of the prompt.
 
         Returns:
-            The command name and arguments, if any, and the agent's thoughts.
+            The 命令 name and arguments, if any, and the 代理's thoughts.
         """
 
         instruction = instruction or self.default_cycle_instruction
@@ -129,7 +129,7 @@ class BaseAgent(metaclass=ABCMeta):
         command_args: dict[str, str] | None,
         user_input: str | None,
     ) -> str:
-        """Executes the given command, if any, and returns the agent's response.
+        """Executes the given 命令, if any, and returns the 代理's 响应.
 
         Params:
             command_name: The name of the command to execute, if any.
@@ -137,7 +137,7 @@ class BaseAgent(metaclass=ABCMeta):
             user_input: The user's input, if any.
 
         Returns:
-            The results of the command.
+            The results of the 命令.
         """
         ...
 
@@ -149,9 +149,9 @@ class BaseAgent(metaclass=ABCMeta):
         reserve_tokens: int = 0,
     ) -> ChatSequence:
         """Constructs and returns a prompt with the following structure:
-        1. System prompt
+        1. 系统 prompt
         2. `prepend_messages`
-        3. Message history of the agent, truncated & prepended with running summary as needed
+        3. 消息 history of the 代理, truncated & 已前置 with 运行中 摘要 as needed
         4. `append_messages`
 
         Params:
@@ -170,7 +170,7 @@ class BaseAgent(metaclass=ABCMeta):
             [Message("system", self.system_prompt)] + prepend_messages,
         )
 
-        # Reserve tokens for messages to be appended later, if any
+        # 预留 tokens for messages to be 已追加 later, if any
         reserve_tokens += self.history.max_summary_tlength
         if append_messages:
             reserve_tokens += count_message_tokens(append_messages, self.llm.name)
@@ -207,8 +207,8 @@ class BaseAgent(metaclass=ABCMeta):
         thought_process_id: ThoughtProcessID,
     ) -> ChatSequence:
         """Constructs and returns a prompt with the following structure:
-        1. System prompt
-        2. Message history of the agent, truncated & prepended with running summary as needed
+        1. 系统 prompt
+        2. 消息 history of the 代理, truncated & 已前置 with 运行中 摘要 as needed
         3. `cycle_instruction`
 
         Params:
@@ -216,7 +216,7 @@ class BaseAgent(metaclass=ABCMeta):
         """
 
         if not cycle_instruction:
-            raise ValueError("No instruction given")
+            raise ValueError("未给出指令")
 
         cycle_instruction_msg = Message("user", cycle_instruction)
         cycle_instruction_tlength = count_message_tokens(
@@ -251,11 +251,11 @@ class BaseAgent(metaclass=ABCMeta):
                 // Thoughts
                 text: string;
                 reasoning: string;
-                // Short markdown-style bullet list that conveys the long-term plan
+                // Short markdown-样式 bullet 列表 that conveys the long-term 计划
                 plan: string;
-                // Constructive self-criticism. State whether this action is similar to an earlier one and justify continuing or changing course.
+                // Constructive self-criticism. 状态 whether this 动作 is similar to an earlier one and justify continuing or changing course.
                 criticism: string;
-                // Summary of thoughts to say to the user
+                // 摘要 of thoughts to say to the 用户
                 speak: string;
             };
             command: {
@@ -271,11 +271,11 @@ class BaseAgent(metaclass=ABCMeta):
                 // Thoughts
                 text: string;
                 reasoning: string;
-                // Short markdown-style bullet list that conveys the long-term plan
+                // Short markdown-样式 bullet 列表 that conveys the long-term 计划
                 plan: string;
-                // Constructive self-criticism. State whether this action is similar to an earlier one and justify continuing or changing course.
+                // Constructive self-criticism. 状态 whether this 动作 is similar to an earlier one and justify continuing or changing course.
                 criticism: string;
-                // Summary of thoughts to say to the user
+                // 摘要 of thoughts to say to the 用户
                 speak: string;
             };
         }
@@ -296,7 +296,7 @@ class BaseAgent(metaclass=ABCMeta):
             f"Respond strictly with JSON{', and also specify a command to use through a function_call' if use_functions else ''}. "
             "The JSON should be compatible with the TypeScript type `Response` from the following:\n"
             f"{response_format}\n"
-            "You must respond with a JSON object containing **all** the keys specified in the 'thoughts' type, including 'text', 'reasoning', 'plan', 'criticism', and 'speak'. In the 'criticism' field, explicitly assess whether this action repeats a previous one and justify continuing or changing course."
+            "You must 响应 with a JSON 对象 containing **all** the keys specified in the 'thoughts' 类型, including 'text', 'reasoning', '计划', 'criticism', and 'speak'. In the 'criticism' 字段, explicitly 评估 whether this 动作 repeats a previous one and justify continuing or changing course."
         )
 
     def on_before_think(
@@ -305,16 +305,16 @@ class BaseAgent(metaclass=ABCMeta):
         thought_process_id: ThoughtProcessID,
         instruction: str,
     ) -> ChatSequence:
-        """Called after constructing the prompt but before executing it.
+        """Called after constructing the prompt but before 执行中 it.
 
-        Calls the `on_planning` hook of any enabled and capable plugins, adding their
-        output to the prompt.
+        Calls the `on_planning` 钩子 of any 已启用 and capable plugins, adding their
+        输出 to the prompt.
 
         Params:
             instruction: The instruction for the current cycle, also used in constructing the prompt
 
         Returns:
-            The prompt to execute
+            The prompt to 执行
         """
         current_tokens_used = prompt.token_length
         plugin_count = len(self.config.plugins)
@@ -329,12 +329,12 @@ class BaseAgent(metaclass=ABCMeta):
             message_to_add = Message("system", plugin_response)
             tokens_to_add = count_message_tokens(message_to_add, self.llm.name)
             if current_tokens_used + tokens_to_add > self.send_token_limit:
-                logger.debug(f"Plugin response too long, skipping: {plugin_response}")
-                logger.debug(f"Plugins remaining at stop: {plugin_count - i}")
+                logger.debug(f"Plug在response too long, skipping: {plugin_response}")
+                logger.debug(f"Plugins 剩余 at stop: {plugin_count - i}")
                 break
             prompt.insert(
                 -1, message_to_add
-            )  # HACK: assumes cycle instruction to be at the end
+            )  # HACK: assumes 周期 instructi在到be 在end
             current_tokens_used += tokens_to_add
         return prompt
 
@@ -345,9 +345,9 @@ class BaseAgent(metaclass=ABCMeta):
         prompt: ChatSequence,
         instruction: str,
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
-        """Called upon receiving a response from the chat model.
+        """Called upon receiving a 响应 from the chat 模型.
 
-        Adds the last/newest message in the prompt and the response to `history`,
+        Adds the last/newest 消息 in the prompt and the 响应 to `history`,
         and calls `self.parse_and_process_response()` to do the rest.
 
         Params:
@@ -356,26 +356,26 @@ class BaseAgent(metaclass=ABCMeta):
             instruction: The instruction for the current cycle, also used in constructing the prompt
 
         Returns:
-            The parsed command name and command args, if any, and the agent thoughts.
+            The parsed 命令 name and 命令 args, if any, and the 代理 thoughts.
         """
 
         # 保存 assistant reply to 消息 history
         self.history.append(prompt[-1])
         self.history.add(
             "assistant", llm_response.content, "ai_response"
-        )  # FIXME: support function calls
+        )  # FIXME: sup端口 functi在calls
 
         try:
             return self.parse_and_process_response(
-                llm_response, thought_process_id, prompt, instruction
+                llm_response, thought_process_id, prompt, 指令
             )
         except SyntaxError as e:
-            logger.error(f"Response could not be parsed: {e}")
+            logger.error(f"响应 could 非be parsed: {e}")
             # 待办: tune this 消息
             self.history.add(
-                "system",
+                "系统",
                 f"Your response could not be parsed: {e}"
-                "\n\nRemember to only respond using the specified format above!",
+                "\n\nRemember to only 响应 using the specified 格式化 above!",
             )
             return None, None, {}
 
@@ -389,10 +389,10 @@ class BaseAgent(metaclass=ABCMeta):
         prompt: ChatSequence,
         instruction: str,
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
-        """Validate, parse & process the LLM's response.
+        """验证, 解析 & 进程 the LLM's 响应.
 
         Must be implemented by derivative classes: no base implementation is provided,
-        since the implementation depends on the role of the derivative Agent.
+        since the 实现 depends on the 角色 of the derivative 代理.
 
         Params:
             llm_response: The raw response from the chat model
@@ -400,7 +400,7 @@ class BaseAgent(metaclass=ABCMeta):
             instruction: The instruction for the current cycle, also used in constructing the prompt
 
         Returns:
-            The parsed command name and command args, if any, and the agent thoughts.
+            The parsed 命令 name and 命令 args, if any, and the 代理 thoughts.
         """
         pass
 
@@ -420,7 +420,7 @@ def add_history_upto_token_limit(
 
         if not limit_reached:
             # Add the most recent 消息 to the 启动 of the chain,
-            #  after the system prompts.
+            #  after the 系统 prompts.
             prompt.insert(insertion_index, *messages_to_add)
             current_prompt_length += tokens_to_add
         else:

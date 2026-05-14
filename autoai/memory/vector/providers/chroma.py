@@ -17,11 +17,11 @@ from .base import VectorMemoryProvider
 
 
 class ChromaMemory(VectorMemoryProvider):
-    """Memory backend powered by ChromaDB."""
+    """由ChromaDB驱动的记忆后端。"""
 
     def __init__(self, config: Config) -> None:
         if chromadb is None:
-            raise ImportError("chromadb is not installed; please install it to use ChromaMemory")
+            raise ImportError("chromadb未安装；请安装以使用ChromaMemory")
         persist_dir = config.workspace_path / "chroma"
         self._client = chromadb.PersistentClient(path=str(persist_dir))
         self._collection = self._client.get_or_create_collection(config.memory_index)
@@ -48,7 +48,7 @@ class ChromaMemory(VectorMemoryProvider):
             else list(item.e_summary)
         )
         self._collection.add(ids=[memory_id], embeddings=[embedding])
-        logger.debug(f"Adding item to memory: {item.dump()}")
+        logger.debug(f"将项添加到记忆: {item.dump()}")
         return len(self._memories)
 
     def discard(self, item: MemoryItem) -> None:

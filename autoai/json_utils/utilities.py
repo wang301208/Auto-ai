@@ -1,4 +1,4 @@
-"""Utilities for the json_fixes package."""
+"""json_fixes包的工具。"""
 import ast
 import json
 import os.path
@@ -25,8 +25,8 @@ def extract_dict_from_response(response_content: str) -> dict[str, Any]:
     try:
         return ast.literal_eval(response_content)
     except BaseException as e:
-        logger.info(f"Error parsing JSON response with literal_eval {e}")
-        logger.debug(f"Invalid JSON received in response: {response_content}")
+        logger.info(f"错误 parsing JSON response 带字面量_eval {e}")
+        logger.debug(f"Invalid JSON received 在response: {response_content}")
         raise ValueError(f"Error parsing JSON response: {e}") from e
 
 
@@ -59,21 +59,21 @@ def validate_dict(
     """
     schema = llm_response_schema(config, schema_name)
     if Draft7Validator is None:
-        raise ImportError("jsonschema is not installed")
+        raise ImportError("jsonschema未安装")
     validator = Draft7Validator(schema)
 
     if errors := sorted(validator.iter_errors(object), key=lambda e: e.path):
         for error in errors:
-            logger.debug(f"JSON Validation Error: {error}")
+            logger.debug(f"JSON Validati在错误: {error}")
 
         if config.debug_mode:
             logger.error(json.dumps(object, indent=4))
             logger.error("The following issues were found:")
 
             for error in errors:
-                logger.error(f"Error: {error.message}")
+                logger.error(f"错误: {error.message}")
         return False, errors
 
-    logger.debug("The JSON object is valid.")
+    logger.debug("The JSON 对象 is valid.")
 
     return True, None

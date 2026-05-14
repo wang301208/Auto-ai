@@ -21,13 +21,13 @@ class Workspace(abc.ABC):
     @property
     @abc.abstractmethod
     def root(self) -> Path:
-        """The root directory of the workspace."""
+        """工作区的根目录。"""
         ...
 
     @property
     @abc.abstractmethod
     def restrict_to_workspace(self) -> bool:
-        """Whether to restrict generated paths to the workspace."""
+        """是否将生成的路径限制在工作区内。"""
         ...
 
     @staticmethod

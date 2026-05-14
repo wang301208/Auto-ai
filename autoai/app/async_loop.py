@@ -37,23 +37,23 @@ async def run_async_interaction_loop(
 ) -> None:
     """Async version of the agent interaction loop.
 
-    Replaces the sync while-loop in autoai/app/main.py with an
-    async equivalent using AsyncAgent.async_think() and
-    AsyncAgent.async_execute_step().
+        Replaces the sync while-loop in autoai/app/main.py with an
+        async equivalent using AsyncAgent.async_think() and
+        AsyncAgent.async_execute_step().
 
-    When comm_bus is provided, the agent can receive tasks from
-    other agents and send results back.
+        When comm_bus is provided, the agent can receive tasks from
+        other agents and send results back.
 
-    When multi_tui is provided, the observation window is updated
-    each cycle with agent status.
+        When multi_tui is provided, the observation window is updated
+        each cycle with agent status.
 
-    Args:
-        agent: An AsyncAgent instance.
-        config: Application configuration.
-        cycle_budget: Number of cycles to run (1 = require approval each step).
-        comm_bus: Optional AgentCommunicationBus for multi-agent coordination.
-        multi_tui: Optional MultiAgentTUI for observation.
-    """
+        Args:
+            agent: An AsyncAgent 实例.
+            config: Application configuration.
+            cycle_budget: Number of cycles to run (1 = require approval each step).
+            comm_bus: Optional AgentCommunicationBus for multi-agent coordination.
+            multi_tui: Optional MultiAgentTUI for observation.
+"""
     from autoai.agents.async_agent import AsyncAgent
 
     if not isinstance(agent, AsyncAgent):
@@ -94,7 +94,7 @@ async def run_async_interaction_loop(
         try:
             command_name, command_args, assistant_reply_dict = await agent.async_think()
         except Exception as e:
-            logger.error(f"Error during think: {e}")
+            logger.error(f"思考期间出错: {e}")
             break
 
         if command_name is None:
@@ -129,7 +129,7 @@ async def run_async_interaction_loop(
                 result = str(e)
                 cycles_remaining = 1
             else:
-                logger.error(f"Error during execute: {e}")
+                logger.error(f"执行期间出错: {e}")
                 break
 
         if result is not None:

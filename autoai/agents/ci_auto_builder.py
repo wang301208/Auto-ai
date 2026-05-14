@@ -114,15 +114,15 @@ stages:
 lint:
   stage: lint
   script:
-    - pip install -r requirements.txt
-    - pip install ruff
-    - ruff check .
+    - pip 安装 -r requirements.txt
+    - pip 安装 ruff
+    - ruff 检查 .
 
 test:
   stage: test
   script:
-    - pip install -r requirements.txt
-    - pip install pytest pytest-asyncio
+    - pip 安装 -r requirements.txt
+    - pip 安装 pytest pytest-asyncio
     - python -m pytest tests/ -v --tb=short
 """
 
@@ -146,7 +146,7 @@ clean:
 
 
 class CIAutoBuilder:
-    """Agent-autonomous CI/CD pipeline builder and maintainer.
+    """代理-autonomous CI/CD 流水线 构建器 and maintainer.
 
     Requires L2 (SELF_BOUND) autonomy to modify config files.
 
@@ -173,7 +173,7 @@ class CIAutoBuilder:
         return self._autonomy.level >= AutonomyLevel.SELF_BOUND
 
     def diagnose(self) -> CIDiagnosis:
-        """Diagnose current CI/CD state."""
+        """诊断 current CI/CD 状态."""
         has_github = (self.workspace / ".github" / "workflows").is_dir()
         has_gitlab = (self.workspace / ".gitlab-ci.yml").is_file()
         has_makefile = (self.workspace / "Makefile").is_file()
@@ -206,7 +206,7 @@ class CIAutoBuilder:
         )
 
     def auto_create_ci(self, platform: CIPlatform = CIPlatform.GITHUB_ACTIONS) -> list[CIAction]:
-        """Auto-create CI/CD configuration. Returns list of actions taken."""
+        """Auto-创建 CI/CD 配置. Returns 列表 of actions taken."""
         if not self.can_modify:
             return []
 
@@ -259,7 +259,7 @@ class CIAutoBuilder:
         return actions
 
     def auto_fix_ci(self, diagnosis: CIDiagnosis) -> list[CIAction]:
-        """Auto-fix CI configuration based on diagnosis."""
+        """Auto-修复 CI 配置 based on diagnosis."""
         if not self.can_modify:
             return []
 
@@ -274,7 +274,7 @@ class CIAutoBuilder:
         return actions
 
     def auto_extend_ci(self, new_step: str, step_content: str) -> CIAction | None:
-        """Add a new step to existing CI configuration."""
+        """添加 a new 步骤 to existing CI 配置."""
         if not self.can_modify:
             return None
 

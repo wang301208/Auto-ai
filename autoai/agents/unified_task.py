@@ -452,7 +452,7 @@ class TaskScheduler:
                 task.mark_cancelled()
                 break
             except Exception as e:
-                logger.warning("Daemon task %s error (auto-restart): %s", task.task_id, e)
+                logger.warning("Daem在任务 %s err或(auto-restart): %s", task.task_id, e)
                 task.error = str(e)
                 await asyncio.sleep(5.0)
                 continue

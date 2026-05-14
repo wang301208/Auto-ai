@@ -1,4 +1,4 @@
-"""A simple spinner module"""
+"""简单的旋转器模块"""
 import itertools
 import sys
 import threading
@@ -6,7 +6,7 @@ import time
 
 
 class Spinner:
-    """A simple spinner class"""
+    """简单的旋转器类"""
 
     def __init__(
         self,
@@ -29,7 +29,7 @@ class Spinner:
         self.spinner_thread = None
 
     def spin(self) -> None:
-        """Spin the spinner"""
+        """旋转旋转器"""
         if self.plain_output:
             self.print_message()
             return
@@ -55,7 +55,7 @@ class Spinner:
         sys.stdout.flush()
 
     def __enter__(self):
-        """Start the spinner"""
+        """启动旋转器"""
         self.start()
         return self
 

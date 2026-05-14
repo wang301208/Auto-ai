@@ -1,4 +1,4 @@
-"""Dependency audit CLI command — scan, report, and reduce external dependencies."""
+"""依赖审计CLI命令 — 扫描、报告和减少外部依赖。"""
 
 from __future__ import annotations
 
@@ -78,7 +78,7 @@ def run_audit(
     unused_only: bool = False,
     as_json: bool = False,
 ) -> list[dict[str, Any]] | None:
-    """Execute dependency audit and return/print results."""
+    """执行依赖审计并返回/打印结果。"""
     all_deps = {**CORE_DEPS, **OPTIONAL_DEPS}
 
     results = []
@@ -102,7 +102,7 @@ def run_audit(
         click.echo(json.dumps(results, indent=2))
         return results
 
-    click.echo("=== Dependency Audit Report ===")
+    click.echo("=== Dependency 审计 Re端口 ===")
     click.echo("")
     for r in sorted(results, key=lambda x: (x["import_count"], x["category"])):
         icon = {"active": "OK", "unused": "UNUSED", "uninstalled": "MISSING"}[r["status"]]

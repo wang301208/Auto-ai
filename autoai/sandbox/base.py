@@ -1,4 +1,4 @@
-"""Sandbox base types and abstract interface."""
+"""沙箱基础类型和抽象接口。"""
 
 from __future__ import annotations
 
@@ -95,7 +95,7 @@ class SandboxConfig:
 
 
 class SandboxBackend(abc.ABC):
-    """Abstract sandbox backend."""
+    """抽象沙箱后端。"""
 
     def __init__(self, config: SandboxConfig | None = None) -> None:
         self.config = config or SandboxConfig()

@@ -26,8 +26,8 @@ def sanitize_path_arg(arg_name: str):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            logger.debug(f"Sanitizing arg '{arg_name}' on function '{func.__name__}'")
-            logger.debug(f"Function annotations: {func.__annotations__}")
+            logger.debug(f"Sanitizing arg '{arg_名称}' 在functi在'{func.__名称__}'")
+            logger.debug(f"函数 annotations: {func.__annotations__}")
 
             # 获取 代理 from the called function's arguments
             agent = kwargs.get(
@@ -35,9 +35,9 @@ def sanitize_path_arg(arg_name: str):
             )
             logger.debug(f"Args: {args}")
             logger.debug(f"KWArgs: {kwargs}")
-            logger.debug(f"Agent argument lifted from function call: {agent}")
+            logger.debug(f"从函数调用提升的代理参数: {agent}")
             if not isinstance(agent, Agent):
-                raise RuntimeError("Could not get Agent from decorated command's args")
+                raise RuntimeError("Could 非get Agent 从deco速率d 命令's args")
 
             # Sanitize the specified 路径 参数, if one is given
             given_path: str | Path | None = kwargs.get(

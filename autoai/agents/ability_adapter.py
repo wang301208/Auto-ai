@@ -1,7 +1,7 @@
-"""Adapter bridging V1 CommandRegistry commands to V2 Ability interface.
+"""将V1 CommandRegistry命令桥接到V2 Ability接口的适配器.
 
 Each V1 @command-decorated function is wrapped as an Ability subclass
-instance, enabling the V2 architecture to invoke V1 commands through
+实例, enabling the V2 architecture to invoke V1 commands through
 the standardized async Ability.__call__() interface.
 """
 
@@ -17,7 +17,7 @@ from autoai.models.command_registry import CommandRegistry
 
 @dataclass
 class AbilityResult:
-    """Standard result container for ability execution."""
+    """标准 结果 容器 for ability execution."""
 
     output: Any = None
     success: bool = True
@@ -29,7 +29,7 @@ class AbilityResult:
 
 
 class Ability(metaclass=ABCMeta):
-    """Abstract base class for all abilities (V2 interface)."""
+    """所有技能的抽象基类 (V2 interface)."""
 
     @classmethod
     @abstractmethod
@@ -52,10 +52,10 @@ class Ability(metaclass=ABCMeta):
 
 
 class CommandAbility(Ability):
-    """Wraps a V1 command function as a V2 Ability.
+    """Wraps a V1 命令 函数 as a V2 Ability.
 
-    Bridges the synchronous V1 command execution into the async
-    V2 ability interface using asyncio.run_in_executor.
+    Bridges the 同步 V1 命令 execution into the async
+    V2 ability 接口 using asyncio.run_in_executor.
     """
 
     def __init__(
@@ -97,7 +97,7 @@ class CommandAbility(Ability):
 
 
 class AbilityRegistry:
-    """Registry of abilities, supporting both V2 native and V1 adapted commands."""
+    """注册表 of abilities, supporting both V2 native and V1 adapted commands."""
 
     def __init__(self) -> None:
         self._abilities: dict[str, Ability] = {}
@@ -126,9 +126,9 @@ class AbilityRegistry:
 
 
 def adapt_command_registry(command_registry: CommandRegistry) -> AbilityRegistry:
-    """Convert a V1 CommandRegistry into a V2 AbilityRegistry.
+    """转换 a V1 CommandRegistry into a V2 AbilityRegistry.
 
-    Each registered command is wrapped in a CommandAbility adapter.
+    Each registered 命令 is wrapped in a CommandAbility 适配器.
     """
     ability_registry = AbilityRegistry()
     for name, command in command_registry.commands.items():

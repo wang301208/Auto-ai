@@ -11,7 +11,7 @@ from autoai.plugins.plugin_config import PluginConfig
 
 
 class PluginsConfig(BaseModel):
-    """Class for holding configuration of all plugins"""
+    """保存所有插件配置的类"""
 
     plugins: dict[str, PluginConfig]
 
@@ -91,22 +91,22 @@ class PluginsConfig(BaseModel):
         plugins_denylist: list[str],
         plugins_allowlist: list[str],
     ):
-        """Create an empty plugins_config.yaml file. Fill it with values from old env variables."""
+        """创建空的plugins_config.yaml文件。用旧环境变量值填充。"""
         base_config = {}
 
-        logger.debug(f"Legacy plugin denylist: {plugins_denylist}")
-        logger.debug(f"Legacy plugin allowlist: {plugins_allowlist}")
+        logger.debug(f"Legacy plug在deny列表: {plugins_deny列表}")
+        logger.debug(f"Legacy plug在allow列表: {plugins_allow列表}")
 
-        # Backwards-compatibility shim
+        # 后端wards-compatibility shim
         for plugin_name in plugins_denylist:
             base_config[plugin_name] = {"enabled": False, "config": {}}
 
         for plugin_name in plugins_allowlist:
             base_config[plugin_name] = {"enabled": True, "config": {}}
 
-        logger.debug(f"Constructed base plugins config: {base_config}")
+        logger.debug(f"已构建基础插件配置: {base_config}")
 
-        logger.debug(f"Creating plugin config file {plugins_config_file}")
+        logger.debug(f"正在创建插件配置文件 {plugins_config_file}")
         with open(plugins_config_file, "w+") as f:
             f.write(yaml.dump(base_config))
             return base_config

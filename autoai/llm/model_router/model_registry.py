@@ -1,4 +1,4 @@
-"""Model registry: manages ModelSpec entries and their associated providers."""
+"""模型注册表：管理ModelSpec条目及其关联的提供者。"""
 
 from __future__ import annotations
 
@@ -14,15 +14,15 @@ logger = logging.getLogger(__name__)
 
 
 class ModelRegistry:
-    """Central registry for model specs and providers.
+    """模型规格和提供者的中央注册表.
 
-    Responsibilities:
-      - Register/unregister ModelSpec entries
-      - Register/unregister provider instances
-      - Look up models by id, tier, capability, provider
-      - Load model specs from YAML/JSON config files
-      - Bridge V1 Config.fast_llm/smart_llm to ModelSpec
-    """
+        Responsibilities:
+          - 注册/注销ModelSpec条目
+          - Register/unregister provider 实例s
+          - 按ID、层级、能力、提供者查找模型
+          - 从YAML/JSON配置文件加载模型规格
+          - 将V1 Config.fast_llm/smart_llm桥接到ModelSpec
+"""
 
     def __init__(self) -> None:
         self._models: dict[str, ModelSpec] = {}
@@ -106,7 +106,7 @@ class ModelRegistry:
     def load_from_file(self, path: str | Path) -> int:
         path = Path(path)
         if not path.exists():
-            logger.warning("Model config file not found: %s", path)
+            logger.warning("模型配置文件未找到: %s", path)
             return 0
         with open(path, "r", encoding="utf-8") as f:
             if path.suffix in (".yaml", ".yml"):
@@ -114,7 +114,7 @@ class ModelRegistry:
                     import yaml
                     data = yaml.safe_load(f)
                 except ImportError:
-                    logger.error("PyYAML not installed, cannot load YAML config")
+                    logger.error("PyYAML未安装，无法加载YAML配置")
                     return 0
             else:
                 data = json.load(f)
@@ -126,7 +126,7 @@ class ModelRegistry:
                 self.register_model(spec)
                 count += 1
             except Exception as e:
-                logger.warning("Failed to load model spec %s: %s", m.get("model_id", "?"), e)
+                logger.warning("无法加载模型规格 %s: %s", m.get("model_id", "?"), e)
         aliases = data.get("aliases", {})
         for alias, target in aliases.items():
             self.add_alias(alias, target)

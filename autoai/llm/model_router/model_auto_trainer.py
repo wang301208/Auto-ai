@@ -115,7 +115,7 @@ class ModelAutoTrainer:
         return self._autonomy.level >= AutonomyLevel.SELF_REWRITE
 
     def prepare_sft_data(self, min_quality: float = 0.5) -> list[SFTDataPoint]:
-        """Extract SFT training data from experience store."""
+        """从经验存储提取SFT训练数据。"""
         if self._experience_store is None:
             return []
 
@@ -140,7 +140,7 @@ class ModelAutoTrainer:
         return data
 
     def save_sft_dataset(self, data: list[SFTDataPoint], output_path: Path | None = None) -> Path:
-        """Save SFT data in JSONL format suitable for training."""
+        """以适合训练的JSONL格式保存SFT数据。"""
         if output_path is None:
             output_path = self.workspace / "training_data" / "sft_dataset.jsonl"
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -160,7 +160,7 @@ class ModelAutoTrainer:
         return output_path
 
     def auto_train_cycle(self) -> TrainingRecord:
-        """Full autonomous training cycle: prepare→train→eval→deploy/reject."""
+        """完整自主训练周期：准备→训练→评估→部署/拒绝。"""
         record = TrainingRecord(
             training_id=f"train_{self._next_id}",
             status=TrainingStatus.PENDING,
@@ -223,7 +223,7 @@ class ModelAutoTrainer:
         return record
 
     def _trigger_training(self, dataset_path: Path) -> bool:
-        """Trigger LoRA fine-tuning via subprocess."""
+        """通过子进程触发LoRA微调。"""
         output_dir = self.workspace / self._config.output_dir
         output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -250,7 +250,7 @@ class ModelAutoTrainer:
             return False
 
     def _evaluate_model(self) -> float:
-        """Evaluate the fine-tuned model on a benchmark."""
+        """在基准测试上评估微调模型。"""
         eval_script = self.workspace / "scripts" / "eval_model.py"
         if not eval_script.exists():
             return self._baseline_score + 0.01

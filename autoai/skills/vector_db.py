@@ -24,31 +24,31 @@ Embedding = List[float]
 
 
 class VectorDBProvider(ABC):
-    """Abstract interface for a vector database."""
+    """向量数据库的抽象接口."""
 
     @abstractmethod
     def add(self, key: str, embedding: Embedding, metadata: Dict | None = None) -> None:
-        """Store an embedding with optional metadata."""
+        """存储带有可选元数据的嵌入."""
 
     @abstractmethod
     def delete(self, key: str) -> None:
-        """Remove an embedding from the index."""
+        """从索引中移除嵌入."""
 
     @abstractmethod
     def query(self, embedding: Embedding, top_k: int = 5) -> List[Tuple[str, float]]:
-        """Return the ``top_k`` most similar keys to the given embedding."""
+        """返回给定嵌入最相似的``top_k``个键。"""
 
     @abstractmethod
     def get(self, key: str) -> Tuple[Embedding, Dict] | None:
-        """Return the stored embedding and metadata for ``key`` if present."""
+        """返回存储的嵌入和元数据 for ``key`` if present."""
 
     def clear(self) -> None:  # pragma: no cover - optional method
-        """Remove all entries from the database."""
+        """从数据库中移除所有条目."""
         raise NotImplementedError
 
 
 class MemoryVectorDB(VectorDBProvider):
-    """Simple in-memory vector database implementation."""
+    """简单的内存向量数据库实现."""
 
     def __init__(self, *_args, **_kwargs) -> None:
         self._index: Dict[str, Tuple[Embedding, Dict]] = {}
@@ -85,7 +85,7 @@ class MemoryVectorDB(VectorDBProvider):
 
 
 class ChromaVectorDB(VectorDBProvider):
-    """`VectorDBProvider` using a persistent ChromaDB collection."""
+    """使用持久化ChromaDB集合的`VectorDBProvider`。"""
 
     def __init__(self, persist_path: Path, collection_name: str = "skills") -> None:
         self.persist_path = Path(persist_path)
@@ -133,7 +133,7 @@ class ChromaVectorDB(VectorDBProvider):
 
 
 class FaissVectorDB(VectorDBProvider):
-    """`VectorDBProvider` backed by a FAISS index with JSON metadata storage."""
+    """由FAISS索引和JSON元数据存储支持的`VectorDBProvider`。"""
 
     def __init__(self, persist_path: Path) -> None:
         self.persist_path = Path(persist_path)
@@ -146,7 +146,7 @@ class FaissVectorDB(VectorDBProvider):
             self._data = {}
         self._rebuild_index()
 
-    # internal helpers -------------------------------------------------
+    # 内部 helpers -------------------------------------------------
     def _save(self) -> None:
         with self.data_file.open("w", encoding="utf-8") as f:
             json.dump(self._data, f)

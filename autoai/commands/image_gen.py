@@ -1,4 +1,4 @@
-"""Commands to generate images based on text input"""
+"""基于文本输入生成图像的命令"""
 
 COMMAND_CATEGORY = "text_to_image"
 COMMAND_CATEGORY_TITLE = "Text to Image"
@@ -72,7 +72,7 @@ def generate_image_with_hf(prompt: str, filename: str, agent: Agent) -> str:
         str: The filename of the image
     """
     if requests is None or Image is None:
-        raise ImportError("requests and/or Pillow is not installed")
+        raise ImportError("requests和/或Pillow未安装")
     API_URL = f"https://api-inference.huggingface.co/models/{agent.config.huggingface_image_model}"
     if agent.config.huggingface_api_token is None:
         raise ValueError(
@@ -96,7 +96,7 @@ def generate_image_with_hf(prompt: str, filename: str, agent: Agent) -> str:
         if response.ok:
             try:
                 image = Image.open(io.BytesIO(response.content))
-                logger.info(f"Image Generated for prompt:{prompt}")
+                logger.info(f"Image 生成d 用于prompt:{prompt}")
                 image.save(filename)
                 return f"Saved to disk:{filename}"
             except Exception as e:
@@ -108,7 +108,7 @@ def generate_image_with_hf(prompt: str, filename: str, agent: Agent) -> str:
                 if "estimated_time" in error:
                     delay = error["estimated_time"]
                     logger.debug(response.text)
-                    logger.info("Retrying in", delay)
+                    logger.info("重试ing in", delay)
                     time.sleep(delay)
                 else:
                     break
@@ -151,7 +151,7 @@ def generate_image_with_dalle(
         response_format="b64_json",
     )
 
-    logger.info(f"Image Generated for prompt:{prompt}")
+    logger.info(f"Image 生成d 用于prompt:{prompt}")
 
     image_data = b64decode(response.data[0].b64_json)
 
@@ -180,7 +180,7 @@ def generate_image_with_sd_webui(
         str: The filename of the image
     """
     if requests is None or Image is None:
-        raise ImportError("requests and/or Pillow is not installed")
+        raise ImportError("requests和/或Pillow未安装")
     # 创建 a session and 集合 the basic auth if needed
     s = requests.Session()
     if agent.config.sd_webui_auth:
@@ -203,7 +203,7 @@ def generate_image_with_sd_webui(
         },
     )
 
-    logger.info(f"Image Generated for prompt:{prompt}")
+    logger.info(f"Image 生成d 用于prompt:{prompt}")
 
     # 保存 the image to disk
     response = response.json()

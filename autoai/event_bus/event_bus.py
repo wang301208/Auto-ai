@@ -22,14 +22,14 @@ def connect(
     port: int | None = None,
     db: int | None = None,
 ) -> "redis.Redis | None":
-    """Connect to Redis using environment or config settings."""
+    """使用环境或配置设置连接到Redis。"""
 
     global _client
 
     if _client:
         return _client
     if redis is None:
-        logger.warning("redis-py not installed; Redis event bus disabled.")
+        logger.warning("redis-py 非installed; Redis event bus disabled.")
         return None
 
     host = host or os.getenv("REDIS_HOST")
@@ -64,12 +64,12 @@ def connect(
 
 
 def publish(event_type: str, payload: Any) -> None:
-    """Publish ``payload`` under ``event_type`` channel."""
+    """在``event_type``通道下发布``payload``。"""
 
     if _client is None and connect() is None:
         return
 
-    assert _client is not None  # for type checkers
+    assert _client is not None  # 用于type checkers
 
     if isinstance(payload, EventMessage):
         data = {
@@ -85,7 +85,7 @@ def publish(event_type: str, payload: Any) -> None:
 
 
 def subscribe(event_type: str, handler: Callable[[EventMessage], None]) -> None:
-    """Subscribe ``handler`` to messages published under ``event_type``."""
+    """将``handler``订阅到``event_type``下发布的消息。"""
 
     if _client is None and connect() is None:
         return

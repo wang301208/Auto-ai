@@ -23,7 +23,7 @@ from .message_types import EventMessage
 
 
 class MessageQueue:
-    """Publish/subscribe queue preferring Redis, with SQLite fallback."""
+    """发布/订阅队列，优先使用Redis，回退到SQLite。"""
 
     def __init__(self, event_bus: "EventBus" | None = None) -> None:
         self.event_bus = event_bus
@@ -44,7 +44,7 @@ class MessageQueue:
 
     # -- 核心 API -----------------------------------------------------
     def publish(self, event: EventMessage) -> None:
-        """Publish ``event`` to subscribers and the optional :class:`EventBus`."""
+        """向订阅者和可选的:class:`EventBus`发布``event``。"""
 
         event_type = event.event_type
 
@@ -67,7 +67,7 @@ class MessageQueue:
     def subscribe(
         self, event_type: str, handler: Callable[[EventMessage], None]
     ) -> None:
-        """Subscribe ``handler`` to events of ``event_type``."""
+        """将``handler``订阅到``event_type``的事件。"""
 
         if self._redis_available:
             try:
@@ -83,7 +83,7 @@ class MessageQueue:
 
     # -- Fallback helpers --------------------------------------------
     def get_events(self, limit: int | None = None) -> Iterable[EventMessage]:
-        """Retrieve events from the underlying :class:`EventBus`, if any."""
+        """从底层:class:`EventBus`检索事件（如有）。"""
 
         if not self.event_bus:
             return []

@@ -228,7 +228,7 @@ class EvolutionCommunity:
                 self._distilled_rules.append(rule)
 
         if new_rules:
-            logger.info(f"[EvolutionCommunity] Distilled {len(new_rules)} new rules from community knowledge")
+            logger.info(f"[EvolutionCommunity] Distilled {len(new_rules)} new rules 从community knowl边")
 
         return new_rules
 

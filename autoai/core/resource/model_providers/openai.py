@@ -167,11 +167,11 @@ class OpenAIProvider(
         self._create_embedding = retry_handler(_create_embedding)
 
     def get_token_limit(self, model_name: str) -> int:
-        """Get the token limit for a given model."""
+        """获取给定模型的令牌限制。"""
         return OPEN_AI_MODELS[model_name].max_tokens
 
     def get_remaining_budget(self) -> float:
-        """Get the remaining budget."""
+        """获取剩余预算。"""
         return self._budget.remaining_budget
 
     async def create_language_completion(
@@ -182,7 +182,7 @@ class OpenAIProvider(
         completion_parser: Callable[[dict], dict],
         **kwargs,
     ) -> LanguageModelProviderModelResponse:
-        """Create a completion using the OpenAI API."""
+        """使用OpenAI API创建补全。"""
         completion_kwargs = self._get_completion_kwargs(model_name, functions, **kwargs)
         response = await self._create_completion(
             messages=model_prompt,
@@ -210,7 +210,7 @@ class OpenAIProvider(
         embedding_parser: Callable[[Embedding], Embedding],
         **kwargs,
     ) -> EmbeddingModelProviderModelResponse:
-        """Create an embedding using the OpenAI API."""
+        """使用OpenAI API创建嵌入。"""
         embedding_kwargs = self._get_embedding_kwargs(model_name, **kwargs)
         response = await self._create_embedding(text=text, **embedding_kwargs)
 
@@ -385,7 +385,7 @@ class _OpenAIRetryHandler:
     def __call__(self, func: Callable[_P, _T]) -> Callable[_P, _T]:
         @functools.wraps(func)
         async def _wrapped(*args: _P.args, **kwargs: _P.kwargs) -> _T:
-            num_attempts = self._num_retries + 1  # +1 for the first attempt
+            num_attempts = self._num_retries + 1  # +1 用于首次尝试
             for attempt in range(1, num_attempts + 1):
                 try:
                     return await func(*args, **kwargs)

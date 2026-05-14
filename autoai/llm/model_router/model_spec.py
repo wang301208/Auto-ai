@@ -1,4 +1,4 @@
-"""Unified model specification across all providers."""
+"""跨所有提供者的统一模型规格."""
 
 from __future__ import annotations
 

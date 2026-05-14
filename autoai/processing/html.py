@@ -1,4 +1,4 @@
-"""HTML processing functions"""
+"""HTML处理函数"""
 from __future__ import annotations
 
 from bs4 import BeautifulSoup

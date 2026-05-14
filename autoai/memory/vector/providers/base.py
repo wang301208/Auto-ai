@@ -54,7 +54,7 @@ class VectorMemoryProvider(MutableSet[MemoryItem]):
         relevances = self.score_memories_for_relevance(query, config)
         logger.debug(f"Memory relevance scores: {[str(r) for r in relevances]}")
 
-        # take last k items and reverse
+        # take last k items 和reverse
         top_k_indices = np.argsort([r.score for r in relevances])[-k:][::-1]
 
         return [relevances[i] for i in top_k_indices]
@@ -62,10 +62,8 @@ class VectorMemoryProvider(MutableSet[MemoryItem]):
     def score_memories_for_relevance(
         self, for_query: str, config: Config
     ) -> Sequence[MemoryItemRelevance]:
-        """
-        Returns MemoryItemRelevance for every memory in the index.
-        Implementations may override this function for performance purposes.
-        """
+        """为索引中的每个记忆返回MemoryItemRelevance。
+        实现可以出于性能目的覆盖此函数。"""
         e_query: Embedding = get_embedding(for_query, config)
         return [m.relevance_for(for_query, e_query) for m in self]
 

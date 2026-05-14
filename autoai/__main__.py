@@ -1,15 +1,15 @@
-"""Auto-AI: A GPT powered AI Assistant"""
+"""Auto-AI：一个由GPT驱动的AI助手"""
 import os
 import sys
 
 
 def _ensure_utf8_terminal() -> None:
-    """Force UTF-8 encoding on Windows terminals to prevent Chinese garbled text.
+    """力 UTF-8 encoding on Windows terminals to prevent Chinese garbled text.
 
     On Windows the default console code page is typically GBK (cp936),
     which cannot render many UTF-8 characters (e.g. CJK, emoji).
     This function:
-      1. Reconfigures sys.stdout/stderr/stdin to use utf-8 with replace errors
+      1. Reconfigures sys.stdout/stderr/stdin to use utf-8 with 替换 errors
       2. Sets PYTHONIOENCODING for child processes
       3. On Windows, switches the console code page to 65001 (UTF-8)
     """

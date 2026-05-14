@@ -1,4 +1,4 @@
-"""Cache management utilities for AutoAI."""
+"""AutoAI的缓存管理工具。"""
 
 from .cache_manager import (
     Artifact,

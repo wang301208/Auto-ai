@@ -1,4 +1,4 @@
-"""Knowledge Mesh: Decentralized knowledge sharing between agents.
+"""知识网格：代理间的去中心化知识共享。
 
 Phase 19.3: Agents share knowledge fragments through:
   - Knowledge publishing (agent posts a knowledge fragment)
@@ -72,7 +72,7 @@ class KnowledgeVersion:
 
 
 class KnowledgeMesh:
-    """Decentralized knowledge sharing network.
+    """去中心化知识共享网络。
 
     Usage:
         mesh = KnowledgeMesh()
@@ -140,7 +140,7 @@ class KnowledgeMesh:
         self._fragments[fragment.fragment_id] = fragment
         self._index_fragment(fragment)
 
-        logger.debug(f"[KnowledgeMesh] Published: {fragment.fragment_id} by {author_id}")
+        logger.debug(f"[Knowl边Mesh] 发布ed: {片段.片段_id} 通过{author_id}")
         return fragment.fragment_id
 
     def query(self, query: KnowledgeQuery) -> list[KnowledgeFragment]:

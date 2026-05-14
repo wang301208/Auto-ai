@@ -70,7 +70,7 @@ class ReadFile(Ability):
         try:
             elements = partition(str(file_path))
             # 待办: Lots of other potentially useful 信息rmation is 可用
-            #   in the partitioned file. Consider returning more of it.
+            # 在分区ed 文件. Consider returning more 的it.
             new_knowledge = Knowledge(
                 content="\n\n".join([element.text for element in elements]),
                 content_type=ContentType.TEXT,

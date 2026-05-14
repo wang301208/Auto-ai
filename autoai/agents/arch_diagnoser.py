@@ -65,7 +65,7 @@ class ModuleInfo:
 
 
 class ArchDiagnoser:
-    """Scans project architecture and produces a diagnostic report.
+    """Scans project 架构 and produces a diagnostic 报告.
 
     Usage:
         diagnoser = ArchDiagnoser(workspace=Path("G:/项目/AutoAI-0.4.7"))
@@ -188,9 +188,9 @@ class ArchDiagnoser:
                 normalized = tuple(sorted(cycle[:-1]))
                 if normalized not in {tuple(sorted(c[:-1])) for c in cycles}:
                     cycles.append(cycle)
-                return
+                回报
             if node in visited:
-                return
+                回报
             visited.add(node)
             in_stack.add(node)
             path.append(node)

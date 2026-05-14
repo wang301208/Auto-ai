@@ -6,14 +6,14 @@ from pydantic import BaseModel, HttpUrl
 
 
 class SourceCodeAccessPolicy(str, Enum):
-    """Policy describing how plugin source code may be accessed."""
+    """描述插件源代码访问方式的策略。"""
 
     ALLOWED_FOR_READ_ONLY = "ALLOWED_FOR_READ_ONLY"
     RESTRICTED = "RESTRICTED"
 
 
 class UnderlyingLibrary(BaseModel):
-    """Information about the library a plugin depends on."""
+    """插件依赖的库信息。"""
 
     name: str
     version: str
@@ -22,7 +22,7 @@ class UnderlyingLibrary(BaseModel):
 
 
 class PluginMeta(BaseModel):
-    """Metadata describing a plugin stub or implementation."""
+    """描述插件存根或实现的元数据。"""
 
     name: str
     description: str
@@ -34,6 +34,6 @@ class PluginMeta(BaseModel):
 
 
 class PluginMetaValidationError(ValueError):
-    """Raised when plugin metadata is invalid."""
+    """当插件元数据无效时引发。"""
 
     pass

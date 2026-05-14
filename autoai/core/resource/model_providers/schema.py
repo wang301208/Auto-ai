@@ -16,7 +16,7 @@ from autoai.core.resource.schema import (
 
 
 class ModelProviderService(str, enum.Enum):
-    """A ModelService describes what kind of service the model provides."""
+    """ModelService描述模型提供的服务类型。"""
 
     EMBEDDING: str = "embedding"
     LANGUAGE: str = "language"
@@ -58,7 +58,7 @@ class ModelProviderModelInfo(BaseModel):
 
 
 class ModelProviderModelResponse(BaseModel):
-    """Standard response struct for a response from a model."""
+    """模型响应的标准响应结构。"""
 
     prompt_tokens_used: int
     completion_tokens_used: int
@@ -66,7 +66,7 @@ class ModelProviderModelResponse(BaseModel):
 
 
 class ModelProviderCredentials(ProviderCredentials):
-    """Credentials for a model provider."""
+    """模型提供者凭据。"""
 
     api_key: SecretStr | None = UserConfigurable(default=None)
     api_type: SecretStr | None = UserConfigurable(default=None)
@@ -93,7 +93,7 @@ def unmask(model: BaseModel):
 
 
 class ModelProviderUsage(ProviderUsage):
-    """Usage for a particular model from a model provider."""
+    """模型提供者中特定模型的使用情况。"""
 
     completion_tokens: int = 0
     prompt_tokens: int = 0
@@ -120,7 +120,7 @@ class ModelProviderBudget(ProviderBudget):
         self,
         model_response: ModelProviderModelResponse,
     ) -> None:
-        """Update the usage and cost of the provider."""
+        """更新提供者使用量和成本。"""
         model_info = model_response.model_info
         self.usage.update_usage(model_response)
         incremental_cost = (
@@ -138,7 +138,7 @@ class ModelProviderSettings(ProviderSettings):
 
 
 class ModelProvider(abc.ABC):
-    """A ModelProvider abstracts the details of a particular provider of models."""
+    """ModelProvider抽象了特定模型提供者的细节。"""
 
     defaults: ClassVar[ModelProviderSettings]
 
@@ -157,14 +157,14 @@ class ModelProvider(abc.ABC):
 
 
 class EmbeddingModelProviderModelInfo(ModelProviderModelInfo):
-    """Struct for embedding model information."""
+    """嵌入模型信息结构。"""
 
     model_service: ModelProviderService = ModelProviderService.EMBEDDING
     embedding_dimensions: int
 
 
 class EmbeddingModelProviderModelResponse(ModelProviderModelResponse):
-    """Standard response struct for a response from an embedding model."""
+    """嵌入模型响应的标准响应结构。"""
 
     embedding: Embedding = Field(default_factory=list)
 
@@ -172,7 +172,7 @@ class EmbeddingModelProviderModelResponse(ModelProviderModelResponse):
     @validator("completion_tokens_used")
     def _verify_no_completion_tokens_used(cls, v):
         if v > 0:
-            raise ValueError("Embeddings should not have completion tokens used.")
+            raise ValueError("Embeddings should 非have completi在令牌s used.")
         return v
 
 
@@ -194,14 +194,14 @@ class EmbeddingModelProvider(ModelProvider):
 
 
 class LanguageModelProviderModelInfo(ModelProviderModelInfo):
-    """Struct for language model information."""
+    """语言模型信息结构。"""
 
     model_service: ModelProviderService = ModelProviderService.LANGUAGE
     max_tokens: int
 
 
 class LanguageModelProviderModelResponse(ModelProviderModelResponse):
-    """Standard response struct for a response from a language model."""
+    """语言模型响应的标准响应结构。"""
 
     content: dict = None
 

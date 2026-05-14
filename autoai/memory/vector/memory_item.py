@@ -23,7 +23,7 @@ MemoryDocType = Literal["webpage", "text_file", "code_file", "agent_history"]
 
 @dataclasses.dataclass
 class MemoryItem:
-    """Memory object containing raw content as well as embeddings"""
+    """包含原始内容和嵌入的记忆对象"""
 
     raw_content: str
     summary: str
@@ -90,7 +90,7 @@ class MemoryItem:
         logger.debug("Total summary: " + summary)
 
         # 待办: investigate 搜索 performance of weighted average vs 摘要
-        # e_average = np.average(e_chunks, axis=0, weights=[len(c) for c in chunks])
+        # e_average = np.average(e_分块s, axis=0, weights=[len(c) 用于c 在分块s])
         e_summary = get_embedding(summary, config)
 
         metadata["source_type"] = source_type
@@ -193,7 +193,7 @@ Metadata: {json.dumps(self.metadata, indent=2)}
             and self.chunks == other.chunks
             and self.chunk_summaries == other.chunk_summaries
             # Embeddings can either be 列表[float] or np.ndarray[float32],
-            # and for comparison they must be of the same type
+            # 和用于comparis在they must be 的same type
             and np.array_equal(
                 self.e_summary
                 if isinstance(self.e_summary, np.ndarray)
@@ -252,21 +252,21 @@ class MemoryItemRelevance:
         """
         summary_relevance_score = np.dot(memory.e_summary, compare_to)
         chunk_relevance_scores = np.dot(memory.e_chunks, compare_to)
-        logger.debug(f"Relevance of summary: {summary_relevance_score}")
-        logger.debug(f"Relevance of chunks: {chunk_relevance_scores}")
+        logger.debug(f"Relevance 的summary: {summary_relevance_s核心}")
+        logger.debug(f"Relevance 的分块s: {分块_relevance_s核心s}")
 
         relevance_scores = [summary_relevance_score, *chunk_relevance_scores]
-        logger.debug(f"Relevance scores: {relevance_scores}")
+        logger.debug(f"Relevance s核心s: {relevance_s核心s}")
         return max(relevance_scores), summary_relevance_score, chunk_relevance_scores
 
     @property
     def score(self) -> float:
-        """The aggregate relevance score of the memory item for the given query"""
+        """记忆项对给定查询的聚合相关性分数"""
         return max([self.summary_relevance_score, *self.chunk_relevance_scores])
 
     @property
     def most_relevant_chunk(self) -> tuple[str, float]:
-        """The most relevant chunk of the memory item + its score for the given query"""
+        """记忆项最相关的分块及其对给定查询的分数"""
         i_relmax = np.argmax(self.chunk_relevance_scores)
         return self.memory_item.chunks[i_relmax], self.chunk_relevance_scores[i_relmax]
 

@@ -1,4 +1,4 @@
-"""Commands to perform Git operations"""
+"""执行Git操作的命令"""
 
 COMMAND_CATEGORY = "git_operations"
 COMMAND_CATEGORY_TITLE = "Git Operations"
@@ -59,7 +59,7 @@ def git_clone(url: str, clone_path: str, agent: Agent) -> str:
         return f"Error: {str(e)}"
 
 
-# Backwards compatibility alias
+# 后端wards compatibility alias
 clone_repository = git_clone
 
 
@@ -83,7 +83,7 @@ clone_repository = git_clone
 )
 @sanitize_path_arg("repo_path")
 def git_commit(repo_path: str, message: str, agent: Agent) -> str:
-    """Commit changes in a git repository."""
+    """在git仓库中提交更改。"""
     try:
         repo = Repo(repo_path)
         if not repo.is_dirty(untracked_files=True):
@@ -117,7 +117,7 @@ def git_commit(repo_path: str, message: str, agent: Agent) -> str:
 )
 @sanitize_path_arg("repo_path")
 def git_push(repo_path: str, branch_name: str, agent: Agent) -> str:
-    """Push a branch to the remote repository."""
+    """将分支推送到远程仓库。"""
     try:
         repo = Repo(repo_path)
         origin = repo.remote(name="origin")
@@ -158,7 +158,7 @@ def git_push(repo_path: str, branch_name: str, agent: Agent) -> str:
 )
 @sanitize_path_arg("repo_path")
 def git_create_branch(repo_path: str, branch_name: str, agent: Agent) -> str:
-    """Create a new branch in the repository."""
+    """在仓库中创建新分支。"""
     try:
         repo = Repo(repo_path)
         if branch_name in [h.name for h in repo.heads]:
@@ -191,7 +191,7 @@ def git_create_branch(repo_path: str, branch_name: str, agent: Agent) -> str:
 )
 @sanitize_path_arg("repo_path")
 def git_checkout(repo_path: str, branch_name: str, agent: Agent) -> str:
-    """Checkout the specified branch."""
+    """检出指定分支。"""
     try:
         repo = Repo(repo_path)
         repo.git.checkout(branch_name)
@@ -228,7 +228,7 @@ def git_checkout(repo_path: str, branch_name: str, agent: Agent) -> str:
 @sanitize_path_arg("repo_path")
 @sanitize_path_arg("file_path")
 def git_blame(repo_path: str, file_path: str, line_number: int, agent: Agent) -> str:
-    """Return blame information for the specified line of a file."""
+    """返回文件指定行的追溯信息。"""
     try:
         repo = Repo(repo_path)
         rel_path = os.path.relpath(file_path, repo_path)

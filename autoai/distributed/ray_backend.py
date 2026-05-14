@@ -3,12 +3,12 @@
 Requires: pip install ray
 
 If Ray is not installed, this module will fail to import.
-The __init__.py handles ImportError gracefully.
+__init__.py优雅地处理ImportError.
 
 Usage:
     from autoai.distributed import RayBackend
 
-    backend = RayBackend(address="auto")  # connect to existing cluster
+    backend = RayBackend(address="auto")  # connect 到existing 集群
     await backend.start()
     future = await backend.dispatch(task, agent_spec)
     result = await backend.get_result(future)
@@ -40,7 +40,7 @@ def _get_ray_worker_class():
 
     @ray.remote
     class _RayAgentWorker:
-        """Ray actor that executes agent tasks on a remote node."""
+        """在远程节点上执行代理任务的Ray actor。"""
 
         def __init__(self, worker_id: str) -> None:
             self.worker_id = worker_id
@@ -71,7 +71,7 @@ def _get_ray_worker_class():
 
 
 class RayBackend(DistributedBackend):
-    """Multi-node Ray distributed execution backend."""
+    """多节点Ray分布式执行后端。"""
 
     def __init__(
         self,
@@ -80,7 +80,7 @@ class RayBackend(DistributedBackend):
         namespace: str = "autoai",
     ) -> None:
         if not _HAS_RAY:
-            raise ImportError("Ray is required: pip install ray")
+            raise ImportError("需要Ray：pip install ray")
         super().__init__()
         self._address = address
         self._num_workers = num_workers
@@ -90,7 +90,7 @@ class RayBackend(DistributedBackend):
 
     async def start(self) -> None:
         if not _HAS_RAY:
-            raise ImportError("Ray is required: pip install ray")
+            raise ImportError("需要Ray：pip install ray")
         if not ray.is_initialized():
             init_kwargs: dict[str, Any] = {"namespace": self._namespace}
             if self._address:
@@ -101,7 +101,7 @@ class RayBackend(DistributedBackend):
 
         WorkerClass = _get_ray_worker_class()
         if not WorkerClass:
-            raise ImportError("Ray worker class could not be created")
+            raise ImportError("无法创建Ray工作者类")
 
         for i in range(self._num_workers):
             worker_id = f"ray-worker-{i}"
@@ -119,7 +119,7 @@ class RayBackend(DistributedBackend):
             self.register_worker(worker_info)
 
         self._running = True
-        logger.info("[distributed:ray] Started with %d workers on Ray cluster", self._num_workers)
+        logger.info("[分布式:ray] 启动ed 带%d 工作者s 在Ray 集群", self._num_workers)
 
     async def stop(self) -> None:
         for actor in self._actors.values():
@@ -132,7 +132,7 @@ class RayBackend(DistributedBackend):
             ray.shutdown()
 
         self._running = False
-        logger.info("[distributed:ray] Stopped")
+        logger.info("[分布式:ray] 停止ped")
 
     async def dispatch(
         self,
@@ -141,7 +141,7 @@ class RayBackend(DistributedBackend):
         preferred_worker: str | None = None,
     ) -> DispatchFuture:
         if not self._running:
-            raise RuntimeError("Ray backend not started")
+            raise RuntimeError("Ray后端未启动")
 
         worker = None
         if preferred_worker and preferred_worker in self._actors:

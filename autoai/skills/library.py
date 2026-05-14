@@ -25,7 +25,7 @@ from .vector_db import (
 
 @dataclass
 class SkillMetadata:
-    """Metadata describing a skill."""
+    """描述技能的元数据."""
 
     skill_name: str
     version: str
@@ -43,7 +43,7 @@ class SkillMetadata:
 
 @dataclass
 class Skill:
-    """Representation of an executable tool script with metadata."""
+    """带有元数据的可执行工具脚本表示."""
 
     metadata: SkillMetadata
     code: str
@@ -71,7 +71,7 @@ class Skill:
 
 
 class SkillLibrary:
-    """Persist and index skills for semantic search."""
+    """持久化并索引技能以支持语义搜索."""
 
     def __init__(
         self,
@@ -147,7 +147,7 @@ class SkillLibrary:
             )
 
     def reindex(self) -> None:
-        """Clear and rebuild the in-memory index and vector database."""
+        """清除并重建内存索引和向量数据库."""
 
         self._skills.clear()
         try:
@@ -200,7 +200,7 @@ class SkillLibrary:
         while repo != repo.parent and not (repo / ".git").exists():
             repo = repo.parent
         if not (repo / ".git").exists():
-            logger.debug("No git repository found for %s", path)
+            logger.debug("No git 仓库 found 用于%s", path)
             return
         rel = path.resolve().relative_to(repo)
         try:
@@ -217,7 +217,7 @@ class SkillLibrary:
                 text=True,
             )
             if commit_proc.returncode != 0:
-                logger.error("git commit failed: %s", commit_proc.stderr.strip())
+                logger.error("git提交失败：%s", commit_proc.stderr.strip())
                 return
             if branch_name is None:
                 branch_name = getattr(self.config, "git_branch", None)
@@ -229,7 +229,7 @@ class SkillLibrary:
                     text=True,
                 )
                 if branch_proc.returncode != 0:
-                    logger.error("git rev-parse failed: %s", branch_proc.stderr.strip())
+                    logger.error("git rev-parse失败：%s", branch_proc.stderr.strip())
                     return
                 branch_name = branch_proc.stdout.strip()
             from autoai.commands.git_operations import git_push
@@ -259,7 +259,7 @@ class SkillLibrary:
         approval_timestamp: str | None = None,
         repo_path: str | Path | None = None,
     ) -> Skill:
-        """Create and persist a new skill."""
+        """创建并持久化新技能."""
 
         metadata = SkillMetadata(
             name,
@@ -377,7 +377,7 @@ class SkillLibrary:
         return list(self._skills.values())
 
     def search(self, query: str, top_k: int = 5) -> List[Skill]:
-        """Search for skills semantically matching ``query``."""
+        """语义搜索匹配的技能 ``query``."""
 
         embedding = get_embedding(query, self.config)
         results = self.vector_db.query(list(map(float, embedding)), top_k=top_k)

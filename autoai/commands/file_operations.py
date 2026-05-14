@@ -1,4 +1,4 @@
-"""Commands to perform operations on files"""
+"""执行文件操作的命令"""
 
 from __future__ import annotations
 
@@ -25,14 +25,14 @@ Operation = Literal["write", "append", "delete"]
 
 
 def text_checksum(text: str) -> str:
-    """Get the hex checksum for the given text."""
+    """获取给定文本的十六进制校验和。"""
     return hashlib.md5(text.encode("utf-8")).hexdigest()
 
 
 def operations_from_log(
     log_path: str | Path,
 ) -> Generator[tuple[Operation, str, str | None], None, None]:
-    """Parse the file operations log and return a tuple containing the log entries"""
+    """解析文件操作日志并返回包含日志条目的元组"""
     try:
         log = open(log_path, "r", encoding="utf-8")
     except FileNotFoundError:
@@ -125,7 +125,7 @@ def log_operation(
     log_entry = f"{operation}: {filename}"
     if checksum is not None:
         log_entry += f" #{checksum}"
-    logger.debug(f"Logging file operation: {log_entry}")
+    logger.debug(f"记录ging 文件 ope比率n: {log_entry}")
     append_to_file(
         agent.config.file_logger_path, f"{log_entry}\n", agent, should_log=False
     )
@@ -199,7 +199,7 @@ def ingest_file(
     """
 
     try:
-        logger.info(f"Ingesting file {filename}")
+        logger.info(f"导入文件 {filename}")
         content = read_textual_file(filename, logger)
 
         config = config or Config()
@@ -227,10 +227,10 @@ def ingest_file(
         ]:
             memory.discard(item)
 
-        logger.debug(f"Created memory: {file_memory.dump(True)}")
+        logger.debug(f"已创建记忆： {file_memory.dump(True)}")
         memory.add(file_memory)
 
-        logger.info(f"Ingested {len(file_memory.e_chunks)} chunks from {filename}")
+        logger.info(f"导入ed {len(文件_memory.e_分块s)} 分块s 从{文件名称}")
     except Exception as err:
         logger.warn(f"Error while ingesting file '{filename}': {err}")
 

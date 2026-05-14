@@ -17,9 +17,7 @@ USER_INPUT_FILE_NAME = "user_input.txt"
 
 
 class LogCycleHandler:
-    """
-    A class for logging cycle data.
-    """
+    """用于记录循环数据的类。"""
 
     def __init__(self):
         self.log_count_within_cycle = 0

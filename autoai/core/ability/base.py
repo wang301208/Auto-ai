@@ -11,7 +11,7 @@ from autoai.core.planning.schema import LanguageModelConfiguration
 
 
 class AbilityConfiguration(SystemConfiguration):
-    """Struct for model configuration."""
+    """模型配置结构。"""
 
     from autoai.core.plugin.base import PluginLocation
 
@@ -23,30 +23,30 @@ class AbilityConfiguration(SystemConfiguration):
 
 
 class Ability(abc.ABC):
-    """A class representing an agent ability."""
+    """表示代理技能的类。"""
 
     default_configuration: ClassVar[AbilityConfiguration]
 
     @classmethod
     def name(cls) -> str:
-        """The name of the ability."""
+        """技能名称。"""
         return underscore(cls.__name__)
 
     @classmethod
     @abc.abstractmethod
     def description(cls) -> str:
-        """A detailed description of what the ability does."""
+        """技能功能的详细描述。"""
         ...
 
     @classmethod
     @abc.abstractmethod
     def arguments(cls) -> dict:
-        """A dict of arguments in standard json schema format."""
+        """标准JSON模式格式的参数字典。"""
         ...
 
     @classmethod
     def required_arguments(cls) -> list[str]:
-        """A list of required arguments."""
+        """必需参数列表。"""
         return []
 
     @abc.abstractmethod

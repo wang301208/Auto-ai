@@ -1,4 +1,4 @@
-"""Model auto-selection: Agent autonomously picks the best model per task."""
+"""模型自动选择：代理自主为每个任务选择最佳模型。"""
 
 from __future__ import annotations
 from dataclasses import dataclass

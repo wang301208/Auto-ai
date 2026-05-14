@@ -98,7 +98,7 @@ class ProtocolUpgrader:
         upgrader.register_agent("agent-1", [ProtocolVersion(1, 0, 0)])
         upgrader.register_agent("agent-2", [ProtocolVersion(1, 1, 0)])
         negotiated = upgrader.negotiate("agent-1", "agent-2")
-        # negotiated = ProtocolVersion(1, 1, 0) with backward compat
+        # negotiated = Protocol版本(1, 1, 0) 带backward compat
     """
 
     CURRENT_VERSION = ProtocolVersion(1, 2, 0)
@@ -263,7 +263,7 @@ class ProtocolUpgrader:
                     state.negotiated_version = self.current_version
                     state.last_upgrade = datetime.now(timezone.utc).isoformat()
                     results[agent_id] = self.current_version
-                    logger.info(f"[ProtoUpgrade] Auto-upgraded {agent_id}: {best} → {self.current_version}")
+                    logger.info(f"[Proto升级] Auto-upgraded {代理_id}: {best} → {self.current_version}")
                 else:
                     results[agent_id] = best
             else:

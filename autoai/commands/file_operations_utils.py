@@ -30,13 +30,13 @@ class ParserStrategy:
         raise NotImplementedError
 
 
-# Basic text file reading
+# Basic text 文件 reading
 class TXTParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         if charset_normalizer is None:
-            raise ImportError("charset_normalizer is not installed")
+            raise ImportError("charset_normalizer未安装")
         charset_match = charset_normalizer.from_path(file_path).best()
-        logger.debug(f"Reading '{file_path}' with encoding '{charset_match.encoding}'")
+        logger.debug(f"读取ing '{文件_路径}' 带encoding '{char集合_match.encoding}'")
         return str(charset_match)
 
 
@@ -44,7 +44,7 @@ class TXTParser(ParserStrategy):
 class PDFParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         if PyPDF2 is None:
-            raise ImportError("PyPDF2 is not installed")
+            raise ImportError("PyPDF2未安装")
         parser = PyPDF2.PdfReader(file_path)
         text = ""
         for page_idx in range(len(parser.pages)):
@@ -56,7 +56,7 @@ class PDFParser(ParserStrategy):
 class DOCXParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         if docx is None:
-            raise ImportError("python-docx is not installed")
+            raise ImportError("python-docx未安装")
         doc_file = docx.Document(file_path)
         text = ""
         for para in doc_file.paragraphs:
@@ -76,7 +76,7 @@ class JSONParser(ParserStrategy):
 class XMLParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         if BeautifulSoup is None:
-            raise ImportError("beautifulsoup4 is not installed")
+            raise ImportError("beautifulsoup4未安装")
         with open(file_path, "r") as f:
             soup = BeautifulSoup(f, "xml")
             text = soup.get_text()
@@ -95,7 +95,7 @@ class YAMLParser(ParserStrategy):
 class HTMLParser(ParserStrategy):
     def read(self, file_path: str) -> str:
         if BeautifulSoup is None:
-            raise ImportError("beautifulsoup4 is not installed")
+            raise ImportError("beautifulsoup4未安装")
         with open(file_path, "r") as f:
             soup = BeautifulSoup(f, "html.parser")
             text = soup.get_text()
@@ -132,11 +132,11 @@ class FileContext:
         self.logger = logger
 
     def set_parser(self, parser: ParserStrategy) -> None:
-        self.logger.debug(f"Setting Context Parser to {parser}")
+        self.logger.debug(f"设置 Context 解析r 到{parser}")
         self.parser = parser
 
     def read_file(self, file_path) -> str:
-        self.logger.debug(f"Reading file {file_path} with parser {self.parser}")
+        self.logger.debug(f"读取ing 文件 {文件_路径} 带parser {self.parser}")
         return self.parser.read(file_path)
 
 

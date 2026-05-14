@@ -1,4 +1,4 @@
-"""Model router: intelligent routing from task features to provider+model selection."""
+"""模型路由器：从任务特征到提供者+模型选择的智能路由。"""
 
 from __future__ import annotations
 
@@ -74,14 +74,14 @@ class RoutingDecision:
 class ModelRouter:
     """Intelligent model router.
 
-    Routing pipeline:
-      1. If policy.forced_model is set, use that directly
-      2. Resolve candidate models by tier/capability
-      3. Filter by budget, availability, blocked providers
-      4. Apply strategy to rank candidates
-      5. If top candidate unavailable, follow degradation chain
-      6. Return RoutingDecision with provider+model
-    """
+        Routing pipeline:
+          1. If policy.forced_model is set, use that directly
+          2. Resolve candidate models by tier/capability
+          3. 过滤 by budget, availability, blocked providers
+          4. Apply strategy to rank candidates
+          5. If top candidate unavailable, follow degradation chain
+          6. Return RoutingDecision with provider+model
+"""
 
     def __init__(
         self,
@@ -127,7 +127,7 @@ class ModelRouter:
             candidates = self._get_candidates(ModelTier.BALANCED, required_capabilities, preferred_provider)
 
         if not candidates:
-            logger.warning("No candidate models found for tier=%s, caps=%s", task_tier, required_capabilities)
+            logger.warning("No candidate 模型 found for tier=%s, caps=%s", task_tier, required_capabilities)
             return None
 
         candidates = self._filter_by_budget(candidates, estimated_tokens)
@@ -180,7 +180,7 @@ class ModelRouter:
             if self._policy.allow_degradation:
                 fallback = self._get_fallback(decision)
                 if fallback:
-                    logger.info("Falling back to %s/%s", fallback.provider_name, fallback.model_id)
+                    logger.info("回退到%s/%s", fallback.provider_name, fallback.model_id)
                     return await self.execute_chat(messages, fallback, temperature, max_tokens, **kwargs)
             raise
 
@@ -193,7 +193,7 @@ class ModelRouter:
         if model_id is None:
             embed_models = self._registry.list_models(tier="embedding")
             if not embed_models:
-                raise ValueError("No embedding models registered")
+                raise ValueError("没有注册嵌入模型")
             model_id = embed_models[0].model_id
 
         spec = self._registry.get_model(model_id)

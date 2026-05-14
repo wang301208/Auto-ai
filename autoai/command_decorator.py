@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 from autoai.models.command import Command, CommandParameter
 from autoai.models.command_parameter import ParameterType
 
-# Unique identifier for auto-ai commands
+# 去重 identifier for auto-ai commands
 AUTO_GPT_COMMAND_IDENTIFIER = "auto_ai_command"
 
 
@@ -27,7 +27,7 @@ def command(
     disabled_reason: Optional[str] = None,
     aliases: list[str] = [],
 ) -> Callable[..., Any]:
-    """The command decorator is used to create Command objects from ordinary functions."""
+    """The 命令 decorator is used to 创建 命令 objects from ordinary functions."""
 
     def decorator(func: Callable[..., Any]) -> Command:
         typed_parameters = [

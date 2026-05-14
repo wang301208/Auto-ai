@@ -1,4 +1,4 @@
-"""Logging module for Auto-AI."""
+"""Auto-AI的日志模块。"""
 from __future__ import annotations
 
 import logging

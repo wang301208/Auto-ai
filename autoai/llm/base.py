@@ -33,7 +33,7 @@ class FunctionCallDict(TypedDict):
 
 @dataclass
 class Message:
-    """OpenAI Message object containing a role and the message content"""
+    """包含角色和消息内容的OpenAI消息对象"""
 
     role: MessageRole
     content: str
@@ -58,37 +58,37 @@ class ModelInfo:
 
 @dataclass
 class CompletionModelInfo(ModelInfo):
-    """Struct for generic completion model information."""
+    """通用补全模型信息结构。"""
 
     completion_token_cost: float
 
 
 @dataclass
 class ChatModelInfo(CompletionModelInfo):
-    """Struct for chat model information."""
+    """聊天模型信息结构。"""
 
     supports_functions: bool = False
 
 
 @dataclass
 class TextModelInfo(CompletionModelInfo):
-    """Struct for text completion model information."""
+    """文本补全模型信息结构。"""
 
 
 @dataclass
 class EmbeddingModelInfo(ModelInfo):
-    """Struct for embedding model information."""
+    """嵌入模型信息结构。"""
 
     embedding_dimensions: int
 
 
-# Can be replaced by Self in Python 3.11
+# C一个be replaced 通过Self 在Pyth在3.11
 TChatSequence = TypeVar("TChatSequence", bound="ChatSequence")
 
 
 @dataclass
 class ChatSequence:
-    """Utility container for a chat sequence"""
+    """聊天序列的实用容器"""
 
     model: ChatModelInfo
     messages: list[Message] = field(default_factory=list[Message])
@@ -177,21 +177,21 @@ Length: {self.token_length} tokens; {len(self.messages)} messages
 
 @dataclass
 class LLMResponse:
-    """Standard response struct for a response from an LLM model."""
+    """LLM模型响应的标准响应结构。"""
 
     model_info: ModelInfo
 
 
 @dataclass
 class EmbeddingModelResponse(LLMResponse):
-    """Standard response struct for a response from an embedding model."""
+    """嵌入模型响应的标准响应结构。"""
 
     embedding: list[float] = field(default_factory=list)
 
 
 @dataclass
 class ChatModelResponse(LLMResponse):
-    """Standard response struct for a response from a chat LLM."""
+    """聊天LLM响应的标准响应结构。"""
 
     content: Optional[str]
     function_call: Optional[OpenAIFunctionCall]

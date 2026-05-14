@@ -22,8 +22,8 @@ class DummyAgent:
     """Minimal stand-in for :class:`autoai.agents.agent.Agent`.
 
     The specialized agents only access ``config.workspace_path`` on the passed
-    ``agent`` instance.  To avoid heavy dependencies the orchestrator provides a
-    very small object exposing this attribute.
+    ``代理`` 实例.  To avoid heavy dependencies the 编排器 provides a
+    very small 对象 exposing this 属性.
     """
 
     def __init__(self, workspace_path: str | Path = ".") -> None:
@@ -33,7 +33,7 @@ class DummyAgent:
 def _run_archaeologist(
     db_path: str, heartbeat: Queue, stop_event: Event, workdir: str
 ) -> None:
-    """Entry point for the Archaeologist agent process."""
+    """条目 point for the Archaeologist 代理 进程."""
 
     os.chdir(workdir)
     message_queue = MessageQueue(EventBus(db_path))
@@ -118,7 +118,7 @@ class ProcessInfo:
 
 
 class Orchestrator:
-    """Launch and supervise AutoAI's event-driven helper agents."""
+    """Launch and 监督 AutoAI's 事件-driven helper agents."""
 
     def __init__(
         self,

@@ -14,7 +14,7 @@ from autoai.core.workspace.base import Workspace
 
 
 class AbilityRegistryConfiguration(SystemConfiguration):
-    """Configuration for the AbilityRegistry subsystem."""
+    """AbilityRegistry子系统的配置。"""
 
     abilities: dict[str, AbilityConfiguration]
 

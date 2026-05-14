@@ -1,4 +1,4 @@
-"""Background manager to automatically develop the codebase."""
+"""自动开发代码库的后台管理器."""
 
 from __future__ import annotations
 
@@ -20,14 +20,14 @@ from .yaml_exporter import export_prompt_config
 
 @dataclass
 class Issue:
-    """Representation of an improvement opportunity."""
+    """改进机会的表示."""
 
     description: str
     context: str
 
 
 class SelfDevelopManager:
-    """Periodically review repository state and apply fixes."""
+    """定期审查仓库状态并应用修复."""
 
     def __init__(
         self,
@@ -57,7 +57,7 @@ class SelfDevelopManager:
 
     # --- 线程 control -------------------------------------------------
     def start(self) -> tuple[Thread, Event]:
-        """Start the self development loop."""
+        """启动自我开发循环."""
 
         stop_event = Event()
 
@@ -81,12 +81,12 @@ class SelfDevelopManager:
 
     # --- 核心 logic -----------------------------------------------------
     def review_repository(self) -> None:
-        """Collect issues and attempt to resolve them."""
+        """收集问题并尝试解决."""
 
         for issue in self._collect_issues():
             self._handle_issue(issue)
 
-    # --- Helpers --------------------------------------------------------
+    # --- 辅助s --------------------------------------------------------
     def _collect_issues(self) -> List[Issue]:
         issues: List[Issue] = []
 
@@ -160,7 +160,7 @@ class SelfDevelopManager:
         return issues
 
     def _handle_issue(self, issue: Issue) -> None:
-        """Generate a patch for ``issue`` and apply it."""
+        """为...生成补丁 ``issue`` 并应用它."""
 
         try:
             diff = generate_diff(issue.context)

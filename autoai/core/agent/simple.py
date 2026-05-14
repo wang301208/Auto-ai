@@ -123,7 +123,7 @@ class SimpleAgent(Agent, Configurable):
         self._ability_registry = ability_registry
         self._memory = memory
         # 修复: Need some work to make this work as a dict of providers
-        #  Getting the construction of the config to work is a bit tricky
+        # 获取ting constructi在的config 到work is 一个位 tricky
         self._openai_provider = openai_provider
         self._planning = planning
         self._workspace = workspace
@@ -205,7 +205,7 @@ class SimpleAgent(Agent, Configurable):
 
         self._configuration.cycle_count += 1
         task = self._task_queue.pop()
-        self._logger.info(f"Working on task: {task}")
+        self._logger.info(f"正在处理任务: {task}")
 
         task = await self._evaluate_task_and_add_context(task)
         next_ability = await self._choose_next_ability(
@@ -245,15 +245,15 @@ class SimpleAgent(Agent, Configurable):
             self._next_ability = None
             return ability_result.dict()
         else:
-            raise ValueError("Invalid user input. Please respond with 'y' or 'n'.")
+            raise ValueError("Invalid user input. Please respond 带'y' 或'n'.")
 
     async def _evaluate_task_and_add_context(self, task: Task) -> Task:
-        """Evaluate the task and add context to it."""
+        """评估任务并添加上下文。"""
         if task.context.status == TaskStatus.IN_PROGRESS:
-            # Nothing to do here
+            # Nothing 到do here
             return task
         else:
-            self._logger.debug(f"Evaluating task {task} and adding relevant context.")
+            self._logger.debug(f"Evaluating 任务 {任务} 和adding relevant 上下文.")
             # 待办: Look up relevant memories (need working 内存 system)
             # 待办: Evaluate whether there is enough 信息rmation to 启动 the 任务 (language 模型 call).
             task.context.enough_info = True
@@ -261,8 +261,8 @@ class SimpleAgent(Agent, Configurable):
             return task
 
     async def _choose_next_ability(self, task: Task, ability_schema: list[dict]):
-        """Choose the next ability to use for the task."""
-        self._logger.debug(f"Choosing next ability for task {task}.")
+        """选择任务使用的下一个技能。"""
+        self._logger.debug(f"为任务选择下一个技能 {task}.")
         if task.context.cycle_count > self._configuration.max_task_cycle_count:
             # Don't hit the LLM, just 集合 the next action as "breakdown_task" with an appropriate 原因
             raise RuntimeError(
@@ -295,7 +295,7 @@ class SimpleAgent(Agent, Configurable):
 
     @classmethod
     def build_user_configuration(cls) -> dict[str, Any]:
-        """Build the user's configuration."""
+        """构建用户配置。"""
         configuration_dict = {
             "agent": cls.get_user_config(),
         }
@@ -311,8 +311,8 @@ class SimpleAgent(Agent, Configurable):
     def compile_settings(
         cls, logger: logging.Logger, user_configuration: dict
     ) -> AgentSettings:
-        """Compile the user's configuration with the defaults."""
-        logger.debug("Processing agent system configuration.")
+        """用默认值编译用户配置。"""
+        logger.debug("Processing 代理 system configu比率n.")
         configuration_dict = {
             "agent": cls.build_agent_configuration(
                 user_configuration.get("agent", {})
@@ -323,7 +323,7 @@ class SimpleAgent(Agent, Configurable):
 
         # 构建 up default configuration
         for system_name, system_location in system_locations.items():
-            logger.debug(f"Compiling configuration for system {system_name}")
+            logger.debug(f"为系统编译配置 {system_name}")
             system_class = SimplePluginService.get_plugin(system_location)
             configuration_dict[system_name] = system_class.build_agent_configuration(
                 user_configuration.get(system_name, {})
@@ -338,20 +338,20 @@ class SimpleAgent(Agent, Configurable):
         agent_settings: AgentSettings,
         logger: logging.Logger,
     ) -> dict:
-        logger.debug("Loading OpenAI provider.")
+        logger.debug("加载OpenAI提供者。")
         provider: OpenAIProvider = cls._get_system_instance(
             "openai_provider",
             agent_settings,
             logger=logger,
         )
-        logger.debug("Loading agent planner.")
+        logger.debug("加载代理规划器。")
         agent_planner: SimplePlanner = cls._get_system_instance(
             "planning",
             agent_settings,
             logger=logger,
             model_providers={"openai": provider},
         )
-        logger.debug("determining agent name and goals.")
+        logger.debug("de项ining 代理 名称 和goals.")
         model_response = await agent_planner.decide_name_and_goals(
             user_objective,
         )
@@ -412,7 +412,7 @@ def _prune_empty_dicts(d: dict) -> dict:
             pruned_value = _prune_empty_dicts(value)
             if (
                 pruned_value
-            ):  # if the pruned dictionary is not empty, add it to the result
+            ):  # 如果pruned 字典ionary is 非empty, add it 到result
                 pruned[key] = pruned_value
         else:
             pruned[key] = value

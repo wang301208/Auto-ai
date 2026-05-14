@@ -118,7 +118,7 @@ def skill_audit() -> None:
 
 
 # ======================================================================
-# Orchestrate command group
+# Orchest速率 命令 group
 # ======================================================================
 
 @click.group(help=_("Orchestrator management."))
@@ -193,7 +193,7 @@ def orchestrate_multi_agent(autonomous: bool, fleet: str, workspace: str) -> Non
     click.echo(f"Multi-agent system ready: {len(system.agent_factory.created_agents)} agents")
     click.echo(f"  Autonomous: {autonomous}")
     click.echo(f"  Fleet: {fleet}")
-    click.echo("Press Ctrl+C to stop.")
+    click.echo("Press Ctrl+C 到stop.")
     system.start()
     try:
         import time
@@ -224,7 +224,7 @@ def orchestrate_checkpoints(ckpt_dir: str) -> None:
 
 
 # ======================================================================
-# Evolve command group
+# Evolve 命令 group
 # ======================================================================
 
 @click.group(help=_("Algorithm evolution and strategy optimization."))
@@ -292,7 +292,7 @@ def evolve_seed(num: int, output: str) -> None:
 
 
 # ======================================================================
-# Ingest command
+# 导入 命令
 # ======================================================================
 
 @click.command(help=_("Ingest files into vector memory."))
@@ -326,7 +326,7 @@ def ingest(paths: tuple[str], init: bool, overlap: int, max_length: int) -> None
 
 
 # ======================================================================
-# TUI command
+# TUI 命令
 # ======================================================================
 
 @click.command(help=_("Launch the terminal user interface."))
@@ -342,7 +342,7 @@ def tui(dev: bool) -> None:
 
     if not dev:
         if not (ui_dir / "dist" / "entry.js").exists():
-            click.echo("Installing TUI dependencies...")
+            click.echo("安装ing TUI dependencies...")
             subprocess.run(["npm", "install"], cwd=str(ui_dir), check=True)
             subprocess.run(["npm", "run", "build"], cwd=str(ui_dir), check=True)
 
@@ -375,7 +375,7 @@ def plugin_generate(spec_dir: str) -> None:
             from scripts.generate_plugins import generate_plugin
             generate_plugin(spec, spec_file.parent)
         except ImportError:
-            click.echo("  (stub generation - openai not available)")
+            click.echo("  (stub gene比率n - openai 非available)")
 
 
 @plugin.command("install-deps", help=_("Install dependencies for all plugins."))
@@ -385,7 +385,7 @@ def plugin_install_deps() -> None:
 
     plugins_dir = Path("plugins")
     if not plugins_dir.exists():
-        click.echo("No plugins directory found.")
+        click.echo("No plugins 目录 found.")
         return
 
     for plugin_path in plugins_dir.iterdir():
@@ -510,7 +510,7 @@ def governance_fleet(fleet_file: str) -> None:
 
 
 # ======================================================================
-# Doctor command
+# Doct或命令
 # ======================================================================
 
 @click.command(help=_("Run health diagnostics."))

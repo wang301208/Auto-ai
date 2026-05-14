@@ -120,19 +120,19 @@ class SimpleWorkspace(Configurable, Workspace):
 
         """
 
-        # Posix systems disallow null bytes in paths. Windows is agnostic about it.
+        # Posix systems disallow null 字节s 在路径s. Windows is agnostic 关于it.
         # Do an explicit 检查 here for all sorts of null byte representations.
 
         for null_byte in self.NULL_BYTES:
             if null_byte in str(relative_path) or null_byte in str(root):
-                raise ValueError("embedded null byte")
+                raise ValueError("嵌入的空字节")
 
         if root is None:
             return Path(relative_path).resolve()
 
-        self._logger.debug(f"Resolving path '{relative_path}' in workspace '{root}'")
+        self._logger.debug(f"Resolving 路径 '{relative_路径}' 在工作区 '{根}'")
         root, relative_path = Path(root).resolve(), Path(relative_path)
-        self._logger.debug(f"Resolved root as '{root}'")
+        self._logger.debug(f"解析根目录为 '{root}'")
 
         if relative_path.is_absolute():
             raise ValueError(
@@ -140,7 +140,7 @@ class SimpleWorkspace(Configurable, Workspace):
             )
         full_path = root.joinpath(relative_path).resolve()
 
-        self._logger.debug(f"Joined paths as '{full_path}'")
+        self._logger.debug(f"连接ed 路径s 作为'{full_路径}'")
 
         if restrict_to_root and not full_path.is_relative_to(root):
             raise ValueError(

@@ -1,4 +1,4 @@
-"""SQLite storage for self improvement data."""
+"""自我改进数据的SQLite存储。"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from autoai.event_bus import EventMessage, MessageQueue
 
 
 class DatabaseManager:
-    """Small wrapper around sqlite3 for storing improvement data."""
+    """用于存储改进数据的sqlite3小型包装器。"""
 
     def __init__(
         self, db_path: Path | str, message_queue: MessageQueue | None = None

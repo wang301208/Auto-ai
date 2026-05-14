@@ -36,11 +36,11 @@ from .base import AgentThoughts, BaseAgent, CommandArgs, CommandName
 
 
 class CommandRepetitionError(RuntimeError):
-    """Raised when the same command is executed too many times."""
+    """Raised when the same 命令 is executed too many times."""
 
 
 class Agent(BaseAgent):
-    """Agent class for interacting with Auto-AI."""
+    """代理 类 for interacting with Auto-AI."""
 
     def __init__(
         self,
@@ -70,16 +70,16 @@ class Agent(BaseAgent):
             threshold=config.long_term_memory_threshold,
         )
         self.memory = self.long_term_memory
-        """Long-term memory manager"""
+        """Long-term memory 管理器"""
 
         self.workspace = Workspace(config.workspace_path, config.restrict_to_workspace)
-        """Workspace that the agent has access to, e.g. for reading/writing files."""
+        """工作区 that the 代理 has access to, e.g. for reading/writing files."""
 
         self.created_at = datetime.now().strftime("%Y%m%d_%H%M%S")
-        """Timestamp the agent was created; only used for structured debug logging."""
+        """Timestamp the 代理 was 已创建; only used for structured 调试 logging."""
 
         self.log_cycle_handler = LogCycleHandler()
-        """LogCycleHandler for structured debug logging."""
+        """LogCycleHandler for structured 调试 logging."""
 
         self.plugin_queue = plugin_queue
         self.message_queue = message_queue
@@ -107,16 +107,16 @@ class Agent(BaseAgent):
                 remaining_budget = 0
 
             budget_msg = Message(
-                "system",
+                "系统",
                 f"Your remaining API budget is ${remaining_budget:.3f}"
                 + (
-                    " BUDGET EXCEEDED! SHUT DOWN!\n\n"
+                    " 预算 已超出! 关闭!\n\n"
                     if remaining_budget == 0
                     else (
-                        " Budget very nearly exceeded! Shut down gracefully!\n\n"
+                        " 预算 very nearly 已超出! 关闭 gracefully!\n\n"
                         if remaining_budget < 0.005
                         else (
-                            " Budget nearly exceeded. Finish up.\n\n"
+                            " 预算 nearly 已超出. 完成 up.\n\n"
                             if remaining_budget < 0.01
                             else ""
                         )
@@ -136,7 +136,7 @@ class Agent(BaseAgent):
         instruction: Optional[str] = None,
         thought_process_id: BaseAgent.ThoughtProcessID = "one-shot",
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
-        """Run one agent cycle, checking the skill library before planning."""
+        """运行 one 代理 循环, checking the skill 库 before planning."""
 
         query = instruction or self.default_cycle_instruction
         library = get_library()
@@ -144,7 +144,7 @@ class Agent(BaseAgent):
 
         if matches:
             skill = matches[0]
-            logger.info(f"Skill match found for task '{query}': {skill.name}")
+            logger.info(f"Skill match found 用于任务 '{query}': {skill.名称}")
             if self.message_queue:
                 self.message_queue.publish(
                     EventMessage(
@@ -168,7 +168,7 @@ class Agent(BaseAgent):
             }
             return command_name, command_args, assistant_reply_dict
 
-        logger.info(f"No skill match found for task '{query}'")
+        logger.info(f"No skill match found 用于任务 '{query}'")
         if self.message_queue:
             self.message_queue.publish(
                 EventMessage(
@@ -201,7 +201,7 @@ class Agent(BaseAgent):
         return prompt
 
     def _record_command(self, signature: str) -> int:
-        """Record a command execution and return the count in the recent window."""
+        """记录 a 命令 execution and 回报 the 计数 in the recent window."""
         now = time.time()
         self._recent_commands.append((signature, now))
         # 丢弃重复窗口外的命令
@@ -233,7 +233,7 @@ class Agent(BaseAgent):
 
         else:
             if command_name is None:
-                raise ValueError("No command name to execute")
+                raise ValueError("没有要执行的命令名称")
             if command_args is None:
                 command_args = {}
 
@@ -244,9 +244,9 @@ class Agent(BaseAgent):
                     command_name, command_args
                 )
             if command_name is None:
-                raise ValueError("Plugin pre_command returned None for command_name")
+                raise ValueError("插件pre_command对command_name返回了None")
             if command_args is None:
-                raise ValueError("Plugin pre_command returned None for command_args")
+                raise ValueError("插件pre_command对command_args返回了None")
             command_result = execute_command(
                 command_name=command_name,
                 arguments=command_args,
@@ -266,7 +266,7 @@ class Agent(BaseAgent):
             )
             if result_tlength + memory_tlength > self.send_token_limit:
                 result = f"Failure: command {command_name} returned too much output. \
-                    Do not execute this command again with the same arguments."
+                    Do not 执行 this 命令 again with the same arguments."
 
             for plugin in self.config.plugins:
                 if not plugin.can_handle_post_command():
@@ -301,7 +301,7 @@ class Agent(BaseAgent):
         command_args: dict[str, str] | None,
         user_input: str | None,
     ) -> str:
-        """Execute a command and emit an event with the result."""
+        """执行 a 命令 and 发射 an 事件 with the 结果."""
         signature = None
         if command_name is not None:
             signature = command_name
@@ -323,13 +323,13 @@ class Agent(BaseAgent):
         except Exception as e:
             if self.db:
                 self.db.log_error(type(e).__name__, traceback.format_exc())
-            raise
+            抛出
 
     def parse_and_process_response(
         self, llm_response: ChatModelResponse, *args: Any, **kwargs: Any
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
         if not llm_response.content:
-            raise SyntaxError("Assistant response has no text content")
+            raise SyntaxError("Assistant response h作为无text content")
 
         try:
             assistant_reply_dict = extract_dict_from_response(llm_response.content)
@@ -363,7 +363,7 @@ class Agent(BaseAgent):
                 )
                 response = command_name, arguments, assistant_reply_dict
             except Exception as e:
-                logger.error(f"Error extracting command: {e}")
+                logger.error(f"错误 extracting 命令: {e}")
                 response = f"Error: {e}", {}, assistant_reply_dict
 
         self.log_cycle_handler.log_cycle(
@@ -379,7 +379,7 @@ class Agent(BaseAgent):
 def extract_command(
     assistant_reply_json: dict, assistant_reply: ChatModelResponse, config: Config
 ) -> tuple[str, dict[str, str]]:
-    """Parse the response and return the command name and arguments
+    """解析 the 响应 and 回报 the 命令 name and arguments
 
     Args:
         assistant_reply_json (dict): The response object from the AI
@@ -438,7 +438,7 @@ def execute_command(
     arguments: dict[str, str],
     agent: Agent,
 ) -> Any:
-    """Execute the command and return the result
+    """执行 the 命令 and 回报 the 结果
 
     Args:
         command_name (str): The name of the command to execute
@@ -463,7 +463,7 @@ def execute_command(
 
         raise RuntimeError(
             f"Cannot execute '{command_name}': unknown command."
-            " Do not try to use this command again."
+            " Do not try to use this 命令 again."
         )
     except Exception as e:
         return f"Error: {str(e)}"

@@ -20,7 +20,7 @@ from autoai.memory.long_term import LongTermMemory
 
 @dataclass
 class MemoryItemV2:
-    """V2-compatible memory item."""
+    """V2兼容的记忆项。"""
 
     content: str
     metadata: dict[str, Any] = field(default_factory=dict)
@@ -33,7 +33,7 @@ class MemoryItemV2:
 
 
 class Memory(metaclass=ABCMeta):
-    """V2 Memory abstract interface."""
+    """V2 Memory抽象接口。"""
 
     @abstractmethod
     async def add(self, item: MemoryItemV2) -> None:
@@ -54,11 +54,10 @@ class Memory(metaclass=ABCMeta):
 
 
 class VectorMemoryAdapter(Memory):
-    """Adapts V1 VectorMemory to V2 Memory interface.
+    """将V1 VectorMemory适配到V2 Memory接口。
 
-    All V1 sync operations are wrapped in run_in_executor
-    for async compatibility.
-    """
+    所有V1同步操作都包装在run_in_executor中
+    以实现异步兼容。"""
 
     def __init__(
         self,
@@ -113,7 +112,7 @@ class VectorMemoryAdapter(Memory):
     async def search_long_term(
         self, query: str, k: int = 5
     ) -> list[str]:
-        """Search long-term memory if available."""
+        """如可用则搜索长期记忆。"""
         if self._long_term is None:
             return []
         loop = asyncio.get_event_loop()
@@ -124,7 +123,7 @@ class VectorMemoryAdapter(Memory):
     async def maybe_transfer(
         self, history: MessageHistory
     ) -> None:
-        """Transfer short-term to long-term memory if threshold exceeded."""
+        """如超过阈值则将短期记忆转移到长期记忆。"""
         if self._long_term is None:
             return
         loop = asyncio.get_event_loop()

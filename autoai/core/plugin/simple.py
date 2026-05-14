@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class SimplePluginService(PluginService):
     @staticmethod
     def get_plugin(plugin_location: dict | PluginLocation) -> "PluginType":
-        """Get a plugin from a plugin location."""
+        """从插件位置获取插件。"""
         if isinstance(plugin_location, dict):
             plugin_location = PluginLocation.parse_obj(plugin_location)
         if plugin_location.storage_format == PluginStorageFormat.WORKSPACE:
@@ -39,10 +39,10 @@ class SimplePluginService(PluginService):
     ####################################
     @staticmethod
     def load_from_file_path(plugin_route: PluginStorageRoute) -> "PluginType":
-        """Load a plugin from a file path."""
+        """从文件路径加载插件。"""
         path_str, _, target = plugin_route.partition(":")
         if not path_str:
-            raise ValueError("Plugin route must include a path")
+            raise ValueError("插件路由必须包含路径")
         plugin_path = Path(path_str).expanduser()
         if not plugin_path.exists():
             raise FileNotFoundError(f"Plugin path '{plugin_path}' does not exist")
@@ -74,7 +74,7 @@ class SimplePluginService(PluginService):
                 sys.path.pop(0)
             return getattr(module, class_name)
 
-        # Treat as a single Python file
+        # Tre在作为一个single Pyth在文件
         module_name = plugin_path.stem
         spec = importlib_util.spec_from_file_location(module_name, str(plugin_path))
         if spec is None or spec.loader is None:
@@ -86,7 +86,7 @@ class SimplePluginService(PluginService):
 
     @staticmethod
     def load_from_import_path(plugin_route: PluginStorageRoute) -> "PluginType":
-        """Load a plugin from an import path."""
+        """从导入路径加载插件。"""
         module_path, _, class_name = plugin_route.rpartition(".")
         return getattr(import_module(module_path), class_name)
 
@@ -94,7 +94,7 @@ class SimplePluginService(PluginService):
     def resolve_name_to_path(
         plugin_route: PluginStorageRoute, path_type: str
     ) -> PluginStorageRoute:
-        """Resolve a plugin name to a plugin path."""
+        """将插件名称解析为插件路径。"""
         if path_type == "file":
             plugin_name = plugin_route
             search_roots = [Path.cwd(), Path.cwd() / "plugins"]
@@ -126,7 +126,7 @@ class SimplePluginService(PluginService):
 
     @staticmethod
     def load_from_workspace(plugin_route: PluginStorageRoute) -> "PluginType":
-        """Load a plugin from the workspace."""
+        """从工作区加载插件。"""
         plugin = SimplePluginService.load_from_file_path(plugin_route)
         return plugin
 

@@ -1,4 +1,4 @@
-"""Queue to collect plugin tasks for missing tool gaps."""
+"""收集缺少工具间隙的插件任务的队列."""
 
 from __future__ import annotations
 
@@ -21,7 +21,7 @@ class PluginTodo:
 
 
 class PluginTodoQueue:
-    """Persistent queue for plugin TODO items backed by a JSON file."""
+    """由JSON文件支持的插件TODO项持久队列."""
 
     def __init__(
         self,
@@ -54,7 +54,7 @@ class PluginTodoQueue:
     def record_failure(
         self, gap: str, context: str, goal: str, *, threshold: int = 3
     ) -> None:
-        """Record a failure for a given gap, enqueue after threshold."""
+        """记录给定间隙的失败，超过阈值后入队."""
         with self._lock:
             count = self._counters.get(gap, 0) + 1
             self._counters[gap] = count

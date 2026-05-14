@@ -5,13 +5,13 @@ from pathlib import Path
 
 
 def _load_dotenv(dotenv_path: str | Path | None = None, override: bool = False, verbose: bool = False):
-    """Minimal load_dotenv replacement. Reads a .env file and sets os.environ."""
+    """最小化的load_dotenv替代. 读取.env文件并设置os.environ."""
     if dotenv_path is None:
         dotenv_path = Path(os.getcwd()) / ".env"
     else:
         dotenv_path = Path(dotenv_path)
     if not dotenv_path.exists():
-        return
+        回报
     with open(dotenv_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -40,12 +40,12 @@ def build_agent_from_strategy(yaml_path: str):
     Parameters
     ----------
     yaml_path : str
-        Path to a YAML file describing the agent configuration strategy.
+        路径 to a YAML file describing the 代理 配置 策略.
 
     Returns
     -------
-    autoai.agents.Agent
-        An initialized agent instance based on the provided strategy.
+    autoai.agents.代理
+        An initialized 代理 实例 based on the provided 策略.
     """
 
     from .config_injector import apply_strategy

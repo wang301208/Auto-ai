@@ -1,7 +1,7 @@
 """V1 subsystem injection as V2 Abilities.
 
 Wraps SelfDevelopManager, SkillLibrary, and EventBus/MessageQueue
-as V2 Ability instances so they can be discovered and invoked through
+as V2 Ability 实例s so they can be discovered and invoked through
 the V2 AbilityRegistry by the planner.
 """
 
@@ -52,7 +52,7 @@ class SelfDevelopAbility(Ability):
             await loop.run_in_executor(None, self._manager.review_repository)
             return AbilityResult(output="Self-develop review completed", success=True)
         except Exception as e:
-            logger.error(f"Self-develop review failed: {e}")
+            logger.error(f"Self-develop re视图 failed: {e}")
             return AbilityResult.failure(str(e))
 
 
@@ -233,27 +233,27 @@ def inject_v1_subsystems(
 ) -> None:
     """Register V1 subsystems as V2 Abilities into the given AbilityRegistry.
 
-    Args:
-        ability_registry: The V2 AbilityRegistry to register into.
-        self_develop_manager: Optional SelfDevelopManager instance.
-        skill_library: Optional SkillLibrary instance.
-        message_queue: Optional MessageQueue instance.
-    """
+        Args:
+            ability_registry: The V2 AbilityRegistry to register into.
+            self_develop_manager: Optional SelfDevelopManager 实例.
+            skill_library: Optional SkillLibrary 实例.
+            message_queue: Optional MessageQueue 实例.
+"""
     if self_develop_manager is not None:
         ability_registry.register(SelfDevelopAbility(self_develop_manager))
-        logger.debug("[Inject] Registered SelfDevelopAbility")
+        logger.debug("[Inject] 已注册 SelfDevelopAbility")
 
     ability_registry.register(SkillSearchAbility(skill_library))
-    logger.debug("[Inject] Registered SkillSearchAbility")
+    logger.debug("[Inject] 已注册 SkillSearchAbility")
 
     ability_registry.register(SkillExecuteAbility())
-    logger.debug("[Inject] Registered SkillExecuteAbility")
+    logger.debug("[Inject] 已注册 SkillExecuteAbility")
 
     ability_registry.register(EventBusPublishAbility(message_queue))
-    logger.debug("[Inject] Registered EventBusPublishAbility")
+    logger.debug("[Inject] 已注册 EventBusPublishAbility")
 
     ability_registry.register(EventBusQueryAbility(message_queue))
-    logger.debug("[Inject] Registered EventBusQueryAbility")
+    logger.debug("[Inject] 已注册 EventBusQueryAbility")
 
 
 def create_self_develop_manager(
@@ -265,7 +265,7 @@ def create_self_develop_manager(
     patch_agent: PatchAgent | None = None,
     **kwargs: Any,
 ) -> SelfDevelopManager:
-    """Factory helper to create a SelfDevelopManager with sensible defaults."""
+    """创建具有合理默认值的SelfDevelopManager的工厂辅助函数。"""
     if patch_agent is None:
         patch_agent = PatchAgent(workspace=workspace)
     return SelfDevelopManager(

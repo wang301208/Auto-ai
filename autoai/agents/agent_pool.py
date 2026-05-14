@@ -1,4 +1,4 @@
-"""Agent pool with elastic scaling based on workload demand.
+"""基于工作负载需求弹性伸缩的代理池.
 
 Manages a pool of agent profiles and automatically scales the number
 of available agents up or down based on:
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class PoolConfig:
-    """Configuration for agent pool scaling."""
+    """配置 for 代理 pool scaling."""
 
     min_agents: dict[str, int] = field(default_factory=lambda: {"coder": 1, "reviewer": 0})
     max_agents: dict[str, int] = field(default_factory=lambda: {"coder": 5, "reviewer": 3})
@@ -43,7 +43,7 @@ class PoolConfig:
 
 @dataclass
 class PoolEntry:
-    """An agent entry in the pool."""
+    """An 代理 条目 in the pool."""
 
     profile: AgentProfile
     created_at: float = field(default_factory=time.time)
@@ -62,7 +62,7 @@ class PoolEntry:
 
 
 class AgentPool:
-    """Elastic agent pool with auto-scaling.
+    """Elastic 代理 pool with 自动扩缩容.
 
     Usage:
         pool = AgentPool(
@@ -103,7 +103,7 @@ class AgentPool:
         capabilities: set[str] | None = None,
         permanent: bool = False,
     ) -> None:
-        """Manually add an agent to the pool."""
+        """Manually 添加 an 代理 to the pool."""
         profile = AgentProfile(
             agent_id=agent_id,
             roles=roles,
@@ -118,10 +118,10 @@ class AgentPool:
         self.comm_bus.register_agent(agent_id)
         if self.health:
             self.health.register(agent_id, role=next(iter(roles), ""))
-        logger.info("[pool] Agent added: %s (roles=%s, permanent=%s)", agent_id, roles, permanent)
+        logger.info("[池] Agent added: %s (roles=%s, 永久=%s)", agent_id, roles, permanent)
 
     def remove_agent(self, agent_id: str) -> bool:
-        """Remove an agent from the pool."""
+        """移除 an 代理 from the pool."""
         with self._lock:
             entry = self._pool.pop(agent_id, None)
             if entry is None:
@@ -135,7 +135,7 @@ class AgentPool:
         self.comm_bus.unregister_agent(agent_id)
         if self.health:
             self.health.unregister(agent_id)
-        logger.info("[pool] Agent removed: %s", agent_id)
+        logger.info("[池] Agent removed: %s", agent_id)
         return True
 
     def get_pool_status(self) -> dict[str, Any]:
@@ -158,7 +158,7 @@ class AgentPool:
         }
 
     def _scale_check(self) -> None:
-        """Check if scaling is needed and perform it."""
+        """检查 if scaling is needed and perform it."""
         now = time.time()
         with self._lock:
             role_utilization: dict[str, list[float]] = {}
@@ -203,7 +203,7 @@ class AgentPool:
                                 break
 
     def _spawn_agent(self, role: str) -> str:
-        """Create a new agent for the given role."""
+        """创建 a new 代理 for the given 角色."""
         agent_id = f"{role}_{uuid_hex(8)}"
         capabilities = self._default_capabilities(role)
 
@@ -213,7 +213,7 @@ class AgentPool:
                 if real_id:
                     agent_id = real_id
             except Exception as e:
-                logger.error("[pool] Factory error for %s: %s", agent_id, e)
+                logger.error("[池] Factory err或用于%s: %s", agent_id, e)
 
         self.add_agent(agent_id, roles={role}, capabilities=capabilities)
         return agent_id
@@ -231,7 +231,7 @@ class AgentPool:
 
     def start(self) -> None:
         if self._running:
-            return
+            回报
         self._running = True
         self._stop.clear()
         self._thread = threading.Thread(
@@ -240,7 +240,7 @@ class AgentPool:
             daemon=True,
         )
         self._thread.start()
-        logger.info("[pool] Agent pool monitor started")
+        logger.info("[池] Agent 池 monit或started")
 
     def stop(self) -> None:
         self._running = False
@@ -253,7 +253,7 @@ class AgentPool:
             try:
                 self._scale_check()
             except Exception as e:
-                logger.error("[pool] Scale check error: %s", e)
+                logger.error("[池] 缩放 check error: %s", e)
             self._stop.wait(timeout=self.config.check_interval_seconds)
 
 

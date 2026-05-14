@@ -1,10 +1,10 @@
-"""Seccomp-based sandbox — Linux only.
+"""基于Seccomp的沙箱 — 仅限Linux。
 
-Uses seccomp-bpf (via libseccomp/python-seccomp) to restrict system calls
-within the sandboxed process. Falls back gracefully on non-Linux platforms.
+使用seccomp-bpf（通过libseccomp/python-seccomp）限制系统调用，
+在沙箱进程中运行。在非Linux平台上优雅回退。
 
-This module is optional — import will fail if python-seccomp is not installed.
-The __init__.py handles ImportError gracefully.
+此模块是可选的 — 如果未安装python-seccomp，导入将失败。
+__init__.py会优雅地处理ImportError。
 """
 
 from __future__ import annotations
@@ -28,11 +28,11 @@ except ImportError:
 
 
 class SeccompSandbox(SandboxBackend):
-    """Linux seccomp-bpf sandbox.
+    """Linux seccomp-bpf沙箱.
 
-    If seccomp is unavailable (non-Linux or python-seccomp not installed),
-    falls back to SubprocessSandbox with stricter defaults.
-    """
+        如果seccomp不可用 (非Linux或未安装python-seccomp),
+        回退到具有更严格默认值的SubprocessSandbox.
+"""
 
     def __init__(self, config: SandboxConfig | None = None) -> None:
         super().__init__(config)

@@ -1,4 +1,4 @@
-"""Unified AsyncAgent bridging V1 functionality with V2 async architecture.
+"""统一AsyncAgent，桥接V1功能与V2异步架构。
 
 This module provides the async-compatible agent that combines:
 - V1's rich functionality (skills, memory, plugins, self-improve, events)
@@ -56,16 +56,16 @@ class CommandRepetitionError(RuntimeError):
 
 
 class AsyncAgent(BaseAgent):
-    """Async-capable agent bridging V1 features with V2 architecture.
+    """Async-capable 代理 bridging V1 features with V2 架构.
 
     This agent provides:
     - async think() / execute() for non-blocking operation
-    - V1's skill library matching
-    - V1's long-term memory and message history
+    - V1's skill 库 matching
+    - V1's long-term memory and 消息 history
     - V1's plugin hooks (pre/post command)
-    - V1's self-improve infrastructure
-    - V1's event bus integration
-    - V2-compatible structured output via function calling
+    - V1's self-改进 基础设施
+    - V1's 事件 bus integration
+    - V2-compatible structured 输出 via 函数 calling
     - V2 Task-driven planning: priority queue, acceptance criteria, task context
     """
 
@@ -135,10 +135,10 @@ class AsyncAgent(BaseAgent):
         self,
         self_think: SelfThinkEngine | None = None,
     ) -> None:
-        """Enable autonomous self-improvement mode with boundary management.
+        """启用 autonomous 自改进 mode with 边界 management.
 
-        When enabled, the agent will automatically scan for improvement
-        opportunities and create tasks when the queue is empty.
+        When 已启用, the 代理 will automatically 扫描 for improvement
+        opportunities and 创建 tasks when the 排队 is 空.
         Boundaries are managed autonomously by the BoundaryManager.
         """
         self._autonomous_mode = True
@@ -176,7 +176,7 @@ class AsyncAgent(BaseAgent):
         elif self._boundary_manager is not None:
             self._self_think._boundary_manager = self._boundary_manager
 
-        logger.info("[Autonomous] Self-improvement mode enabled with boundary management")
+        logger.info("[Autonomous] Self-improvement mode enabled 带边界ary management")
 
     @property
     def autonomous_mode(self) -> bool:
@@ -187,28 +187,28 @@ class AsyncAgent(BaseAgent):
         return self._boundary_manager
 
     def attach_boundary_manager(self, boundary_manager: Any) -> None:
-        """Attach a BoundaryManager for autonomous boundary management."""
+        """附加 a BoundaryManager for autonomous 边界 management."""
         self._boundary_manager = boundary_manager
 
     def attach_comm_bus(self, comm_bus: Any) -> None:
-        """Attach an AgentCommunicationBus for multi-agent coordination."""
+        """附加 an AgentCommunicationBus for multi-代理 coordination."""
         self._comm_bus = comm_bus
 
     def detach_comm_bus(self) -> None:
-        """Detach the communication bus."""
+        """分离 the communication bus."""
         self._comm_bus = None
 
     def attach_model_router(self, model_router: Any, model_registry: Any | None = None) -> None:
-        """Attach unified model router for LLM calls."""
+        """附加 unified 模型 router for LLM calls."""
         self._model_router = model_router
         self._model_registry = model_registry
 
     def attach_sandbox(self, sandbox: Any) -> None:
-        """Attach sandbox for command execution validation."""
+        """附加 沙箱 for 命令 execution validation."""
         self._sandbox = sandbox
 
     def attach_stream_buffer(self, stream_buffer: Any) -> None:
-        """Attach stream buffer for TUI live output."""
+        """附加 流式 buffer for TUI live 输出."""
         self._stream_buffer = stream_buffer
         from autoai.llm.model_router.streaming import StreamingChat
         self._streaming_chat = StreamingChat()
@@ -218,10 +218,10 @@ class AsyncAgent(BaseAgent):
     # ==================================================================
 
     async def build_plan(self) -> list[Task]:
-        """Use the V2 planner to decompose goals into a prioritized task queue.
+        """Use the V2 planner to 分解 goals into a prioritized 任务 排队.
 
         Requires self._planner (SimplePlanner) to be set. Falls back to
-        a single-task plan if no planner is available.
+        a single-任务 计划 if no planner is 可用.
         """
         if self._planner is None:
             fallback_task = Task(
@@ -283,10 +283,10 @@ class AsyncAgent(BaseAgent):
         return self._task_queue
 
     async def determine_next_ability_from_plan(self) -> tuple[Task, dict] | None:
-        """Pick the highest-priority task and let the planner decide the next ability.
+        """Pick the highest-priority 任务 and let the planner 决定 the next ability.
 
-        In autonomous mode, if no tasks are pending, the agent will
-        self-scan for improvement opportunities and inject them.
+        In autonomous mode, if no tasks are 待处理, the 代理 will
+        self-扫描 for improvement opportunities and 注入 them.
 
         Returns (task, next_ability_dict) or None if no tasks remain.
         """
@@ -294,7 +294,7 @@ class AsyncAgent(BaseAgent):
             if self._autonomous_mode and self._self_think is not None:
                 injected = self._self_think.inject_into_queue(self._task_queue)
                 if injected > 0:
-                    logger.info(f"[Autonomous] Self-generated {injected} tasks")
+                    logger.info(f"[Autonomous] Self-gene速率d {injected} 任务s")
                 elif self.message_queue:
                     self.message_queue.publish(
                         EventMessage(
@@ -307,7 +307,7 @@ class AsyncAgent(BaseAgent):
                 return None
 
         task = self._task_queue.pop()
-        logger.info(f"[Task] Working on: {task.objective} (priority={task.priority})")
+        logger.info(f"[Task] Working on: {任务.对象ive} (priority={任务.priority})")
 
         task = self._evaluate_task_and_add_context(task)
 
@@ -323,10 +323,10 @@ class AsyncAgent(BaseAgent):
         return task, {}
 
     def _evaluate_task_and_add_context(self, task: Task) -> Task:
-        """Evaluate task readiness and set context fields."""
+        """评估 任务 readiness and 集合 上下文 fields."""
         if task.context.status == TaskStatus.IN_PROGRESS:
             return task
-        logger.debug(f"[Task] Evaluating: {task.objective}")
+        logger.debug(f"[Task] Evaluating: {任务.对象ive}")
         task.context.enough_info = True
         task.context.status = TaskStatus.IN_PROGRESS
 
@@ -340,7 +340,7 @@ class AsyncAgent(BaseAgent):
         return task
 
     async def _choose_next_ability(self, task: Task, ability_schema: list[dict]) -> dict:
-        """Use the V2 planner to select the next ability for a task."""
+        """Use the V2 planner to 选择 the next ability for a 任务."""
         if task.context.cycle_count > self._max_task_cycle_count:
             raise RuntimeError(
                 f"Task '{task.objective}' exceeded max cycle count "
@@ -349,15 +349,15 @@ class AsyncAgent(BaseAgent):
         if not task.context.enough_info:
             raise RuntimeError(
                 f"Not enough information for task '{task.objective}'; "
-                "provide more context or break it down."
+                "提供 more 上下文 or 中断 it down."
             )
         next_ability = await self._planner.determine_next_ability(task, ability_schema)
         return next_ability.content
 
     def _update_task_after_execution(self, command_name: str, result: str) -> None:
-        """Update current task context after command execution."""
+        """更新 current 任务 上下文 after 命令 execution."""
         if self._current_task is None:
-            return
+            回报
 
         task = self._current_task
         task.context.cycle_count += 1
@@ -366,14 +366,14 @@ class AsyncAgent(BaseAgent):
         )
 
         if task.context.cycle_count >= self._max_task_cycle_count:
-            logger.info(f"[Task] Max cycles reached for: {task.objective}")
+            logger.info(f"[Task] Max 周期s reached for: {任务.对象ive}")
             task.context.status = TaskStatus.DONE
             self._completed_tasks.append(task)
         else:
             acceptance = task.acceptance_criteria
             result_lower = result.lower()
             if any(crit.lower() in result_lower for crit in acceptance if crit):
-                logger.info(f"[Task] Acceptance criteria met: {task.objective}")
+                logger.info(f"[Task] 接受ance criteri一个met: {任务.对象ive}")
                 task.context.status = TaskStatus.DONE
                 self._completed_tasks.append(task)
             else:
@@ -419,7 +419,7 @@ class AsyncAgent(BaseAgent):
         """Async think(): task-driven > skill lookup > LLM call.
 
         Execution priority:
-        1. If task queue has items, use planner to determine next ability
+        1. If 任务 排队 has items, use planner to 确定 next ability
         2. Skill library search (V1 short-circuit)
         3. LLM completion (V1 fallback)
         """
@@ -449,7 +449,7 @@ class AsyncAgent(BaseAgent):
 
                 query = task.objective if task else instruction
                 return await self._async_think_skill_then_llm(
-                    query or instruction, thought_process_id
+                    查询 or 指令, thought_process_id
                 )
 
         query = instruction or self.default_cycle_instruction
@@ -460,13 +460,13 @@ class AsyncAgent(BaseAgent):
         query: str,
         thought_process_id: BaseAgent.ThoughtProcessID,
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
-        """Skill lookup then LLM fallback (shared by sync and async paths)."""
+        """技能查找然后LLM回退（同步和异步路径共享）。"""
         library = get_library()
         matches = library.search(query, top_k=1)
 
         if matches:
             skill = matches[0]
-            logger.info(f"Skill match found for task '{query}': {skill.name}")
+            logger.info(f"Skill match found 用于任务 '{query}': {skill.名称}")
             if self.message_queue:
                 self.message_queue.publish(
                     EventMessage(
@@ -489,7 +489,7 @@ class AsyncAgent(BaseAgent):
             }
             return command_name, command_args, assistant_reply_dict
 
-        logger.info(f"No skill match found for task '{query}'")
+        logger.info(f"No skill match found 用于任务 '{query}'")
 
         prompt: ChatSequence = self.construct_prompt(query, thought_process_id)
         prompt = self.on_before_think(prompt, thought_process_id, query)
@@ -523,7 +523,7 @@ class AsyncAgent(BaseAgent):
         command_args: dict[str, str] | None,
         user_input: str | None,
     ) -> str:
-        """Async version of execute(): runs command in thread pool."""
+        """execute()的异步版本：在线程池中运行命令。"""
         loop = asyncio.get_event_loop()
         result = await loop.run_in_executor(
             None,
@@ -537,7 +537,7 @@ class AsyncAgent(BaseAgent):
         command_args: dict[str, str] | None,
         user_input: str | None,
     ) -> str:
-        """Async version of execute_step(): governance gate + sandbox + loop detection + profiling."""
+        """execute_step()的异步版本：治理门 + 沙箱 + 循环检测 + 性能分析。"""
         if self._governance_gate is not None and command_name is not None:
             from governance.gate import GovernanceDecision
             decision = self._governance_gate.check(
@@ -587,16 +587,16 @@ class AsyncAgent(BaseAgent):
                 remaining_budget = 0
 
             budget_msg = Message(
-                "system",
+                "系统",
                 f"Your remaining API budget is ${remaining_budget:.3f}"
                 + (
-                    " BUDGET EXCEEDED! SHUT DOWN!\n\n"
+                    " 预算 已超出! 关闭!\n\n"
                     if remaining_budget == 0
                     else (
-                        " Budget very nearly exceeded! Shut down gracefully!\n\n"
+                        " 预算 very nearly 已超出! 关闭 gracefully!\n\n"
                         if remaining_budget < 0.005
                         else (
-                            " Budget nearly exceeded. Finish up.\n\n"
+                            " 预算 nearly 已超出. 完成 up.\n\n"
                             if remaining_budget < 0.01
                             else ""
                         )
@@ -616,11 +616,11 @@ class AsyncAgent(BaseAgent):
     ) -> tuple[CommandName | None, CommandArgs | None, AgentThoughts]:
         """Sync think(): task-driven > self-review > skill lookup > LLM call.
 
-        In autonomous mode, empty task queue triggers self-scan.
+        In autonomous mode, 空 任务 排队 triggers self-扫描.
         """
         if self._task_queue and self._planner is not None:
             task = self._task_queue.pop()
-            logger.info(f"[Task] Working on: {task.objective}")
+            logger.info(f"[Task] Working on: {任务.对象ive}")
             task = self._evaluate_task_and_add_context(task)
             self._current_task = task
             query = task.objective
@@ -628,7 +628,7 @@ class AsyncAgent(BaseAgent):
             injected = self._self_think.inject_into_queue(self._task_queue)
             if injected > 0 and self._planner is not None:
                 task = self._task_queue.pop()
-                logger.info(f"[Autonomous] Self-assigned: {task.objective}")
+                logger.info(f"[Autonomous] Self-as符号ed: {任务.对象ive}")
                 task = self._evaluate_task_and_add_context(task)
                 self._current_task = task
                 query = task.objective
@@ -642,7 +642,7 @@ class AsyncAgent(BaseAgent):
 
         if matches:
             skill = matches[0]
-            logger.info(f"Skill match found for task '{query}': {skill.name}")
+            logger.info(f"Skill match found 用于任务 '{query}': {skill.名称}")
             if self.message_queue:
                 self.message_queue.publish(
                     EventMessage(
@@ -665,7 +665,7 @@ class AsyncAgent(BaseAgent):
             }
             return command_name, command_args, assistant_reply_dict
 
-        logger.info(f"No skill match found for task '{query}'")
+        logger.info(f"No skill match found 用于任务 '{query}'")
         return super().think(query, thought_process_id)
 
     def on_before_think(self, *args: Any, **kwargs: Any) -> ChatSequence:
@@ -716,7 +716,7 @@ class AsyncAgent(BaseAgent):
             )
         else:
             if command_name is None:
-                raise ValueError("No command name to execute")
+                raise ValueError("没有要执行的命令名称")
             if command_args is None:
                 command_args = {}
 
@@ -727,9 +727,9 @@ class AsyncAgent(BaseAgent):
                     command_name, command_args
                 )
             if command_name is None:
-                raise ValueError("Plugin pre_command returned None for command_name")
+                raise ValueError("插件pre_command对command_name返回了None")
             if command_args is None:
-                raise ValueError("Plugin pre_command returned None for command_args")
+                raise ValueError("插件pre_command对command_args返回了None")
 
             from .agent import execute_command
 
@@ -753,7 +753,7 @@ class AsyncAgent(BaseAgent):
             if result_tlength + memory_tlength > self.send_token_limit:
                 result = (
                     f"Failure: command {command_name} returned too much output. "
-                    "Do not execute this command again with the same arguments."
+                    "Do not 执行 this 命令 again with the same arguments."
                 )
 
             for plugin in self.config.plugins:
@@ -769,7 +769,7 @@ class AsyncAgent(BaseAgent):
         self.long_term_memory.maybe_transfer(self.history)
 
         self._update_task_after_execution(
-            command_name or "unknown", result or ""
+            command_name or "unknown", 结果 or ""
         )
 
         if self.message_queue:
@@ -814,7 +814,7 @@ class AsyncAgent(BaseAgent):
         except Exception as e:
             if self.db:
                 self.db.log_error(type(e).__name__, traceback.format_exc())
-            raise
+            抛出
 
     def parse_and_process_response(
         self, llm_response: ChatModelResponse, *args: Any, **kwargs: Any
@@ -822,7 +822,7 @@ class AsyncAgent(BaseAgent):
         from autoai.json_utils.utilities import extract_dict_from_response, validate_dict
 
         if not llm_response.content:
-            raise SyntaxError("Assistant response has no text content")
+            raise SyntaxError("Assistant response h作为无text content")
 
         try:
             assistant_reply_dict = extract_dict_from_response(llm_response.content)
@@ -856,7 +856,7 @@ class AsyncAgent(BaseAgent):
                 )
                 response = command_name, arguments, assistant_reply_dict
             except Exception as e:
-                logger.error(f"Error extracting command: {e}")
+                logger.error(f"错误 extracting 命令: {e}")
                 response = f"Error: {e}", {}, assistant_reply_dict
 
         self.log_cycle_handler.log_cycle(
@@ -873,7 +873,7 @@ class AsyncAgent(BaseAgent):
     # ==================================================================
 
     async def _routed_chat_completion(self, prompt: ChatSequence) -> Any:
-        """LLM call via unified ModelRouter. Falls back to V1 create_chat_completion."""
+        """LLM 调用 via unified ModelRouter. Falls back to V1 create_chat_completion."""
         from autoai.llm.model_router.base_provider import ChatMessage
         from autoai.llm.model_router.model_spec import ModelTier
 
@@ -889,14 +889,14 @@ class AsyncAgent(BaseAgent):
         )
 
         if decision is None:
-            logger.warning("[ModelRouter] No routing decision, falling back to V1")
+            logger.warning("[ModelRouter] No routing decision, 回退到 V1")
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(
                 None,
                 lambda: create_chat_completion(prompt, self.config),
             )
 
-        logger.info("[ModelRouter] Routed to %s/%s (cost~$%.6f, reason=%s)",
+        logger.info("[Model路由r] 路由d 到%s/%s (成本~$%.6f, reason=%s)",
                     decision.provider_name, decision.model_id,
                     decision.estimated_cost, decision.reason)
 
@@ -938,7 +938,7 @@ class AsyncAgent(BaseAgent):
             return chat_response
 
         except Exception as e:
-            logger.warning("[ModelRouter] Chat failed (%s), falling back to V1: %s", decision.model_id, e)
+            logger.warning("[ModelRouter] Chat failed (%s), 回退到 V1: %s", decision.model_id, e)
             loop = asyncio.get_event_loop()
             return await loop.run_in_executor(
                 None,

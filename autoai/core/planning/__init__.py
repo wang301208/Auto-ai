@@ -1,4 +1,4 @@
-"""The planning system organizes the Agent's activities."""
+"""规划系统组织代理的活动。"""
 from autoai.core.planning.schema import (
     LanguageModelClassification,
     LanguageModelConfiguration,

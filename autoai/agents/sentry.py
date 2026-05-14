@@ -18,7 +18,7 @@ from autoai.event_bus import ISSUE_DETECTED, EventMessage, MessageQueue
 
 
 class SentryAgent:
-    """Monitor plugin logs, health endpoints and dependencies for issues."""
+    """监控插件日志、健康端点和依赖项以发现问题。"""
 
     ERROR_PATTERN = re.compile(r"ERROR|Exception|Traceback")
 
@@ -127,7 +127,7 @@ class SentryAgent:
                         continue
 
     def _get_latest_repo_release(self, repo_url: str) -> str | None:
-        """Return latest release tag for a GitHub repository."""
+        """返回GitHub仓库的最新发布标签。"""
         parsed = urlparse(repo_url)
         path_parts = [p for p in parsed.path.strip("/").split("/") if p]
         if len(path_parts) < 2:
@@ -157,7 +157,7 @@ class SentryAgent:
         return None
 
     def _is_newer_version(self, latest: str, current: str) -> bool:
-        """Return True if *latest* is newer than *current*."""
+        """如果*latest*比*current*新则返回True。"""
         latest = latest.lstrip("v")
         current = current.lstrip("v")
         try:

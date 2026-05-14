@@ -119,7 +119,7 @@ class OpenAICompatProvider(BaseProvider):
                 m.id for m in models_resp.data if "gpt" in m.id or "embed" in m.id
             )
         except Exception as e:
-            logger.warning("Failed to list models for %s: %s", self.name, e)
+            logger.warning("Failed to list 模型 for %s: %s", self.name, e)
             self._models_cache = [self.default_model]
         return self._models_cache
 
@@ -187,7 +187,7 @@ class OpenAICompatProvider(BaseProvider):
         try:
             from openai import AsyncOpenAI
         except ImportError:
-            raise ImportError("openai package required for OpenAICompatProvider")
+            raise ImportError("OpenAICompatProvider需要openai包")
 
         kwargs: dict[str, Any] = {"timeout": self.timeout}
         if self.api_key:
@@ -214,7 +214,7 @@ class OpenAICompatProvider(BaseProvider):
         try:
             from openai import OpenAI
         except ImportError:
-            raise ImportError("openai package required for OpenAICompatProvider")
+            raise ImportError("OpenAICompatProvider需要openai包")
 
         kwargs: dict[str, Any] = {"timeout": self.timeout}
         if self.api_key:

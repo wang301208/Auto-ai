@@ -1,4 +1,4 @@
-"""Base class for all voice classes."""
+"""所有语音类的基类."""
 from __future__ import annotations
 
 import abc
@@ -14,13 +14,13 @@ from autoai.singleton import AbstractSingleton
 
 class VoiceBase(AbstractSingleton):
     """
-    Base class for all voice classes.
-    """
+        所有语音类的基类.
+"""
 
     def __init__(self, config: Config):
         """
-        Initialize the voice class.
-        """
+                初始化语音类.
+"""
         self._url = None
         self._headers = None
         self._api_key = None
@@ -30,12 +30,12 @@ class VoiceBase(AbstractSingleton):
 
     def say(self, text: str, voice_index: int = 0) -> bool:
         """
-        Say the given text.
+                朗读给定文本.
 
-        Args:
-            text (str): The text to say.
-            voice_index (int): The index of the voice to use.
-        """
+                Args:
+                    text (str): The text to say.
+                    voice_index (int): The index of the voice to use.
+"""
         text = re.sub(
             r"\b(?:https?://[-\w_.]+/?\w[-\w_.]*\.(?:[-\w_.]+/?\w[-\w_.]*\.)?[a-z]+(?:/[-\w_.%]+)*\b(?!\.))",
             "",
@@ -47,14 +47,14 @@ class VoiceBase(AbstractSingleton):
     @abc.abstractmethod
     def _setup(self, config: Config) -> None:
         """
-        Setup the voices, API key, etc.
-        """
+                设置语音、API密钥等.
+"""
 
     @abc.abstractmethod
     def _speech(self, text: str, voice_index: int = 0) -> bool:
         """
-        Play the given text.
+                播放给定文本.
 
-        Args:
-            text (str): The text to play.
-        """
+                Args:
+                    text (str): The text to play.
+"""

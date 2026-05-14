@@ -17,48 +17,48 @@ supported_memory = ["json_file", "no_memory", "chroma"]
 # try:
 #     from .providers.redis 导入 RedisMemory
 
-#     supported_memory.append("redis")
-# except ImportError:
+# sup端口ed_memory.append("redis")
+# except 导入错误:
 #     RedisMemory = None
 
 # try:
 #     from .providers.pinecone 导入 PineconeMemory
 
-#     supported_memory.append("pinecone")
-# except ImportError:
+# sup端口ed_memory.append("pinecone")
+# except 导入错误:
 #     PineconeMemory = None
 
 # try:
 #     from .providers.weaviate 导入 WeaviateMemory
 
-#     supported_memory.append("weaviate")
-# except ImportError:
+# sup端口ed_memory.append("weaviate")
+# except 导入错误:
 #     WeaviateMemory = None
 
 # try:
 #     from .providers.milvus 导入 MilvusMemory
 
-#     supported_memory.append("milvus")
-# except ImportError:
+# sup端口ed_memory.append("milvus")
+# except 导入错误:
 #     MilvusMemory = None
 
 
 def get_memory(config: Config) -> VectorMemory:
     """Returns a memory object corresponding to the memory backend specified in the config.
 
-    The type of memory object returned depends on the value of the `memory_backend`
-    attribute in the configuration. E.g. if `memory_backend` is set to "pinecone", a
-    `PineconeMemory` object is returned. If it is set to "redis", a `RedisMemory`
-    object is returned.
-    By default, a `JSONFileMemory` object is returned.
+        The type of memory object returned depends on the value of the `memory_backend`
+        attribute in the configuration. E.g. if `memory_backend` is set to "pinecone", a
+        `PineconeMemory` object is returned. If it is set to "redis", a `RedisMemory`
+        object is returned.
+        By default, a `JSONFileMemory` object is returned.
 
-    Params:
-        config: A configuration object that contains information about the memory backend
-            to be used and other relevant parameters.
+        Params:
+            config: A configuration object that contains information about the memory backend
+                to be used and other relevant parameters.
 
-    Returns:
-        VectorMemory: an instance of a memory object based on the configuration provided.
-    """
+        Returns:
+            VectorMemory: an 实例 of a memory object based on the configuration provided.
+"""
     memory = None
 
     match config.memory_backend:
@@ -75,7 +75,7 @@ def get_memory(config: Config) -> VectorMemory:
                 "in the future is subject to discussion, feel free to pitch in: "
                 "https://github.com/Significant-Gravitas/Auto-AI/discussions/4280"
             )
-            # if not PineconeMemory:
+            # 如果非PineconeMemory:
             #     logger.警告(
             #         "错误: Pinecone is 未安装. Please 安装 pinecone"
             #         " to use Pinecone as a 内存 backend."
@@ -90,7 +90,7 @@ def get_memory(config: Config) -> VectorMemory:
                 "The Redis memory backend has been rendered incompatible by work on "
                 "the memory system, and has been removed temporarily."
             )
-            # if not RedisMemory:
+            # 如果非RedisMemory:
             #     logger.警告(
             #         "错误: Redis is 未安装. Please 安装 redis-py to"
             #         " use Redis as a 内存 backend."
@@ -105,7 +105,7 @@ def get_memory(config: Config) -> VectorMemory:
                 "in the future is subject to discussion, feel free to pitch in: "
                 "https://github.com/Significant-Gravitas/Auto-AI/discussions/4280"
             )
-            # if not WeaviateMemory:
+            # 如果非WeaviateMemory:
             #     logger.警告(
             #         "错误: Weaviate is 未安装. Please 安装 weaviate-客户端 to"
             #         " use Weaviate as a 内存 backend."
@@ -120,7 +120,7 @@ def get_memory(config: Config) -> VectorMemory:
                 "in the future is subject to discussion, feel free to pitch in: "
                 "https://github.com/Significant-Gravitas/Auto-AI/discussions/4280"
             )
-            # if not MilvusMemory:
+            # 如果非MilvusMemory:
             #     logger.警告(
             #         "错误: pymilvus sdk is 未安装."
             #         "Please 安装 pymilvus to use Milvus or Zilliz Cloud as 内存 backend."

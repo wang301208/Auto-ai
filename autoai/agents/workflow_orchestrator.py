@@ -37,7 +37,7 @@ class TaskState(Enum):
 
 @dataclass
 class WorkflowTask:
-    """A single task within a workflow DAG."""
+    """工作流DAG中的单个任务。"""
 
     task_id: str = field(default_factory=lambda: uuid.uuid4().hex[:12])
     name: str = ""
@@ -88,7 +88,7 @@ class WorkflowTask:
 
 @dataclass
 class AgentProfile:
-    """Profile of an agent available for task assignment."""
+    """可用于任务分配的代理配置。"""
 
     agent_id: str
     roles: set[str] = field(default_factory=set)
@@ -121,7 +121,7 @@ class AgentProfile:
 
 @dataclass
 class WorkflowResult:
-    """Final result of a workflow execution."""
+    """工作流执行的最终结果。"""
 
     workflow_id: str
     success: bool
@@ -133,7 +133,7 @@ class WorkflowResult:
 
 
 class WorkflowDAG:
-    """A workflow defined as a DAG of tasks."""
+    """定义为任务DAG的工作流。"""
 
     def __init__(self, name: str, workflow_id: str | None = None) -> None:
         self.name = name
@@ -157,7 +157,7 @@ class WorkflowDAG:
         return list(self._tasks.values())
 
     def validate(self) -> list[str]:
-        """Validate DAG structure. Returns list of error messages."""
+        """验证DAG结构。返回错误消息列表。"""
         errors: list[str] = []
         all_ids = set(self._tasks.keys())
         for task in self._tasks.values():
@@ -233,14 +233,14 @@ class WorkflowDAG:
 class WorkflowOrchestrator:
     """Orchestrates workflow execution with automatic agent assignment.
 
-    Features:
-      - DAG validation before execution
-      - Automatic agent assignment based on role/capability matching
-      - Parallel execution of independent tasks
-      - Retry with configurable max retries
-      - Cascading skip of tasks dependent on failed tasks
-      - Integration with AgentCommunicationBus for coordination
-    """
+        Features:
+          - DAG validation before execution
+          - Automatic agent assignment based on role/capability 匹配
+          - Parallel execution of independent tasks
+          - Retry with configurable max retries
+          - Cascading skip of tasks dependent on failed tasks
+          - Integration with AgentCommunicationBus for coordination
+"""
 
     def __init__(
         self,
@@ -278,10 +278,10 @@ class WorkflowOrchestrator:
             profile.current_tasks -= 1
 
     async def execute(self, workflow: WorkflowDAG) -> WorkflowResult:
-        """Execute a workflow DAG. Returns when all tasks are done or failed."""
+        """执行工作流DAG。所有任务完成或失败时返回。"""
         errors = workflow.validate()
         if errors:
-            logger.error("Workflow validation failed: %s", errors)
+            logger.error("Workflow validati在failed: %s", errors)
             return WorkflowResult(
                 workflow_id=workflow.workflow_id,
                 success=False,
@@ -347,7 +347,7 @@ class WorkflowOrchestrator:
         )
 
     async def _run_task(self, workflow: WorkflowDAG, task: WorkflowTask, agent_id: str) -> None:
-        """Execute a single task with timeout and error handling."""
+        """执行带有超时和错误处理的单个任务。"""
         try:
             result = await asyncio.wait_for(
                 self._execute_with_comm(workflow, task, agent_id),

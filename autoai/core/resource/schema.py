@@ -16,7 +16,7 @@ from autoai.core.configuration import (
 
 
 class ResourceType(str, enum.Enum):
-    """An enumeration of resource types."""
+    """资源类型的枚举。"""
 
     MODEL = "model"
     MEMORY = "memory"
@@ -25,7 +25,7 @@ class ResourceType(str, enum.Enum):
 class ProviderUsage(SystemConfiguration, abc.ABC):
     @abc.abstractmethod
     def update_usage(self, *args, **kwargs) -> None:
-        """Update the usage of the resource."""
+        """更新资源使用量。"""
         ...
 
 
@@ -37,12 +37,12 @@ class ProviderBudget(SystemConfiguration):
 
     @abc.abstractmethod
     def update_usage_and_cost(self, *args, **kwargs) -> None:
-        """Update the usage and cost of the resource."""
+        """更新资源使用量和成本。"""
         ...
 
 
 class ProviderCredentials(SystemConfiguration):
-    """Struct for credentials."""
+    """凭据结构。"""
 
     class Config:
         json_encoders = {

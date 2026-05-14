@@ -87,7 +87,7 @@ class IssueDetected(EventMessage):
 
 @dataclass(kw_only=True)
 class RecommendedSkill(TypedDict):
-    """Metadata describing a skill suggestion."""
+    """描述技能的元数据 suggestion."""
 
     name: str
     version: str
@@ -95,16 +95,16 @@ class RecommendedSkill(TypedDict):
 
 
 class DiagnosisDetails(TypedDict, total=False):
-    """Extra information included with :class:`DiagnosisComplete`."""
+    """随:class:`DiagnosisComplete`包含的额外信息。"""
 
     recommended_skill: RecommendedSkill | None
     plugin: str | None
-    # other optional fields such as ``skill_search`` or ``metadata`` may appear
+    # other 可选 fields such 作为``skill_search`` 或``metadata`` may appear
 
 
 @dataclass(kw_only=True)
 class DiagnosisComplete(EventMessage):
-    """Schema for :data:`DIAGNOSIS_COMPLETE` events."""
+    """:data:`DIAGNOSIS_COMPLETE`事件的模式。"""
 
     summary: str
     actionable_recommendations: str
@@ -211,7 +211,7 @@ class HumanArchitectApprovalRequired(EventMessage):
 
 @dataclass(kw_only=True)
 class TestsFailed(EventMessage):
-    """Schema for :data:`TESTS_FAILED` events."""
+    """:data:`TESTS_FAILED`事件的模式。"""
 
     branch_name: str
     test_output: str
@@ -285,7 +285,7 @@ class IssueResolved(EventMessage):
 
 @dataclass(kw_only=True)
 class DeploymentFailed(EventMessage):
-    """Schema for :data:`DEPLOYMENT_FAILED` events."""
+    """:data:`DEPLOYMENT_FAILED`事件的模式。"""
 
     branch_name: str
     commit_hash: str

@@ -1,4 +1,4 @@
-"""General-purpose utilities for AutoAI."""
+"""AutoAI的通用工具。"""
 
 from __future__ import annotations
 

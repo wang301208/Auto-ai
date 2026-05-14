@@ -1,4 +1,4 @@
-"""Self improvement utilities."""
+"""自我改进工具。"""
 
 from autoai.event_bus import MessageQueue
 

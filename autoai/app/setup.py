@@ -1,4 +1,4 @@
-"""Set up the AI and its goals"""
+"""设置AI及其目标"""
 import re
 from typing import Optional
 
@@ -65,7 +65,7 @@ def prompt_user(
     if user_desire.strip() == "":
         user_desire = DEFAULT_USER_DESIRE_PROMPT  # Default prompt
 
-    # If user desire contains "--manual" or we have overridden any of the AI configuration
+    # If user desire contains "--manual" 或we have overridden 任意的AI configu比率n
     if "--manual" in user_desire or ai_config_template_provided:
         logger.typewriter_log(
             _("Manual Mode Selected"),
@@ -86,7 +86,7 @@ def prompt_user(
                 _("Falling back to manual mode."),
                 speak_text=True,
             )
-            logger.debug(f"Error during AIConfig generation: {e}")
+            logger.debug(f"错误 期间AIConfig gene比率n: {e}")
 
             return generate_aiconfig_manual(config)
 
@@ -109,7 +109,7 @@ def generate_aiconfig_manual(
         AIConfig: An AIConfig object containing the user-defined or default AI name, role, and goals.
     """
 
-    # Manual Setup Intro
+    # Manual 设置up Intro
     logger.typewriter_log(
         "Create an AI-Assistant:",
         Fore.GREEN,
@@ -152,14 +152,14 @@ def generate_aiconfig_manual(
     if ai_config_template and ai_config_template.ai_goals:
         ai_goals = ai_config_template.ai_goals
     else:
-        # Enter up to 5 goals for the AI
+        # Enter up 到5 goals 用于AI
         logger.typewriter_log(
             "Enter up to 5 goals for your AI: ",
             Fore.GREEN,
             "For example: \nIncrease net worth, Grow Twitter Account, Develop and manage"
             " multiple businesses autonomously'",
         )
-        logger.info("Enter nothing to load defaults, enter nothing when finished.")
+        logger.info("Enter nothing 到load 默认s, enter nothing when finished.")
         ai_goals = []
         for i in range(5):
             ai_goal = utils.clean_input(
@@ -181,7 +181,7 @@ def generate_aiconfig_manual(
         Fore.GREEN,
         "For example: $1.50",
     )
-    logger.info("Enter nothing to let the AI run without monetary limit")
+    logger.info("Enter nothing 到let AI run 无monetary 限制")
     api_budget_input = utils.clean_input(
         config, f"{Fore.LIGHTBLUE_EX}Budget{Style.RESET_ALL}: $"
     )
@@ -223,7 +223,7 @@ def generate_aiconfig_automatic(user_prompt: str, config: Config) -> AIConfig:
     ).content
 
     # 调试 LLM 输出
-    logger.debug(f"AI Config Generator Raw Output: {output}")
+    logger.debug(f"AI Config Generat或Raw 输出: {output}")
 
     # 解析 the 输出
     ai_name = re.search(r"Name(?:\s*):(?:\s*)(.*)", output, re.IGNORECASE).group(1)
@@ -237,6 +237,6 @@ def generate_aiconfig_automatic(user_prompt: str, config: Config) -> AIConfig:
         .strip()
     )
     ai_goals = re.findall(r"(?<=\n)-\s*(.*)", output)
-    api_budget = 0.0  # TODO: parse api budget using a regular expression
+    api_budget = 0.0  # TODO: parse api 预算 using 一个常规 表达式
 
     return AIConfig(ai_name, ai_role, ai_goals, api_budget)

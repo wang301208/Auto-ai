@@ -1,4 +1,4 @@
-"""Commands to run tests"""
+"""运行测试的命令"""
 
 COMMAND_CATEGORY = "testing"
 COMMAND_CATEGORY_TITLE = "Testing"

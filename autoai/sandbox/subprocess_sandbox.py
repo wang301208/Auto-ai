@@ -1,11 +1,11 @@
-"""Subprocess-based sandbox — cross-platform (Windows/Linux/macOS).
+"""基于子进程的沙箱 — 跨平台（Windows/Linux/macOS）。
 
-Runs commands in a subprocess with:
-  - Pre-exec validation (command whitelist, path check)
-  - Timeout enforcement
-  - Output size limit
-  - Working directory restriction
-  - Environment isolation
+在子进程中运行命令，具有以下特性：
+  - 预执行验证（命令白名单、路径检查）
+  - 超时强制执行
+  - 输出大小限制
+  - 工作目录限制
+  - 环境隔离
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from .base import SandboxBackend, SandboxConfig, SandboxResult, SandboxViolation
 
 
 class SubprocessSandbox(SandboxBackend):
-    """Cross-platform subprocess sandbox."""
+    """跨平台子进程沙箱."""
 
     def __init__(self, config: SandboxConfig | None = None) -> None:
         super().__init__(config)

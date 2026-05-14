@@ -1,4 +1,4 @@
-"""Commands for reading and understanding code bases."""
+"""阅读和理解代码库的命令。"""
 
 from __future__ import annotations
 
@@ -35,7 +35,7 @@ PROMPT_TEMPLATE = (
     },
 )
 def read_and_understand_code(path: str, agent: Agent) -> str:
-    """Recursively read `.py` files under ``path`` and summarize their contents."""
+    """递归读取``path``下的.py文件并总结其内容。"""
 
     global CALL_COUNT
     base = Path(path)

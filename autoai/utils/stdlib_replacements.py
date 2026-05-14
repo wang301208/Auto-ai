@@ -18,10 +18,10 @@ import unicodedata
 from typing import Any
 
 
-# ==================== inflection replacements ====================
+# ==================== inflecti在replacements ====================
 
 def underscore(word: str) -> str:
-    """Convert CamelCase to snake_case. Replaces inflection.underscore()."""
+    """将CamelCase转换为snake_case。替代inflection.underscore()。"""
     word = re.sub(r"([A-Z]+)([A-Z][a-z])", r"\1_\2", word)
     word = re.sub(r"([a-z\d])([A-Z])", r"\1_\2", word)
     word = word.replace("-", "_")
@@ -29,12 +29,12 @@ def underscore(word: str) -> str:
 
 
 def dasherize(word: str) -> str:
-    """Convert snake_case to dash-case. Replaces inflection.dasherize()."""
+    """将snake_case转换为dash-case。替代inflection.dasherize()。"""
     return underscore(word).replace("_", "-")
 
 
 def camelize(word: str, uppercase_first_letter: bool = False) -> str:
-    """Convert snake_case/dash-case to CamelCase. Replaces inflection.camelize()."""
+    """将snake_case/dash-case转换为CamelCase。替代inflection.camelize()。"""
     parts = re.split(r"[_\-]", underscore(word))
     if uppercase_first_letter:
         return "".join(p.capitalize() for p in parts)
@@ -44,7 +44,7 @@ def camelize(word: str, uppercase_first_letter: bool = False) -> str:
 # ==================== distro replacements ====================
 
 def get_distro_id() -> str:
-    """Get OS distro ID. Replaces distro.id()."""
+    """获取OS发行版ID。替代distro.id()。"""
     try:
         import distro
         return distro.id()
@@ -53,7 +53,7 @@ def get_distro_id() -> str:
 
 
 def get_distro_name() -> str:
-    """Get OS distro name. Replaces distro.name()."""
+    """获取OS发行版名称。替代distro.name()。"""
     try:
         import distro
         return distro.name()
@@ -71,7 +71,7 @@ def get_distro_version() -> str:
 
 
 def get_os_info() -> dict[str, str]:
-    """Get complete OS info dict."""
+    """获取完整OS信息字典。"""
     return {
         "id": get_distro_id(),
         "name": get_distro_name(),
@@ -82,10 +82,10 @@ def get_os_info() -> dict[str, str]:
     }
 
 
-# ==================== orjson replacements ====================
+# ==================== orjs在replacements ====================
 
 def json_dumps(obj: Any, *, indent: int | None = None, sort_keys: bool = False) -> str:
-    """JSON serialize. Tries orjson, falls back to stdlib json."""
+    """JSON序列化。尝试orjson，回退到标准库json。"""
     try:
         import orjson
         opts = 0
@@ -103,7 +103,7 @@ def json_dumps(obj: Any, *, indent: int | None = None, sort_keys: bool = False) 
 
 
 def json_loads(s: str | bytes) -> Any:
-    """JSON deserialize. Tries orjson, falls back to stdlib json."""
+    """JSON反序列化。尝试orjson，回退到标准库json。"""
     try:
         import orjson
         return orjson.loads(s)

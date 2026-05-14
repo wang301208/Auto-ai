@@ -45,7 +45,7 @@ class RefactorResult:
 
 
 class ArchRefactorer:
-    """Generates refactoring patches from architecture diagnostic reports.
+    """Generates refactoring patches from 架构 diagnostic reports.
 
     Usage:
         refactorer = ArchRefactorer(workspace=Path("..."))
@@ -83,7 +83,7 @@ class ArchRefactorer:
                 if plan is not None and plan.estimated_risk <= self._max_risk:
                     plans.append(plan)
                 elif plan is not None:
-                    logger.debug(f"[ArchRefactor] Rejected plan (risk {plan.estimated_risk:.2f} > {self._max_risk})")
+                    logger.debug(f"[Arch重构] 拒绝ed pl一个(risk {plan.estimated_risk:.2f} > {self._max_risk})")
             except Exception as e:
                 logger.warn(f"[ArchRefactor] Plan generation failed for {issue.issue_type.value}: {e}")
 

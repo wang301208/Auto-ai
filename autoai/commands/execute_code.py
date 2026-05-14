@@ -1,4 +1,4 @@
-"""Commands to execute code"""
+"""执行代码的命令"""
 
 COMMAND_CATEGORY = "execute_code"
 COMMAND_CATEGORY_TITLE = "Execute Code"
@@ -55,7 +55,7 @@ def execute_python_code(code: str, name: str, agent: Agent) -> str:
     if not name.endswith(".py"):
         name = name + ".py"
 
-    # The `name` arg is not covered by @sanitize_path_arg,
+    # The `名称` arg is 非covered 通过@sanitize_路径_arg,
     # so sanitization must be done here to prevent 路径 traversal.
     file_path = agent.workspace.get_path(code_dir / name)
     if not file_path.is_relative_to(code_dir):
@@ -178,7 +178,7 @@ def execute_shell(command_line: str, agent: Agent) -> str:
         str: The output of the command
     """
     if not validate_command(command_line, agent.config):
-        logger.info(f"Command '{command_line}' not allowed")
+        logger.info(f"Comm和'{命令_行}' 非allowed")
         return "Error: This Shell Command is not allowed."
 
     current_dir = Path.cwd()
@@ -225,7 +225,7 @@ def execute_shell_popen(command_line, agent: Agent) -> str:
         str: Description of the fact that the process started and its id
     """
     if not validate_command(command_line, agent.config):
-        logger.info(f"Command '{command_line}' not allowed")
+        logger.info(f"Comm和'{命令_行}' 非allowed")
         return "Error: This Shell Command is not allowed."
 
     current_dir = os.getcwd()

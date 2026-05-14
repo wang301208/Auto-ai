@@ -68,7 +68,7 @@ class Executor:
         system = (
             "You are an expert planner."
             " Break the user's goal into an ordered list of discrete sub‑tasks."
-            " Respond using a JSON array of strings.""
+            " Respond using a JSON array of strings."
         )
         prompt = ChatSequence.for_model(
             self.config.smart_llm,
@@ -105,7 +105,7 @@ class Executor:
             " Given the sub-task description and the skill metadata,"
             " fill in the required parameters."
             " Respond with JSON {\"skill_name\": str, \"version\": str,"
-            " \"parameters\": {..}, \"confidence\": float}""
+            " \"parameters\": {..}, \"confidence\": float}"
         )
         prompt = ChatSequence.for_model(
             self.config.smart_llm,

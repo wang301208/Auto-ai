@@ -1,4 +1,4 @@
-"""Event-driven TDD developer agent that responds to diagnostics."""
+"""响应诊断的事件驱动TDD开发者代理。"""
 
 from __future__ import annotations
 
@@ -148,7 +148,7 @@ class TDDDeveloper:
 
     # ------------------------------------------------------------------
     def _on_diagnosis_complete(self, event: EventMessage) -> None:
-        """Handle a ``DIAGNOSIS_COMPLETE`` event."""
+        """处理``DIAGNOSIS_COMPLETE``事件。"""
 
         payload = event.payload or {}
         if not isinstance(payload, dict):
@@ -220,7 +220,7 @@ class TDDDeveloper:
                         metadata, str(skill_dir / "main.py")
                     )
                     if not added:
-                        logger.error("Librarian rejected new skill %s", name)
+                        logger.error("Librarian 已拒绝 new skill %s", name)
                         return
                 except Exception:
                     logger.exception(

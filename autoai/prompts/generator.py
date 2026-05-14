@@ -1,4 +1,4 @@
-""" A module for generating custom prompt strings."""
+"""生成自定义提示词字符串的模块。"""
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -22,7 +22,7 @@ class PromptGenerator:
         function: Optional[Callable]
 
         def __str__(self) -> str:
-            """Returns a string representation of the command."""
+            """返回命令的字符串表示。"""
             params_string = ", ".join(
                 f'"{key}": "{value}"' for key, value in self.params.items()
             )
@@ -150,7 +150,7 @@ class PromptGenerator:
                 if cmd.enabled
             ]
 
-        # Add commands from plugins etc.
+        # 添加 命令s 从plugins etc.
         command_strings += [str(cmd) for cmd in self.commands]
 
         return self._generate_numbered_list(command_strings)

@@ -79,7 +79,7 @@ class UnattendedRunner:
     Usage:
         runner = UnattendedRunner(autonomy=manager)
         runner.register_agent("main", think_fn, heartbeat_interval=30)
-        await runner.start()  # runs forever until stop()
+        await runner.start()  # runs forever 直到stop()
     """
 
     def __init__(

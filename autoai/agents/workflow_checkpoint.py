@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class WorkflowCheckpoint:
-    """Snapshot of a workflow's execution state."""
+    """工作流执行状态的快照。"""
 
     workflow_id: str
     workflow_name: str = ""
@@ -87,7 +87,7 @@ class CheckpointManager:
         data = json.dumps(checkpoint.to_dict(), indent=2, ensure_ascii=False)
         with self._lock:
             path.write_text(data, encoding="utf-8")
-        logger.info("[checkpoint] Saved workflow %s to %s", checkpoint.workflow_id, path)
+        logger.info("[checkpoint] 保存d 工作流 %s 到%s", checkpoint.workflow_id, path)
         return path
 
     def load(self, workflow_id: str) -> WorkflowCheckpoint | None:
@@ -99,7 +99,7 @@ class CheckpointManager:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 return WorkflowCheckpoint.from_dict(data)
             except Exception as e:
-                logger.error("[checkpoint] Failed to load %s: %s", workflow_id, e)
+                logger.error("[checkpoint] Failed 到load %s: %s", workflow_id, e)
                 return None
 
     def delete(self, workflow_id: str) -> bool:
@@ -131,7 +131,7 @@ class CheckpointManager:
         return results
 
     def snapshot_workflow(self, workflow: Any) -> WorkflowCheckpoint:
-        """Create a checkpoint from a WorkflowDAG instance."""
+        """Create a checkpoint from a WorkflowDAG 实例."""
         checkpoint = WorkflowCheckpoint(
             workflow_id=workflow.workflow_id,
             workflow_name=workflow.name,
@@ -146,7 +146,7 @@ class CheckpointManager:
         return checkpoint
 
     def restore_workflow(self, workflow: Any, checkpoint: WorkflowCheckpoint) -> int:
-        """Restore a WorkflowDAG from a checkpoint. Returns number of tasks restored."""
+        """从检查点恢复WorkflowDAG。返回恢复的任务数。"""
         from autoai.agents.workflow_orchestrator import TaskState
 
         restored = 0
@@ -170,7 +170,7 @@ class CheckpointManager:
         return restored
 
     def auto_save(self, workflow: Any, interval_seconds: float = 30.0) -> threading.Thread:
-        """Start a background thread that periodically saves checkpoints."""
+        """启动定期保存检查点的后台线程。"""
         stop_event = threading.Event()
 
         def _loop():

@@ -8,10 +8,10 @@ from autoai.config import AIConfig
 
 
 def apply_strategy(yaml_path: str) -> AIConfig:
-    """Load a strategy YAML file and return a populated AIConfig.
+    """加载 a 策略 YAML file and 回报 a populated AIConfig.
 
-    The YAML file may define ``ai_name``, ``ai_role``, ``ai_goals`` and
-    ``api_budget`` keys. Missing keys default to empty values.
+    The YAML file may 定义 ``ai_name``, ``ai_role``, ``ai_goals`` and
+    ``api_budget`` keys. 缺少 keys default to 空 values.
     """
 
     path = Path(yaml_path)
