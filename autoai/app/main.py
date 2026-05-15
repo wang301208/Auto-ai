@@ -225,6 +225,16 @@ def run_auto_ai(
     )
 
     try:
+        from autoai.integration.agent_enhancer import AgentEnhancer
+        _enhancer = AgentEnhancer(agent_id=ai_config.ai_name)
+        _enhancer.initialize()
+        agent._agent_enhancer = _enhancer
+        agent._enhanced_context = _enhancer.ctx
+        logger.info("Agent增强器已注入(分层记忆/事件溯源/治理/安全直觉/自主度/模型矩阵/遥测/推理)")
+    except Exception as e:
+        logger.debug(f"Agent增强器注入失败(非致命): {e}")
+
+    try:
         if getattr(config, "async_mode", False):
             from autoai.agents.async_agent import AsyncAgent
             from autoai.agents.subsystem_injection import inject_v1_subsystems
@@ -257,6 +267,16 @@ def run_auto_ai(
                     self_develop_manager=sdm,
                     message_queue=message_queue,
                 )
+
+            try:
+                from autoai.integration.agent_enhancer import AgentEnhancer
+                _async_enhancer = AgentEnhancer(agent_id=ai_config.ai_name)
+                _async_enhancer.initialize()
+                async_agent._agent_enhancer = _async_enhancer
+                async_agent._enhanced_context = _async_enhancer.ctx
+                logger.info("AsyncAgent增强器已注入")
+            except Exception as e:
+                logger.debug(f"AsyncAgent增强器注入失败(非致命): {e}")
 
             if autonomous:
                 async_agent.enable_autonomous_mode()

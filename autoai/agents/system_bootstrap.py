@@ -48,6 +48,7 @@ class SystemConfig:
     enable_task_scheduler: bool = True
     enable_model_router: bool = True
     detect_local_models: bool = True
+    enable_enhancer: bool = True
     heartbeat_interval: float = 10.0
     health_check_interval: float = 5.0
     checkpoint_interval: float = 30.0
@@ -96,6 +97,8 @@ class MultiAgentSystem:
         self.model_registry: Any | None = None
         self.sandbox: Any | None = None
         self.distributed: Any | None = None
+        self.agent_enhancer: Any | None = None
+        self.enhanced_context: Any | None = None
 
         self._running = False
         self._checkpoint_thread: threading.Thread | None = None
@@ -255,6 +258,20 @@ class MultiAgentSystem:
                 self.distributed = LocalBackend(max_concurrent=self.config.distributed_workers)
                 logger.info("[system] Local 分布式 backend created (%d slots)", self.config.distributed_workers)
 
+        if self.config.enable_enhancer:
+            try:
+                from autoai.integration.agent_enhancer import AgentEnhancer
+                self.agent_enhancer = AgentEnhancer(
+                    agent_id="system-enhancer",
+                    autonomy_profile="balanced" if self.config.autonomous else "conservative",
+                )
+                self.enhanced_context = self.agent_enhancer.initialize()
+                logger.info("[system] Agent增强器初始化完成(分层记忆/事件溯源/治理/安全直觉/自主度/模型矩阵/遥测/推理)")
+            except Exception as e:
+                logger.warning("[system] Agent增强器初始化失败(非致命): %s", e)
+                self.agent_enhancer = None
+                self.enhanced_context = None
+
         logger.info("[system] 设置up complete")
 
     def start(self) -> None:
@@ -300,6 +317,10 @@ class MultiAgentSystem:
             from autoai.llm.model_router.streaming import StreamBuffer
             buf = StreamBuffer()
             agent.attach_stream_buffer(buf)
+        if self.agent_enhancer is not None:
+            agent._agent_enhancer = self.agent_enhancer
+            agent._enhanced_context = self.enhanced_context
+            logger.info("[system] Agent增强器已挂载到代理")
         logger.info("[system] Attached 到代理: %s", agent.ai_config.ai_name)
 
     def _resolve_model_alias(self, tier: str) -> str:
@@ -363,6 +384,8 @@ class MultiAgentSystem:
             }
         if self.distributed:
             status["distributed"] = self.distributed.summary()
+        if self.agent_enhancer:
+            status["enhancer"] = self.agent_enhancer.get_status()
         return status
 
 

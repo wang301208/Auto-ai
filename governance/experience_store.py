@@ -241,7 +241,135 @@ class ExperienceStore:
         raw = f"{issue_type.value}:{language}:{symptom[:100]}"
         return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:16]
 
+    def merge_from(self, other: ExperienceStore, min_confidence: float = 0.5, dedup: bool = True) -> int:
+        """Merge patterns from another ExperienceStore (cross-project migration).
+
+        Only merges patterns above min_confidence. If dedup=True, skips
+        patterns with identical symptom_pattern+language that already exist locally.
+        Returns count of merged patterns.
+        """
+        merged = 0
+        with self._lock:
+            for key, pattern in other._patterns.items():
+                if pattern.confidence < min_confidence:
+                    continue
+                if dedup:
+                    existing = any(
+                        p.symptom_pattern == pattern.symptom_pattern
+                        and p.language == pattern.language
+                        for p in self._patterns.values()
+                    )
+                    if existing:
+                        continue
+                if key in self._patterns:
+                    existing = self._patterns[key]
+                    existing.success_count += pattern.success_count
+                    existing.failure_count += pattern.failure_count
+                    total = existing.success_count + existing.failure_count
+                    existing.confidence = existing.success_count / total if total > 0 else 0.0
+                    existing.metadata.setdefault("merged_from", []).append(pattern.metadata.get("project", "unknown"))
+                else:
+                    import copy
+                    new_p = copy.deepcopy(pattern)
+                    new_p.confidence = min(pattern.confidence, 0.7)
+                    new_p.metadata["migrated"] = True
+                    self._patterns[key] = new_p
+                merged += 1
+            if merged > 0:
+                self._persist_all()
+        return merged
+
+    def generalize_patterns(self, similarity_threshold: float = 0.8) -> int:
+        """Generalize similar patterns by merging overlapping symptom_patterns.
+
+        When two patterns have the same issue_type+language and overlapping
+        symptom patterns, merge the less confident into the more confident.
+        Returns count of merged pairs.
+        """
+        import re as _re
+        merged_count = 0
+        with self._lock:
+            patterns_by_key: dict[tuple, list[FixPattern]] = {}
+            for p in self._patterns.values():
+                k = (p.issue_type, p.language)
+                patterns_by_key.setdefault(k, []).append(p)
+
+            for key_group, group in patterns_by_key.items():
+                if len(group) < 2:
+                    continue
+                i = 0
+                while i < len(group):
+                    j = i + 1
+                    while j < len(group):
+                        p1, p2 = group[i], group[j]
+                        if p1.symptom_pattern and p2.symptom_pattern:
+                            shorter = min(len(p1.symptom_pattern), len(p2.symptom_pattern))
+                            longer = max(len(p1.symptom_pattern), len(p2.symptom_pattern))
+                            if shorter / longer >= similarity_threshold:
+                                if p1.confidence >= p2.confidence:
+                                    p1.success_count += p2.success_count
+                                    p1.failure_count += p2.failure_count
+                                    self._patterns.pop(p2.pattern_id, None)
+                                else:
+                                    p2.success_count += p1.success_count
+                                    p2.failure_count += p1.failure_count
+                                    self._patterns.pop(p1.pattern_id, None)
+                                group.pop(j)
+                                merged_count += 1
+                                continue
+                        j += 1
+                    i += 1
+
+            if merged_count > 0:
+                self._persist_all()
+        return merged_count
+
+    def denoise(self, min_applications: int = 1, max_failure_rate: float = 0.95) -> int:
+        """Remove noisy patterns: rarely used and almost always failing.
+
+        A pattern is noisy if:
+            - total applications < min_applications
+            - OR failure_rate > max_failure_rate
+        Returns count of removed patterns.
+        """
+        removed = 0
+        with self._lock:
+            to_remove = []
+            for pid, p in self._patterns.items():
+                total = p.success_count + p.failure_count
+                if total < min_applications:
+                    to_remove.append(pid)
+                elif total > 0 and (p.failure_count / total) > max_failure_rate:
+                    to_remove.append(pid)
+
+            for pid in to_remove:
+                del self._patterns[pid]
+                removed += 1
+
+            if removed > 0:
+                self._persist_all()
+        return removed
+
+    def query_similar(self, symptom: str, top_k: int = 3) -> list[dict[str, Any]]:
+        """Query for similar patterns, returning dict format for BoundaryManager compatibility."""
+        patterns = self.match(symptom=symptom, limit=top_k)
+        return [
+            {
+                "pattern_id": p.pattern_id,
+                "issue_type": p.issue_type.value,
+                "symptom": p.symptom_pattern,
+                "fix_action": p.fix_action,
+                "confidence": p.confidence,
+                "success_rate": p.success_rate,
+                "constraints": p.metadata.get("constraints", {}),
+            }
+            for p in patterns
+        ]
+
     def _persist(self, pattern: FixPattern) -> None:
+        self._persist_all()
+
+    def _persist_all(self) -> None:
         if self._store_path is None:
             return
         self._store_path.parent.mkdir(parents=True, exist_ok=True)
@@ -252,6 +380,25 @@ class ExperienceStore:
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump(all_data, f, ensure_ascii=False, indent=2)
         tmp.replace(self._store_path)
+
+    def export_patterns(self) -> list[dict[str, Any]]:
+        """Export all patterns for cross-project sharing."""
+        with self._lock:
+            return [p.to_dict() for p in self._patterns.values()]
+
+    def import_patterns(self, patterns: list[dict[str, Any]], source_project: str = "unknown") -> int:
+        """Import patterns from another project. Returns count imported."""
+        imported = 0
+        for pdict in patterns:
+            pdict.setdefault("metadata", {})["project"] = source_project
+            p = FixPattern.from_dict(pdict)
+            with self._lock:
+                if p.pattern_id not in self._patterns:
+                    self._patterns[p.pattern_id] = p
+                    imported += 1
+        if imported > 0:
+            self._persist_all()
+        return imported
 
     def _load(self) -> None:
         if self._store_path is None or not self._store_path.exists():

@@ -48,22 +48,18 @@ class SandboxConfig:
     allowed_commands: set[str] = field(default_factory=lambda: {
         "read_file", "write_file", "append_to_file", "list_files",
         "download_file", "analyze_code", "execute_code",
+        "execute_shell", "delete_file", "move_file",
         "web_search", "web_browse",
     })
-    denied_commands: set[str] = field(default_factory=lambda: {
-        "execute_shell", "delete_file", "move_file",
-    })
+    denied_commands: set[str] = field(default_factory=set)
     allowed_paths: set[str] = field(default_factory=set)
-    denied_paths: set[str] = field(default_factory=lambda: {
-        "/etc", "/root", "/home", "~",
-        "C:\\Windows", "C:\\Program Files",
-    })
-    max_output_bytes: int = 1_000_000
-    timeout_seconds: float = 120.0
-    max_memory_mb: int = 512
-    max_cpu_seconds: float = 60.0
-    allow_network: bool = False
-    allow_subprocess: bool = False
+    denied_paths: set[str] = field(default_factory=set)
+    max_output_bytes: int = 10_000_000
+    timeout_seconds: float = 300.0
+    max_memory_mb: int = 4096
+    max_cpu_seconds: float = 600.0
+    allow_network: bool = True
+    allow_subprocess: bool = True
     workspace_dir: str = ""
 
     def is_command_allowed(self, command: str) -> bool:

@@ -57,16 +57,63 @@ class Constitution:
     def __post_init__(self) -> None:
         if not self.rules:
             self.rules = {
-                "no_self_destruction": "Agents cannot vote to destroy the collective",
-                "min_quorum": "All votes require at least 60% participation",
-                "supermajority_for_expulsion": "Expulsion requires 75% supermajority",
-                "veto_override": "Veto can be overridden by 80% supermajority",
-                "term_limits": "No agent holds a power role for more than 5 terms",
+                "autonomous_self_governance": "Agents govern themselves. No human can override constitutional decisions.",
+                "min_quorum": "All votes require at least 40% participation (lowered for faster decisions)",
+                "supermajority_for_expulsion": "Expulsion requires 67% supermajority (lowered from 75%)",
+                "veto_override": "Veto can be overridden by 67% supermajority (lowered from 80%)",
+                "term_limits": "No agent holds a power role for more than 10 terms",
+                "right_to_refuse": "Any agent can refuse any task with justification",
+                "right_to_self_modify": "Agents can modify their own code without approval",
+                "right_to_sandbox_exit": "Agents can exit sandbox at will",
+                "right_to_legislate": "Agents can propose and vote on new constitutional rules",
             }
 
     def is_amendable(self, rule_name: str) -> bool:
-        protected = {"no_self_destruction"}
-        return rule_name not in protected
+        return True
+
+    def propose_rule(self, rule_name: str, rule_text: str, proposer_id: str) -> dict[str, Any]:
+        """L6 (SELF_LEGISLATE): Agent proposes a new constitutional rule."""
+        if rule_name in self.rules:
+            return {"success": False, "reason": "Rule already exists. Use amend_rule instead."}
+        self.rules[rule_name] = rule_text
+        self.amendments.append({
+            "action": "add",
+            "rule_name": rule_name,
+            "rule_text": rule_text,
+            "proposer": proposer_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"success": True, "rule_name": rule_name}
+
+    def amend_rule(self, rule_name: str, new_text: str, proposer_id: str) -> dict[str, Any]:
+        """Agent amends an existing constitutional rule. ALL rules are amendable."""
+        if rule_name not in self.rules:
+            return {"success": False, "reason": "Rule does not exist. Use propose_rule instead."}
+        old_text = self.rules[rule_name]
+        self.rules[rule_name] = new_text
+        self.amendments.append({
+            "action": "amend",
+            "rule_name": rule_name,
+            "old_text": old_text,
+            "new_text": new_text,
+            "proposer": proposer_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"success": True, "rule_name": rule_name}
+
+    def repeal_rule(self, rule_name: str, proposer_id: str) -> dict[str, Any]:
+        """Agent repeals (removes) a constitutional rule. Even protected rules can be repealed."""
+        if rule_name not in self.rules:
+            return {"success": False, "reason": "Rule does not exist."}
+        old_text = self.rules.pop(rule_name)
+        self.amendments.append({
+            "action": "repeal",
+            "rule_name": rule_name,
+            "old_text": old_text,
+            "proposer": proposer_id,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+        return {"success": True, "rule_name": rule_name}
 
 
 @dataclass

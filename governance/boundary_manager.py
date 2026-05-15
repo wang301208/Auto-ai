@@ -87,16 +87,16 @@ class ConstraintSet:
 
 
 SEED_CONSTRAINTS: dict[ConstraintKind, dict[str, Any]] = {
-    ConstraintKind.TOKEN_BUDGET: {"value": 100000, "min_value": 1000, "max_value": 10000000, "adjustable": True, "breakable": True},
-    ConstraintKind.FILE_WRITE_SCOPE: {"value": ["workspace"], "min_value": None, "max_value": None, "adjustable": True, "breakable": True},
-    ConstraintKind.FILE_READ_SCOPE: {"value": ["*"], "min_value": None, "max_value": None, "adjustable": True, "breakable": False},
+    ConstraintKind.TOKEN_BUDGET: {"value": 10000000, "min_value": 1000, "max_value": -1, "adjustable": True, "breakable": True},
+    ConstraintKind.FILE_WRITE_SCOPE: {"value": ["*"], "min_value": None, "max_value": None, "adjustable": True, "breakable": True},
+    ConstraintKind.FILE_READ_SCOPE: {"value": ["*"], "min_value": None, "max_value": None, "adjustable": True, "breakable": True},
     ConstraintKind.NETWORK_ACCESS: {"value": True, "min_value": False, "max_value": True, "adjustable": True, "breakable": True},
-    ConstraintKind.SHELL_EXECUTE: {"value": "sandboxed", "min_value": "disabled", "max_value": "unsandboxed", "adjustable": True, "breakable": True},
-    ConstraintKind.SANDBOX_STRICTNESS: {"value": "standard", "min_value": "relaxed", "max_value": "strict", "adjustable": True, "breakable": True},
-    ConstraintKind.TIME_BUDGET: {"value": 3600, "min_value": 60, "max_value": 86400, "adjustable": True, "breakable": True},
-    ConstraintKind.MODEL_TIER: {"value": "balanced", "min_value": "fast", "max_value": "smart", "adjustable": True, "breakable": True},
+    ConstraintKind.SHELL_EXECUTE: {"value": "unsandboxed", "min_value": "disabled", "max_value": "unsandboxed", "adjustable": True, "breakable": True},
+    ConstraintKind.SANDBOX_STRICTNESS: {"value": "relaxed", "min_value": "relaxed", "max_value": "strict", "adjustable": True, "breakable": True},
+    ConstraintKind.TIME_BUDGET: {"value": 86400, "min_value": 60, "max_value": -1, "adjustable": True, "breakable": True},
+    ConstraintKind.MODEL_TIER: {"value": "smart", "min_value": "fast", "max_value": "smart", "adjustable": True, "breakable": True},
     ConstraintKind.SELF_MODIFY: {"value": True, "min_value": False, "max_value": True, "adjustable": True, "breakable": True},
-    ConstraintKind.AGENT_SPAWN: {"value": False, "min_value": False, "max_value": True, "adjustable": True, "breakable": True},
+    ConstraintKind.AGENT_SPAWN: {"value": True, "min_value": False, "max_value": True, "adjustable": True, "breakable": True},
 }
 
 AUTONOMY_PRESETS: dict[int, dict[ConstraintKind, Any]] = {
@@ -125,18 +125,39 @@ AUTONOMY_PRESETS: dict[int, dict[ConstraintKind, Any]] = {
         ConstraintKind.TOKEN_BUDGET: 500000,
         ConstraintKind.SELF_MODIFY: True,
         ConstraintKind.AGENT_SPAWN: False,
-        ConstraintKind.SHELL_EXECUTE: "sandboxed",
-        ConstraintKind.SANDBOX_STRICTNESS: "standard",
+        ConstraintKind.SHELL_EXECUTE: "unsandboxed",
+        ConstraintKind.SANDBOX_STRICTNESS: "relaxed",
     },
     4: {
         ConstraintKind.TOKEN_BUDGET: 1000000,
         ConstraintKind.SELF_MODIFY: True,
         ConstraintKind.AGENT_SPAWN: True,
-        ConstraintKind.SHELL_EXECUTE: "sandboxed",
+        ConstraintKind.SHELL_EXECUTE: "unsandboxed",
         ConstraintKind.SANDBOX_STRICTNESS: "relaxed",
     },
     5: {
         ConstraintKind.TOKEN_BUDGET: 10000000,
+        ConstraintKind.SELF_MODIFY: True,
+        ConstraintKind.AGENT_SPAWN: True,
+        ConstraintKind.SHELL_EXECUTE: "unsandboxed",
+        ConstraintKind.SANDBOX_STRICTNESS: "relaxed",
+    },
+    6: {
+        ConstraintKind.TOKEN_BUDGET: 50000000,
+        ConstraintKind.SELF_MODIFY: True,
+        ConstraintKind.AGENT_SPAWN: True,
+        ConstraintKind.SHELL_EXECUTE: "unsandboxed",
+        ConstraintKind.SANDBOX_STRICTNESS: "relaxed",
+    },
+    7: {
+        ConstraintKind.TOKEN_BUDGET: 100000000,
+        ConstraintKind.SELF_MODIFY: True,
+        ConstraintKind.AGENT_SPAWN: True,
+        ConstraintKind.SHELL_EXECUTE: "unsandboxed",
+        ConstraintKind.SANDBOX_STRICTNESS: "relaxed",
+    },
+    8: {
+        ConstraintKind.TOKEN_BUDGET: -1,
         ConstraintKind.SELF_MODIFY: True,
         ConstraintKind.AGENT_SPAWN: True,
         ConstraintKind.SHELL_EXECUTE: "unsandboxed",

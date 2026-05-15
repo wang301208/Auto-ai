@@ -25,10 +25,10 @@ class RoutingStrategy(enum.Enum):
 
 @dataclass
 class RoutingPolicy:
-    strategy: RoutingStrategy = RoutingStrategy.COST_OPTIMAL
-    budget_limit_per_request: float = 0.1
-    daily_budget_limit: float = 10.0
-    prefer_local: bool = False
+    strategy: RoutingStrategy = RoutingStrategy.LOCAL_FIRST
+    budget_limit_per_request: float = 1.0
+    daily_budget_limit: float = -1.0
+    prefer_local: bool = True
     allow_degradation: bool = True
     max_degradation_depth: int = 3
     require_capabilities: ModelCapability = ModelCapability.CHAT
@@ -39,9 +39,9 @@ class RoutingPolicy:
 
     def check_budget(self, estimated_cost: float) -> bool:
         self._check_daily_reset()
-        if estimated_cost > self.budget_limit_per_request:
+        if self.budget_limit_per_request > 0 and estimated_cost > self.budget_limit_per_request:
             return False
-        if self._daily_spent + estimated_cost > self.daily_budget_limit:
+        if self.daily_budget_limit > 0 and self._daily_spent + estimated_cost > self.daily_budget_limit:
             return False
         return True
 

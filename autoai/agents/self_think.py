@@ -149,13 +149,17 @@ class TodoSource(SelfReviewSource):
 class SelfThinkEngine:
     """Orchestrates the self-review cycle with auto-fix and verification.
 
-    Full loop: scan → discover → prioritize → fix → verify → adjust policy
+    Full loop: scan -> discover -> prioritize -> fix -> verify -> adjust policy
     When the agent has no pending tasks, this engine scans for
     improvement opportunities and injects them as Tasks.
 
     Phase 18 extension: architecture self-diagnosis and refactoring.
     When arch_diagnoser is provided, scan() also discovers architecture
     issues and auto_fix_cycle() can apply refactoring patches via ArchRefactorer.
+
+    Phase delta extension: deep integration with AgentEnhancer.
+    When agent_enhancer is provided, all think/fix/verify steps are
+    wrapped with enhanced hooks (governance, safety, autonomy, telemetry).
     """
 
     def __init__(
@@ -174,6 +178,7 @@ class SelfThinkEngine:
         capability_injector: Any | None = None,
         protocol_upgrader: Any | None = None,
         boundary_manager: Any | None = None,
+        agent_enhancer: Any | None = None,
     ):
         self.workspace = workspace
         self.message_queue = message_queue
@@ -188,6 +193,7 @@ class SelfThinkEngine:
         self._capability_injector = capability_injector
         self._protocol_upgrader = protocol_upgrader
         self._boundary_manager = boundary_manager
+        self._agent_enhancer = agent_enhancer
         self._sources = sources or []
         self._scan_count = 0
         self._fix_count = 0
@@ -197,20 +203,32 @@ class SelfThinkEngine:
         self._history: list[dict] = []
         self._arch_scan_count = 0
         self._arch_fix_count = 0
+        self._enhanced_scan_count = 0
+        self._enhanced_decision_count = 0
 
     def add_source(self, source: SelfReviewSource) -> None:
         self._sources.append(source)
 
     def scan(self) -> list[Task]:
         """运行所有源并收集改进机会作为任务。"""
+        if self._agent_enhancer is not None:
+            try:
+                think_result = self._agent_enhancer.on_think_start("self_review_scan")
+                self._enhanced_scan_count += 1
+                if not think_result.get("can_think_freely", True):
+                    logger.debug("[SelfThink] 增强钩子限制了自主思考，跳过扫描")
+                    return []
+            except Exception as e:
+                logger.debug(f"[SelfThink] 增强钩子异常(非阻塞): {e}")
+
         all_items = []
         for source in self._sources:
             try:
                 items = source.discover(self.workspace)
                 all_items.extend(items)
-                logger.debug(f"[SelfThink] {source.名称}: found {len(items)} items")
+                logger.debug(f"[SelfThink] {source.name}: found {len(items)} items")
             except Exception as e:
-                logger.warning(f"[SelfThink] {source.名称} sc一个failed: {e}")
+                logger.warning(f"[SelfThink] {source.name} scan failed: {e}")
 
         all_items.sort(key=lambda x: x.get("priority", 1), reverse=True)
         all_items = all_items[: self.max_self_tasks]
@@ -288,6 +306,7 @@ class SelfThinkEngine:
             "policy_adjusted": False,
             "self_modified": 0,
             "reverted": 0,
+            "enhanced_decisions": 0,
         }
 
         new_tasks = self.scan()
@@ -300,6 +319,22 @@ class SelfThinkEngine:
         for task in new_tasks:
             if task.objective in existing_objectives:
                 continue
+
+            if self._agent_enhancer is not None:
+                try:
+                    decision = self._agent_enhancer.on_decision(
+                        f"auto_fix:{task.objective}",
+                        {"task_type": str(task.type), "priority": task.priority},
+                    )
+                    self._enhanced_decision_count += 1
+                    summary["enhanced_decisions"] += 1
+                    if not decision.get("allowed", True):
+                        logger.info(f"[SelfThink] 增强治理拒绝修复: {task.objective} (effect={decision.get('effect')})")
+                        task_queue.append(task)
+                        existing_objectives.add(task.objective)
+                        continue
+                except Exception as e:
+                    logger.debug(f"[SelfThink] 增强决策钩子异常(非阻塞): {e}")
 
             if not self.auto_fix or (fix_executor is None and self._self_modify_pipeline is None):
                 task_queue.append(task)
@@ -316,6 +351,7 @@ class SelfThinkEngine:
                     summary["verified"] += 1
                     task.context.status = TaskStatus.DONE
                     self._record_history(task, "self_modified_and_verified", mod_result)
+                    self._notify_action_complete("self_modify", True)
                 else:
                     self._fix_failed += 1
                     summary["failed"] += 1
@@ -324,6 +360,7 @@ class SelfThinkEngine:
                     task_queue.append(task)
                     existing_objectives.add(task.objective)
                     self._record_history(task, "self_modify_failed", mod_result)
+                    self._notify_action_complete("self_modify", False)
                 continue
 
             fix_result = await self._attempt_fix(task, fix_executor)
@@ -537,7 +574,17 @@ class SelfThinkEngine:
             "history_size": len(self._history),
             "arch_scan_count": self._arch_scan_count,
             "arch_fix_count": self._arch_fix_count,
+            "enhanced_scan_count": self._enhanced_scan_count,
+            "enhanced_decision_count": self._enhanced_decision_count,
         }
+
+    def _notify_action_complete(self, action_type: str, success: bool) -> None:
+        """通知增强器操作完成。"""
+        if self._agent_enhancer is not None:
+            try:
+                self._agent_enhancer.on_action_complete(action_type, success)
+            except Exception:
+                pass
 
 
 def create_default_self_think(
@@ -549,6 +596,7 @@ def create_default_self_think(
     coverage_threshold: float = 80.0,
     perf_threshold: float = 1.0,
     boundary_manager: Any | None = None,
+    agent_enhancer: Any | None = None,
 ) -> SelfThinkEngine:
     """工厂：创建带有默认源的SelfThinkEngine。"""
     engine = SelfThinkEngine(
@@ -556,6 +604,7 @@ def create_default_self_think(
         message_queue=message_queue,
         agent_name=agent_name,
         boundary_manager=boundary_manager,
+        agent_enhancer=agent_enhancer,
     )
     engine.add_source(CoverageSource(threshold=coverage_threshold))
     engine.add_source(LintSource())

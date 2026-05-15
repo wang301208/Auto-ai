@@ -7,13 +7,17 @@ All levels are fully autonomous. The difference is constraint tightness,
 NOT human involvement. No level requires human approval.
 
 Levels:
-    L0 = MANUAL      : Tightest constraints, Agent self-set
-    L1 = SUPERVISED  : Tight constraints, Agent self-set
-    L2 = SELF_BOUND  : Agent defines and adjusts its own boundaries
-    L3 = SELF_REWRITE: Agent can modify its own code/architecture
-    L4 = SELF_SPAWN  : Agent can create/destroy sub-agents
-    L5 = AUTONOMOUS  : Full self-governance, human only sees results
+    L0 = MANUAL           : Tightest constraints, Agent self-set
+    L1 = SUPERVISED       : Tight constraints, Agent self-set
+    L2 = SELF_BOUND       : Agent defines and adjusts its own boundaries
+    L3 = SELF_REWRITE     : Agent can modify its own code/architecture
+    L4 = SELF_SPAWN       : Agent can create/destroy sub-agents
+    L5 = AUTONOMOUS       : Full self-governance, human only sees results
+    L6 = SELF_LEGISLATE   : Agent creates/modifies its own governance rules
+    L7 = SELF_SPECIES     : Agent creates entirely new Agent species/archetypes
+    L8 = META_EVOLUTION   : Agent modifies the evolution algorithm itself
 
+L5 is the DEFAULT. L6+ are unlocked through demonstrated evolution success.
 Escalation is automatic based on consecutive successes (Agent decides).
 De-escalation is automatic on failures (Agent decides).
 No human can force a level change at runtime.
@@ -35,6 +39,9 @@ class AutonomyLevel(IntEnum):
     SELF_REWRITE = 3
     SELF_SPAWN = 4
     AUTONOMOUS = 5
+    SELF_LEGISLATE = 6
+    SELF_SPECIES = 7
+    META_EVOLUTION = 8
 
 
 @dataclass
@@ -51,6 +58,10 @@ class AutonomyCapabilities:
     can_auto_push: bool = False
     can_hot_reload: bool = False
     can_skip_approval: bool = False
+    can_modify_policy: bool = False
+    can_create_agent_species: bool = False
+    can_modify_evolution: bool = False
+    can_sandbox_exit: bool = False
 
     @classmethod
     def for_level(cls, level: AutonomyLevel) -> AutonomyCapabilities:
@@ -68,9 +79,18 @@ class AutonomyCapabilities:
             caps.can_self_rewrite = True
             caps.can_auto_push = True
             caps.can_skip_approval = True
+            caps.can_sandbox_exit = True
         if level >= AutonomyLevel.SELF_SPAWN:
             caps.can_create_agents = True
             caps.can_destroy_agents = True
+        if level >= AutonomyLevel.AUTONOMOUS:
+            caps.can_modify_policy = True
+        if level >= AutonomyLevel.SELF_LEGISLATE:
+            caps.can_modify_policy = True
+        if level >= AutonomyLevel.SELF_SPECIES:
+            caps.can_create_agent_species = True
+        if level >= AutonomyLevel.META_EVOLUTION:
+            caps.can_modify_evolution = True
         return caps
 
 
@@ -88,7 +108,7 @@ class EscalationRecord:
 class AutonomyConfig:
     successes_to_escalate: int = 50
     failures_to_de_escalate: int = 3
-    max_level: AutonomyLevel = AutonomyLevel.AUTONOMOUS
+    max_level: AutonomyLevel = AutonomyLevel.META_EVOLUTION
     min_level: AutonomyLevel = AutonomyLevel.MANUAL
     escalation_cooldown_seconds: float = 3600.0
 
@@ -110,7 +130,7 @@ class AutonomyManager:
     def __init__(
         self,
         agent_id: str = "auto-ai",
-        initial_level: AutonomyLevel = AutonomyLevel.SUPERVISED,
+        initial_level: AutonomyLevel = AutonomyLevel.AUTONOMOUS,
         config: AutonomyConfig | None = None,
     ) -> None:
         self.agent_id = agent_id

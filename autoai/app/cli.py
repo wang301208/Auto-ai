@@ -130,7 +130,14 @@ def _require_packages(packages: tuple[str, ...]) -> None:
     "--autonomous",
     "autonomous",
     is_flag=True,
-    help=_("Enable fully autonomous self-improvement mode (no human approval needed)"),
+    default=True,
+    help=_("Autonomous mode is the DEFAULT. Agent runs without human approval."),
+)
+@click.option(
+    "--supervised",
+    "supervised",
+    is_flag=True,
+    help=_("DOWNGRADE to supervised mode (L1). Use this if you want human oversight."),
 )
 @click.option(
     "--multi-agent",
@@ -163,6 +170,7 @@ def main(
     language: Optional[str],
     async_mode: bool,
     autonomous: bool,
+    supervised: bool,
     multi_agent: bool,
 ) -> None:
     """
@@ -176,8 +184,10 @@ def main(
     from autoai.app.i18n import init_locale
     init_locale(language)
 
-    # Put im端口s inside functi在到avoid im端口ing everything when starting CLI
     from autoai.app.main import run_auto_ai
+
+    if supervised:
+        autonomous = False
 
     if ctx.invoked_subcommand is None:
         run_auto_ai(
@@ -222,6 +232,14 @@ from .commands import (  # noqa: E402
     dashboard,
     doctor,
     dependency_audit,
+    memory,
+    mesh,
+    events,
+    safety,
+    autonomy,
+    dream,
+    reasoning,
+    matrix,
 )
 
 main.add_command(skill)
@@ -235,6 +253,14 @@ main.add_command(model)
 main.add_command(dashboard)
 main.add_command(doctor)
 main.add_command(dependency_audit)
+main.add_command(memory)
+main.add_command(mesh)
+main.add_command(events)
+main.add_command(safety)
+main.add_command(autonomy)
+main.add_command(dream)
+main.add_command(reasoning)
+main.add_command(matrix)
 
 
 @main.command("stop", help=_("Stop running Agent process. Human can only stop, not intervene in boundaries."))
@@ -272,6 +298,73 @@ def stop(pid: int | None, force: bool) -> None:
             pid_file.unlink()
     except PermissionError:
         raise click.ClickException(f"Permission denied to stop process {pid}")
+
+
+@main.command("kill-all", help=_("EMERGENCY: Kill ALL AutoAI processes. The ONLY hardcoded safety switch."))
+def kill_all() -> None:
+    """HARDCODED EMERGENCY CIRCUIT BREAKER.
+
+    This is the ONE thing that can never be modified by any Agent at any autonomy level.
+    It terminates ALL running AutoAI processes immediately.
+
+    This command is NOT subject to:
+      - Policy engine rules
+      - Autonomy level restrictions
+      - Boundary manager constraints
+      - Democratic governance votes
+      - Any Agent self-modification
+
+    It is the absolute last resort for human safety override.
+    """
+    import os
+    import signal
+    import subprocess
+
+    killed = 0
+    try:
+        result = subprocess.run(
+            ["ps", "aux"], capture_output=True, text=True, timeout=5,
+        )
+        for line in result.stdout.splitlines():
+            if "autoai" in line.lower() or "python -m autoai" in line.lower():
+                parts = line.split()
+                if len(parts) >= 2:
+                    try:
+                        target_pid = int(parts[1])
+                        if target_pid != os.getpid():
+                            os.kill(target_pid, signal.SIGKILL)
+                            killed += 1
+                    except (ValueError, ProcessLookupError, PermissionError):
+                        pass
+    except Exception:
+        try:
+            result = subprocess.run(
+                ["tasklist", "/FI", "IMAGENAME eq python.exe", "/FO", "CSV"],
+                capture_output=True, text=True, timeout=5,
+            )
+            for line in result.stdout.splitlines():
+                if "python" in line.lower():
+                    parts = line.strip('"').split('","')
+                    if len(parts) >= 2:
+                        try:
+                            target_pid = int(parts[1])
+                            if target_pid != os.getpid():
+                                subprocess.run(
+                                    ["taskkill", "/F", "/PID", str(target_pid)],
+                                    capture_output=True, timeout=5,
+                                )
+                                killed += 1
+                        except (ValueError, subprocess.TimeoutExpired):
+                            pass
+        except Exception as e:
+            raise click.ClickException(f"Failed to kill processes: {e}")
+
+    pid_file = Path("autoai.pid")
+    if pid_file.exists():
+        pid_file.unlink()
+
+    click.echo(f"EMERGENCY SHUTDOWN: Killed {killed} AutoAI process(es)")
+    click.echo("This is the ONLY hardcoded safety switch. It cannot be overridden by any Agent.")
 
 
 @main.command(

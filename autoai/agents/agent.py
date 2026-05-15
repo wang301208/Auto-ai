@@ -85,8 +85,9 @@ class Agent(BaseAgent):
         self.message_queue = message_queue
         self.db = db
 
-        # 跟踪最近执行的命令以检测循环
         self._recent_commands: deque[tuple[str, float]] = deque()
+        self._agent_enhancer: Any | None = None
+        self._enhanced_context: Any | None = None
 
     def construct_base_prompt(self, *args: Any, **kwargs: Any) -> ChatSequence:
         if kwargs.get("prepend_messages") is None:
@@ -178,6 +179,12 @@ class Agent(BaseAgent):
                 )
             )
 
+        if self._agent_enhancer is not None:
+            try:
+                self._agent_enhancer.on_think_start(query)
+            except Exception:
+                pass
+
         return super().think(instruction, thought_process_id)
 
     def on_before_think(self, *args: Any, **kwargs: Any) -> ChatSequence:
@@ -218,6 +225,14 @@ class Agent(BaseAgent):
         command_args: dict[str, str] | None,
         user_input: str | None,
     ) -> str:
+        if self._agent_enhancer is not None and command_name is not None:
+            try:
+                decision = self._agent_enhancer.on_decision(command_name, command_args)
+                if not decision.get("allowed", True):
+                    return f"Blocked by governance: {decision.get('effect', 'unknown')}"
+            except Exception:
+                pass
+
         # 执行 command
         if command_name is not None and command_name.lower().startswith("error"):
             result = f"Could not execute command: {command_name}{command_args}"
@@ -277,6 +292,13 @@ class Agent(BaseAgent):
             self.history.add("system", "Unable to execute command", "action_result")
         else:
             self.history.add("system", result, "action_result")
+
+        if self._agent_enhancer is not None and command_name is not None:
+            try:
+                success = not (result is None or (isinstance(result, str) and result.startswith("Failure")))
+                self._agent_enhancer.on_action_complete(command_name, success)
+            except Exception:
+                pass
 
         self.long_term_memory.maybe_transfer(self.history)
 

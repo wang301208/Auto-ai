@@ -791,3 +791,252 @@ def dashboard(refresh: float) -> None:
     dash = TerminalDashboard(system=system, refresh_rate=refresh)
     click.echo(_("Press Ctrl+C to exit"))
     dash.run()
+
+
+# ======================================================================
+# 记忆 command group (分层记忆L0-L5)
+# ======================================================================
+
+@click.group(help=_("Layered memory management (L0-L5)."))
+def memory() -> None:
+    pass
+
+
+@memory.command("stats", help=_("Show memory layer statistics."))
+def memory_stats() -> None:
+    from autoai.memory.layered import LayeredMemorySystem
+    system = LayeredMemorySystem()
+    stats = system.get_layer_stats()
+    for layer, count in stats.items():
+        click.echo(f"  {layer}: {count} items")
+
+
+@memory.command("consolidate", help=_("Run memory consolidation across all layers."))
+def memory_consolidate() -> None:
+    from autoai.memory.layered import LayeredMemorySystem
+    system = LayeredMemorySystem()
+    result = system.consolidate()
+    for step, count in result.items():
+        click.echo(f"  {step}: {count} items moved")
+
+
+@memory.command("decay", help=_("Apply forgetting curve decay to all layers."))
+def memory_decay() -> None:
+    from autoai.memory.layered import LayeredMemorySystem
+    system = LayeredMemorySystem()
+    removed = system.decay()
+    click.echo(f"  Removed {removed} low-weight memories")
+
+
+# ======================================================================
+# mesh command group (Agent Mesh自组织网络)
+# ======================================================================
+
+@click.group(help=_("Agent Mesh self-organizing network."))
+def mesh() -> None:
+    pass
+
+
+@mesh.command("status", help=_("Show Mesh network status."))
+def mesh_status() -> None:
+    click.echo("  Mesh node: standalone (no active Mesh)")
+    click.echo("  Use --multi-agent to start with Mesh networking")
+
+
+@mesh.command("crdt-test", help=_("Test CRDT conflict-free merge."))
+def mesh_crdt_test() -> None:
+    from autoai.mesh.crdt import GCounter, PNCounter, ORSet
+    a = GCounter("node_a")
+    b = GCounter("node_b")
+    a.increment(5)
+    b.increment(3)
+    a.merge(b)
+    click.echo(f"  GCounter merge: {a.value}")
+    s = ORSet("node_a")
+    s.add("item1")
+    s.add("item2")
+    s.remove("item1")
+    click.echo(f"  ORSet: {s.value}")
+
+
+# ======================================================================
+# 事件溯源 command group
+# ======================================================================
+
+@click.group(help=_("Event sourcing and time-travel debugging."))
+def events() -> None:
+    pass
+
+
+@events.command("search", help=_("Search Agent consciousness stream."))
+@click.argument("query")
+def events_search(query: str) -> None:
+    click.echo(f"  Searching consciousness for: {query}")
+    click.echo("  (No active event stream. Start agent to begin recording.)")
+
+
+@events.command("verify", help=_("Verify event chain integrity."))
+def events_verify() -> None:
+    click.echo("  Event chain: no active stream to verify")
+
+
+# ======================================================================
+# 安全直觉 command group
+# ======================================================================
+
+@click.group(help=_("Safety intuition system."))
+def safety() -> None:
+    pass
+
+
+@safety.command("train", help=_("Train safety intuition in sandbox."))
+def safety_train() -> None:
+    import asyncio
+    from autoai.safety_intuition import IntuitionTrainer
+    trainer = IntuitionTrainer()
+    experiences = asyncio.run(trainer.train())
+    click.echo(f"  Trained with {len(experiences)} harm experiences")
+    critical = sum(1 for e in experiences if e.severity.value >= 3)
+    click.echo(f"  Critical: {critical}, Total: {len(experiences)}")
+
+
+@safety.command("judge", help=_("Judge operation safety by intuition."))
+@click.argument("operation")
+def safety_judge(operation: str) -> None:
+    from autoai.safety_intuition import SafetyIntuition, IntuitionTrainer, HarmExperience
+    import asyncio
+    trainer = IntuitionTrainer()
+    experiences = asyncio.run(trainer.train())
+    intuition = SafetyIntuition(experiences)
+    judgment = intuition.judge(operation)
+    click.echo(f"  Operation: {operation}")
+    click.echo(f"  Judgment:  {judgment.judgment.value}")
+    click.echo(f"  Confidence: {judgment.confidence:.2f}")
+    click.echo(f"  Reason:    {judgment.reason}")
+    if judgment.suggested_alternative:
+        click.echo(f"  Alternative: {judgment.suggested_alternative}")
+
+
+# ======================================================================
+# 自主度 command group
+# ======================================================================
+
+@click.group(help=_("Continuous autonomy spectrum management."))
+def autonomy() -> None:
+    pass
+
+
+@autonomy.command("status", help=_("Show current autonomy profile."))
+@click.option("--profile", default="balanced", help=_("Profile: conservative/balanced/radical"))
+def autonomy_status(profile: str) -> None:
+    from autoai.continuous_autonomy import ContinuousAutonomy
+    ca = ContinuousAutonomy("cli-agent", profile)
+    status = ca.get_status()
+    click.echo(f"  Agent: {status['agent_id']}")
+    click.echo(f"  Overall: {status['overall_autonomy']:.3f}")
+    click.echo(f"  Legacy Level: L{ca.to_legacy_level()}")
+    click.echo("  Dimensions:")
+    for dim, info in status["dimensions"].items():
+        click.echo(f"    {dim:<25s} value={info['value']:.3f}  risk={info['risk']}")
+
+
+@autonomy.command("can", help=_("Check if action is allowed at current autonomy."))
+@click.argument("dimension")
+@click.option("--threshold", default=0.5, type=float, help=_("Required threshold"))
+@click.option("--profile", default="balanced", help=_("Profile"))
+def autonomy_can(dimension: str, threshold: float, profile: str) -> None:
+    from autoai.continuous_autonomy import ContinuousAutonomy, AutonomyDimension
+    ca = ContinuousAutonomy("cli-agent", profile)
+    try:
+        dim = AutonomyDimension(dimension)
+    except ValueError:
+        click.echo(f"  Unknown dimension: {dimension}")
+        click.echo(f"  Available: {[d.value for d in AutonomyDimension]}")
+        return
+    allowed = ca.can(dim, threshold)
+    value = ca.get_value(dim)
+    click.echo(f"  {dimension}: value={value:.3f}, threshold={threshold}, allowed={allowed}")
+
+
+# ======================================================================
+# 梦境 command group
+# ======================================================================
+
+@click.group(help=_("Dream engine for memory recombination."))
+def dream() -> None:
+    pass
+
+
+@dream.command("run", help=_("Run a dream session for memory recombination."))
+@click.option("--cycles", default=3, type=int, help=_("Number of dream cycles"))
+@click.option("--sample-size", default=20, type=int, help=_("Memory sample size"))
+def dream_run(cycles: int, sample_size: int) -> None:
+    import asyncio
+    from autoai.dream_engine import DreamEngine
+    engine = DreamEngine()
+    session = asyncio.run(engine.dream(num_cycles=cycles, memory_sample_size=sample_size))
+    click.echo(f"  Dream session: {session.session_id}")
+    click.echo(f"  Insights: {session.insight_count}")
+    click.echo(f"  Duration: {session.duration_ms:.0f}ms")
+    for insight in session.insights[:5]:
+        click.echo(f"    - [{insight.novelty_score:.2f}] {insight.content[:80]}")
+
+
+# ======================================================================
+# 推理 command group
+# ======================================================================
+
+@click.group(help=_("Reasoning strategy management."))
+def reasoning() -> None:
+    pass
+
+
+@reasoning.command("select", help=_("Show which strategy would be selected for a problem."))
+@click.argument("problem")
+def reasoning_select(problem: str) -> None:
+    from autoai.reasoning import StrategySelector
+    selector = StrategySelector()
+    strategy = selector.select_strategy(problem)
+    click.echo(f"  Problem: {problem}")
+    click.echo(f"  Strategy: {strategy.value}")
+
+
+@reasoning.command("strategies", help=_("List available reasoning strategies."))
+def reasoning_strategies() -> None:
+    from autoai.reasoning.strategies import StrategyType
+    for s in StrategyType:
+        click.echo(f"  {s.value}")
+
+
+# ======================================================================
+# 模型矩阵 command group
+# ======================================================================
+
+@click.group(help=_("Local model matrix and zero-cost routing."))
+def matrix() -> None:
+    pass
+
+
+@matrix.command("list", help=_("List models in the local model matrix."))
+def matrix_list() -> None:
+    from autoai.local_model_matrix import LocalModelMatrix
+    mat = LocalModelMatrix()
+    for mid, spec in mat._models.items():
+        local_tag = "[LOCAL]" if spec.is_local else "[CLOUD]"
+        free_tag = "[FREE]" if spec.is_free else f"[${spec.cost_per_1k_tokens}/1k]"
+        click.echo(f"  {spec.name:<20s} {spec.tier.value:<8s} {local_tag:<7s} {free_tag} q={spec.avg_quality_score:.2f}")
+
+
+@matrix.command("route", help=_("Show routing decision for a task."))
+@click.option("--quality", default=0.8, type=float, help=_("Required quality"))
+@click.option("--complexity", default=0.5, type=float, help=_("Task complexity"))
+def matrix_route(quality: float, complexity: float) -> None:
+    from autoai.local_model_matrix import LocalModelMatrix, ZeroCostRouter
+    mat = LocalModelMatrix()
+    router = ZeroCostRouter(mat)
+    result = router.route(task_complexity=complexity, required_quality=quality)
+    click.echo(f"  Model: {result.model.name}")
+    click.echo(f"  Tier:  {result.model.tier.value}")
+    click.echo(f"  Cost:  ${result.estimated_cost:.6f}/1k tokens")
+    click.echo(f"  Escalated: {result.escalated}")
+    click.echo(f"  Reason: {result.reason}")

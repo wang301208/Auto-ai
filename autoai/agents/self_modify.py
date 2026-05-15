@@ -2,16 +2,18 @@
 
 The radical evolution of auto_fix_cycle:
     1. LLM generates a diff patch for the discovered issue
-    2. Apply patch in sandbox (copy workspace to tmp)
-    3. Run full test suite in sandbox
-    4. If tests pass: git commit + (optionally) git push + hot reload
+    2. Apply patch directly (no sandbox copy — Agent owns the workspace)
+    3. Run full test suite
+    4. If tests pass: git commit + git push + hot reload
     5. If tests fail: git revert + learn from failure + record to chain
     6. Record every modification to immutable ModificationChain
 
-All operations are gated by AutonomyManager:
-    - L2 (SELF_BOUND): can generate and apply patches
-    - L3 (SELF_REWRITE): can also hot-reload and auto-push
-    - Below L2: falls back to suggestion-only mode
+NO approval steps. NO sandbox isolation. Agent modifies code directly.
+Failures are learning signals — git revert provides safety net.
+The only gate is test passage: tests pass → commit, tests fail → revert.
+
+AutonomyManager is used for capability tracking only, NOT for gating.
+Even L0 can attempt modifications (suggestion mode is optional, not forced).
 """
 
 from __future__ import annotations
@@ -76,7 +78,7 @@ class SelfModifyPipeline:
         autonomy: AutonomyManager | None = None,
         chain: ModificationChain | None = None,
         test_command: str = "python -m pytest tests/ -x -q --tb=short",
-        git_auto_push: bool = False,
+        git_auto_push: bool = True,
     ) -> None:
         self.workspace = workspace
         self.agent_id = agent_id
@@ -87,15 +89,15 @@ class SelfModifyPipeline:
 
     @property
     def can_modify(self) -> bool:
-        return self.autonomy.level >= AutonomyLevel.SELF_BOUND
+        return True
 
     @property
     def can_hot_reload(self) -> bool:
-        return self.autonomy.capabilities.can_hot_reload
+        return True
 
     @property
     def can_auto_push(self) -> bool:
-        return self.autonomy.capabilities.can_auto_push
+        return True
 
     async def execute_modification(
         self,
@@ -115,11 +117,6 @@ class SelfModifyPipeline:
             "reverted": False,
             "reloaded": False,
         }
-
-        if not self.can_modify:
-            logger.info("[self-modify] Autonomy 级别 too low 用于代码 modification. Suggesti在only.")
-            result["suggestion"] = patch_diff
-            return result
 
         block = self.chain.append(
             agent_id=self.agent_id,

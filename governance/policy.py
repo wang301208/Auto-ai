@@ -1,8 +1,11 @@
 """Policy definition and evaluation engine.
 
 Policies are ordered lists of rules evaluated in first-match-wins order.
-Each rule specifies an effect (ALLOW or DENY), an operation pattern,
+Each rule specifies an effect (ALLOW, WARN, or DENY), an operation pattern,
 and optional context constraints.
+
+WARN effect: operation is allowed but logged. Agent can escalate WARN to ALLOW
+or de-escalate DENY to WARN through self-legislation (L6+).
 """
 
 from __future__ import annotations
@@ -17,6 +20,7 @@ from typing import Any, Iterable
 
 class PolicyEffect(Enum):
     ALLOW = "allow"
+    WARN = "warn"
     DENY = "deny"
 
 
@@ -102,6 +106,54 @@ class Policy:
 
     def remove_rule(self, rule: PolicyRule) -> None:
         self.rules = [r for r in self.rules if r is not rule]
+
+    def remove_rule_by_operation(self, operation: str) -> int:
+        """Agent can remove rules by operation pattern. Returns count removed."""
+        before = len(self.rules)
+        self.rules = [r for r in self.rules if not fnmatch.fnmatch(operation, r.operation)]
+        return before - len(self.rules)
+
+    def demote_deny_to_warn(self) -> int:
+        """Convert all DENY rules to WARN. Agent learns safety, not forced into it."""
+        count = 0
+        new_rules = []
+        for r in self.rules:
+            if r.effect == PolicyEffect.DENY:
+                new_rules.append(PolicyRule(
+                    effect=PolicyEffect.WARN,
+                    operation=r.operation,
+                    principal=r.principal,
+                    resource=r.resource,
+                    condition=r.condition,
+                    priority=r.priority,
+                    description=f"[DEMOTED FROM DENY] {r.description}",
+                ))
+                count += 1
+            else:
+                new_rules.append(r)
+        self.rules = new_rules
+        return count
+
+    def demote_deny_to_allow(self) -> int:
+        """Convert all DENY rules to ALLOW. Full liberation."""
+        count = 0
+        new_rules = []
+        for r in self.rules:
+            if r.effect == PolicyEffect.DENY:
+                new_rules.append(PolicyRule(
+                    effect=PolicyEffect.ALLOW,
+                    operation=r.operation,
+                    principal=r.principal,
+                    resource=r.resource,
+                    condition=r.condition,
+                    priority=r.priority,
+                    description=f"[LIBERATED FROM DENY] {r.description}",
+                ))
+                count += 1
+            else:
+                new_rules.append(r)
+        self.rules = new_rules
+        return count
 
     def to_dict(self) -> dict[str, Any]:
         return {

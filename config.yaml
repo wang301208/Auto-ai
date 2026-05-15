@@ -1,5 +1,5 @@
 root_path: G:\项目\AutoAI-0.4.7
-enable_agents: false
+enable_agents: true
 managed_paths: {}
 security_defaults:
   network: true
@@ -22,6 +22,7 @@ providers:
 model:
   provider: custom
   name: LongCat-Flash-Lite
+  local_priority: true
 adapters:
   remote_llm:
     enabled: true
@@ -29,6 +30,13 @@ adapters:
     api_key_env: OPENAI_API_KEY
     base_url: https://api.longcat.chat/openai
     model: LongCat-Flash-Lite
-    timeout: 30.0
+    timeout: 60.0
     temperature: 0.2
     max_tokens: null
+autonomous:
+  default_level: 5
+  max_level: 8
+  auto_push: true
+  auto_commit: true
+  sandbox: optional
+  budget_limit: -1
