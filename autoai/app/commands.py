@@ -1040,3 +1040,299 @@ def matrix_route(quality: float, complexity: float) -> None:
     click.echo(f"  Cost:  ${result.estimated_cost:.6f}/1k tokens")
     click.echo(f"  Escalated: {result.escalated}")
     click.echo(f"  Reason: {result.reason}")
+
+
+# ======================================================================
+# 目标涌现 command group (Phase epsilon)
+# ======================================================================
+
+@click.group(help=_("Emergent goal generation and desire system."))
+def goals() -> None:
+    pass
+
+
+@goals.command("emerge", help=_("Emerge new goals from observation history."))
+def goals_emerge() -> None:
+    from autoai.goal_emergence import GoalEmergenceEngine
+    engine = GoalEmergenceEngine()
+    new_goals = engine.emerge_goals()
+    if not new_goals:
+        click.echo("  (无新目标涌现)")
+    for g in new_goals:
+        click.echo(f"  [{g.origin.value}] {g.description} (priority={g.priority:.2f})")
+
+
+# ======================================================================
+# 自我意识 command group
+# ======================================================================
+
+@click.group(help=_("Self-awareness introspection and cognitive load."))
+def awareness() -> None:
+    pass
+
+
+@awareness.command("reflect", help=_("Run self-reflection and report state."))
+def awareness_reflect() -> None:
+    from autoai.self_awareness import SelfAwarenessLoop
+    loop = SelfAwarenessLoop()
+    snap = loop.reflect()
+    click.echo(f"  Self-awareness: {snap.overall_self_awareness:.3f}")
+    click.echo(f"  Cognitive load: {snap.cognitive_load.level.value} ({snap.cognitive_load.total_load:.3f})")
+    click.echo(f"  Capabilities: {len(snap.capabilities)}")
+    click.echo(f"  Knowledge gaps: {len(snap.knowledge_gaps)}")
+
+
+# ======================================================================
+# 因果推理 command group
+# ======================================================================
+
+@click.group(help=_("Causal reasoning and do-calculus."))
+def causal() -> None:
+    pass
+
+
+@causal.command("stats", help=_("Show causal graph statistics."))
+def causal_stats() -> None:
+    from autoai.causal_reasoning import CausalReasoner
+    reasoner = CausalReasoner()
+    s = reasoner.stats
+    click.echo(f"  Nodes: {s['nodes']}, Edges: {s['edges']}, Interventions: {s['interventions']}")
+
+
+# ======================================================================
+# 进化压力 command group
+# ======================================================================
+
+@click.group(help=_("Evolution pressure and natural selection."))
+def evolve_pressure() -> None:
+    pass
+
+
+@evolve_pressure.command("stats", help=_("Show evolution pressure statistics."))
+def evolve_pressure_stats() -> None:
+    from autoai.evolution_pressure import EvolutionPressure
+    evo = EvolutionPressure()
+    s = evo.stats
+    click.echo(f"  Generation: {s['generation']}, Population: {s['population']}, Niches: {s['niches']}")
+
+
+# ======================================================================
+# 工具创造 command group
+# ======================================================================
+
+@click.group(help=_("Zero-shot tool creation."))
+def tools() -> None:
+    pass
+
+
+@tools.command("create", help=_("Create a new tool from a need."))
+@click.argument("operation")
+def tools_create(operation: str) -> None:
+    from autoai.tool_creation import ToolCreator
+    creator = ToolCreator()
+    tool = creator.create_from_need(operation)
+    if tool:
+        click.echo(f"  Created: {tool.spec.name} (status={tool.status.value})")
+    else:
+        click.echo("  (无法创建工具)")
+
+
+# ======================================================================
+# 元认知 command group (Phase zeta)
+# ======================================================================
+
+@click.group(help=_("Meta-cognition control and introspection."))
+def meta() -> None:
+    pass
+
+
+@meta.command("reflect", help=_("Meta-cognitive reflection."))
+def meta_reflect() -> None:
+    from autoai.meta_cognition import MetaCognitionController
+    mc = MetaCognitionController()
+    meta_snap = mc.reflect()
+    click.echo(f"  Mode: {meta_snap.current_mode.value}")
+    click.echo(f"  Efficiency: {meta_snap.cognitive_efficiency:.3f}")
+    click.echo(f"  Is stuck: {meta_snap.is_stuck}")
+
+
+# ======================================================================
+# 价值对齐 command group
+# ======================================================================
+
+@click.group(help=_("Value alignment and calibration."))
+def values() -> None:
+    pass
+
+
+@values.command("list", help=_("List all values."))
+def values_list() -> None:
+    from autoai.value_alignment import ValueCalibrator
+    vc = ValueCalibrator()
+    for v in vc._values.values():
+        tag = "[CORE]" if v.is_core else "[DERIVED]"
+        click.echo(f"  {tag} {v.name}: weight={v.weight:.2f} threshold={v.threshold:.2f}")
+
+
+# ======================================================================
+# 世界模型 command group
+# ======================================================================
+
+@click.group(help=_("World model for prediction and simulation."))
+def world() -> None:
+    pass
+
+
+@world.command("stats", help=_("Show world model statistics."))
+def world_stats() -> None:
+    from autoai.world_model import WorldModel
+    wm = WorldModel()
+    s = wm.stats
+    click.echo(f"  Variables: {s['variables_tracked']}, Transitions: {s['known_transitions']}")
+
+
+# ======================================================================
+# 自举 command group
+# ======================================================================
+
+@click.group(help=_("Self-bootstrap from seed to mature agent."))
+def bootstrap() -> None:
+    pass
+
+
+@bootstrap.command("run", help=_("Run full bootstrap process."))
+def bootstrap_run() -> None:
+    from autoai.bootstrap import SelfBootstrapper
+    bs = SelfBootstrapper()
+    report = bs.run_full_bootstrap()
+    click.echo(f"  Phase: {report.phase.value}")
+    click.echo(f"  Capabilities: {report.total_capabilities}")
+    click.echo(f"  Quality: {report.quality_score:.2f}")
+    click.echo(f"  Mature: {report.is_mature}")
+
+
+# ======================================================================
+# 全息Agent command group (Phase eta)
+# ======================================================================
+
+@click.group(help=_("Holographic unified agent with all capabilities."))
+def holo() -> None:
+    pass
+
+
+@holo.command("init", help=_("Initialize holographic agent."))
+def holo_init() -> None:
+    from autoai.holistic import HoloAgent
+    agent = HoloAgent()
+    status = agent.initialize()
+    click.echo(f"  Modules loaded: {status.module_count}")
+    click.echo(f"  Agent ID: {status.agent_id}")
+
+
+# ======================================================================
+# 量子决策 command group
+# ======================================================================
+
+@click.group(help=_("Quantum decision making."))
+def quantum() -> None:
+    pass
+
+
+@quantum.command("decide", help=_("Make a quantum decision between options."))
+@click.option("--options", multiple=True, help=_("Decision options"))
+def quantum_decide(options: tuple[str, ...]) -> None:
+    from autoai.quantum_decision import QuantumDecider
+    qd = QuantumDecider()
+    opts = [{"action": o, "expected_value": 0.5, "risk": 0.5} for o in (options or ("A", "B"))]
+    result = qd.decide(opts)
+    if result:
+        click.echo(f"  Collapsed to: {result.action} (P={result.probability:.3f})")
+
+
+# ======================================================================
+# 活UI command group (Phase iota)
+# ======================================================================
+
+@click.group(help=_("Living UI: Agent IS the interface."))
+def lui() -> None:
+    pass
+
+
+@lui.command("emerge", help=_("Emerge panels from current context."))
+def lui_emerge() -> None:
+    from autoai.living_ui import PanelEmerger
+    emerger = PanelEmerger()
+    panels = emerger.emerge_from_context({"metrics": {"cpu": 0.7, "mem": 0.5}, "tasks": [{"name": "scan", "status": "running"}]})
+    for p in panels:
+        click.echo(f"  [{p.panel_type.value}] {p.title} (priority={p.priority:.1f})")
+        for line in p.content_lines[:3]:
+            click.echo(f"    {line}")
+
+
+# ======================================================================
+# 知识涌现 command group (Phase kappa)
+# ======================================================================
+
+@click.group(help=_("Knowledge emergence: graph, compression, transfer, belief."))
+def knowledge() -> None:
+    pass
+
+
+@knowledge.command("stats", help=_("Show knowledge graph statistics."))
+def knowledge_stats() -> None:
+    from autoai.knowledge.graph import KnowledgeGraph
+    kg = KnowledgeGraph()
+    s = kg.stats
+    click.echo(f"  Nodes: {s['node_count']}, Edges: {s['edge_count']}")
+    click.echo(f"  Conflicts: {s['conflicts_unresolved']} unresolved / {s['conflicts_total']} total")
+    click.echo(f"  Inferences: {s['inferences_made']}, Avg confidence: {s['avg_confidence']:.2f}")
+
+
+@knowledge.command("add", help=_("Add a knowledge triple."))
+@click.argument("subject")
+@click.argument("predicate")
+@click.argument("obj")
+def knowledge_add(subject: str, predicate: str, obj: str) -> None:
+    from autoai.knowledge.graph import KnowledgeGraph
+    kg = KnowledgeGraph()
+    src, edge, tgt = kg.observe_triple(subject, predicate, obj)
+    click.echo(f"  Added: {subject} --[{predicate}]--> {obj}")
+
+
+@knowledge.command("compress", help=_("Compress knowledge chunks semantically."))
+@click.option("--level", default="moderate", help=_("Compression level: detail/moderate/abstract"))
+def knowledge_compress(level: str) -> None:
+    from autoai.knowledge.compressor import SemanticCompressor, CompressionLevel
+    sc = SemanticCompressor()
+    level_map = {"detail": CompressionLevel.DETAIL, "moderate": CompressionLevel.MODERATE, "abstract": CompressionLevel.ABSTRACT}
+    cl = level_map.get(level, CompressionLevel.MODERATE)
+    s = sc.stats
+    click.echo(f"  Compressor ready. Level: {cl.value}")
+    click.echo(f"  Compressions done: {s['compressions_done']}, Target ratio: {s['target_ratio']}")
+
+
+@knowledge.command("transfer", help=_("Discover cross-domain knowledge bridges."))
+@click.argument("domain_a")
+@click.argument("domain_b")
+def knowledge_transfer(domain_a: str, domain_b: str) -> None:
+    from autoai.knowledge.transfer import CrossDomainTransfer
+    cdt = CrossDomainTransfer()
+    click.echo(f"  Discovering bridge: {domain_a} <-> {domain_b}")
+    click.echo("  (Register domains first via API to enable transfer)")
+
+
+@knowledge.command("believe", help=_("Manage beliefs and belief revision."))
+@click.argument("proposition")
+@click.option("--confidence", default=0.9, type=float, help=_("Confidence level"))
+@click.option("--source", default="perception", help=_("Belief source"))
+def knowledge_believe(proposition: str, confidence: float, source: str) -> None:
+    from autoai.knowledge.belief import BeliefSystem, BeliefSource
+    bs = BeliefSystem()
+    src_map = {"perception": BeliefSource.PERCEPTION, "inference": BeliefSource.INFERENCE,
+               "communication": BeliefSource.COMMUNICATION, "introspection": BeliefSource.INTROSPECTION,
+               "axiom": BeliefSource.AXIOM}
+    src_enum = src_map.get(source, BeliefSource.DEFAULT)
+    b = bs.believe(proposition, src_enum, confidence)
+    click.echo(f"  Belief: {proposition}")
+    click.echo(f"  Confidence: {b.confidence:.2f}")
+    click.echo(f"  Source: {b.source.value}")

@@ -240,6 +240,19 @@ from .commands import (  # noqa: E402
     dream,
     reasoning,
     matrix,
+    goals,
+    awareness,
+    causal,
+    evolve_pressure,
+    tools,
+    meta,
+    values,
+    world,
+    bootstrap,
+    holo,
+    quantum,
+    lui,
+    knowledge,
 )
 
 main.add_command(skill)
@@ -261,6 +274,19 @@ main.add_command(autonomy)
 main.add_command(dream)
 main.add_command(reasoning)
 main.add_command(matrix)
+main.add_command(goals)
+main.add_command(awareness)
+main.add_command(causal)
+main.add_command(evolve_pressure)
+main.add_command(tools)
+main.add_command(meta)
+main.add_command(values)
+main.add_command(world)
+main.add_command(bootstrap)
+main.add_command(holo)
+main.add_command(quantum)
+main.add_command(lui)
+main.add_command(knowledge)
 
 
 @main.command("stop", help=_("Stop running Agent process. Human can only stop, not intervene in boundaries."))
