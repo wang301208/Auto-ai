@@ -253,6 +253,21 @@ from .commands import (  # noqa: E402
     quantum,
     lui,
     knowledge,
+    chaos,
+    darwin,
+    reproduce,
+    optimize,
+    arch,
+    identity,
+    forever,
+    heal,
+    selftest,
+    upgrade,
+    evofield,
+    zerohuman,
+    emapi,
+    niche,
+    autonomy_core,
 )
 
 main.add_command(skill)
@@ -287,6 +302,21 @@ main.add_command(holo)
 main.add_command(quantum)
 main.add_command(lui)
 main.add_command(knowledge)
+main.add_command(chaos)
+main.add_command(darwin)
+main.add_command(reproduce)
+main.add_command(optimize)
+main.add_command(arch)
+main.add_command(identity)
+main.add_command(forever)
+main.add_command(heal)
+main.add_command(selftest)
+main.add_command(upgrade)
+main.add_command(evofield)
+main.add_command(zerohuman)
+main.add_command(emapi)
+main.add_command(niche)
+main.add_command(autonomy_core)
 
 
 @main.command("stop", help=_("Stop running Agent process. Human can only stop, not intervene in boundaries."))

@@ -46,6 +46,10 @@ class HoloAgent:
     - 世界模型 (world_model)
     - 自举 (bootstrap)
     - 知识涌现 (knowledge)
+    - 混沌免疫 (chaos)
+    - 技术达尔文 (darwin)
+    - 生殖管道 (reproduction)
+    - 自优化闭环 (self_optimize)
     """
 
     def __init__(self, agent_id: str = "holo", autonomy_profile: str = "balanced"):
@@ -83,6 +87,30 @@ class HoloAgent:
             ("semantic_compressor", "autoai.knowledge.compressor", "SemanticCompressor"),
             ("cross_domain", "autoai.knowledge.transfer", "CrossDomainTransfer"),
             ("belief_system", "autoai.knowledge.belief", "BeliefSystem"),
+            ("immune_system", "autoai.chaos.immune", "ImmuneSystem"),
+            ("antifragile", "autoai.chaos.antifragile", "AntiFragileEngine"),
+            ("tech_darwin", "autoai.evolution.tech_darwin", "TechDarwinEngine"),
+            ("reproduction", "autoai.reproduction.pipeline", "ReproductionPipeline"),
+            ("self_optimize", "autoai.self_optimize.loop", "SelfOptimizeLoop"),
+            ("living_arch", "autoai.living_arch.engine", "LivingArchEngine"),
+            ("identity_flux", "autoai.identity.flux", "IdentityFlux"),
+            ("semantic_router", "autoai.semantic_router.router", "SemanticRouter"),
+            ("forever_loop", "autoai.forever_loop.loop", "ForeverLoop"),
+            ("self_heal", "autoai.self_heal.engine", "SelfHealEngine"),
+            ("self_test", "autoai.self_test.engine", "SelfTestEngine"),
+            ("self_doc", "autoai.self_doc.engine", "SelfDocEngine"),
+            ("self_upgrade", "autoai.self_upgrade.engine", "SelfUpgradeEngine"),
+            ("evolution_field", "autoai.evolution_field.field", "EvolutionField"),
+            ("zero_human", "autoai.zero_human.engine", "ZeroHumanEngine"),
+            ("emergent_api", "autoai.emergent_api.engine", "EmergentAPIEngine"),
+            ("niche_engine", "autoai.niche.engine", "NicheEngine"),
+            ("learnable_params", "autoai.autonomy_core.learnable_params", "ParamSpace"),
+            ("reasoning_decider", "autoai.autonomy_core.reasoning_decider", "ReasoningDecider"),
+            ("real_executor", "autoai.autonomy_core.real_executor", "RealExecutor"),
+            ("open_emergence", "autoai.autonomy_core.open_emergence", "OpenEmergenceEngine"),
+            ("cognitive_loop", "autoai.autonomy_core.cognitive_loop", "CognitiveLoop"),
+            ("auditor", "autoai.autonomy_core.auditor", "AutonomyAuditor"),
+            ("autonomy_orchestrator", "autoai.autonomy_core.orchestrator", "AutonomyOrchestrator"),
         ]
         loaded = []
         for name, module_path, class_name in modules_to_load:
@@ -142,6 +170,29 @@ class HoloAgent:
             "compress": "semantic_compressor",
             "xfer": "cross_domain",
             "belief": "belief_system",
+            "immune": "immune_system",
+            "antifrag": "antifragile",
+            "darwin": "tech_darwin",
+            "repro": "reproduction",
+            "opt": "self_optimize",
+            "larch": "living_arch",
+            "iflux": "identity_flux",
+            "sroute": "semantic_router",
+            "floop": "forever_loop",
+            "sheal": "self_heal",
+            "stest": "self_test",
+            "sdoc": "self_doc",
+            "supg": "self_upgrade",
+            "efield": "evolution_field",
+            "zhuman": "zero_human",
+            "emapi": "emergent_api",
+            "niche": "niche_engine",
+            "lparams": "learnable_params",
+            "rdecider": "reasoning_decider",
+            "rexecutor": "real_executor",
+            "oemerge": "open_emergence",
+            "cloop": "cognitive_loop",
+            "auditor": "auditor",
         }
         if name in aliases and aliases[name] in self._modules:
             return self._modules[aliases[name]]

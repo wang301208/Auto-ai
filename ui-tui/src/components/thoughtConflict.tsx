@@ -40,7 +40,7 @@ export default function ThoughtConflict({ debates }: ThoughtConflictProps) {
     const change = after - before;
     const changePercent = Math.round(change * 100);
     
-    let color = theme.colors.primary;
+    let color: string = theme.colors.primary;
     let arrow = '→';
     
     if (change > 0.1) {
@@ -109,9 +109,11 @@ export default function ThoughtConflict({ debates }: ThoughtConflictProps) {
               <Text bold>
                 {index + 1}. {debate.topic}
               </Text>
-              <Text marginLeft={2}>
-                {renderStatusBadge(debate.status)}
-              </Text>
+              <Box marginLeft={2}>
+                <Text>
+                  {renderStatusBadge(debate.status)}
+                </Text>
+              </Box>
             </Box>
 
             {/* 初始决策 */}

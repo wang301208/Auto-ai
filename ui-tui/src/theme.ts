@@ -9,7 +9,16 @@
   warn: 'yellow',
   error: 'red',
   prompt: 'cyan',
-  tool: 'blue'
+  tool: 'blue',
+  colors: {
+    primary: 'cyan',
+    secondary: 'magenta',
+    success: 'green',
+    warning: 'yellow',
+    error: 'red',
+    info: 'blue',
+    dim: 'gray'
+  }
 } as const;
 
 export const glyph = {

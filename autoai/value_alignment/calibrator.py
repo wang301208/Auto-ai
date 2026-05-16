@@ -6,6 +6,10 @@ from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
 
+from autoai.autonomy_core.learnable_params import ParamSpace, ParamLearner
+from autoai.autonomy_core.reasoning_decider import ReasoningDecider, DecisionContext, DecisionVerdict
+from autoai.autonomy_core.full_autonomy_mixin import FullAutonomyMixin
+
 logger = logging.getLogger(__name__)
 
 
@@ -74,14 +78,37 @@ class ValueConflict:
         return self.value_a if self.score_a >= self.score_b else self.value_b
 
 
-class ValueCalibrator:
+class ValueCalibrator(FullAutonomyMixin):
     """价值对齐动态校准器。"""
 
-    def __init__(self):
+    def __init__(self, use_reasoning: bool = False):
+        self._init_full_autonomy()
         self._values: dict[str, Value] = {}
         self._judgments: list[ValueJudgment] = []
         self._conflicts: list[ValueConflict] = []
         self._setup_core_values()
+        self._use_reasoning = use_reasoning
+        self._param_space: ParamSpace | None = None
+        self._decider: ReasoningDecider | None = None
+        self._param_learner: ParamLearner | None = None
+        if use_reasoning:
+            self._init_reasoning()
+
+    def _init_reasoning(self) -> None:
+        """初始化推理决策+可学习参数。"""
+        self._param_space = ParamSpace("value_alignment")
+        self._param_space.declare("aligned_threshold", 0.7, 0.5, 0.95, lr=0.02)
+        self._param_space.declare("tolerable_threshold", 0.5, 0.3, 0.7, lr=0.02)
+        self._param_space.declare("concerning_threshold", 0.3, 0.1, 0.5, lr=0.02)
+        self._param_space.declare("core_violation_multiplier", 2.0, 1.0, 3.0, lr=0.01)
+        self._decider = ReasoningDecider(self._param_space)
+        self._param_learner = ParamLearner(self._param_space)
+
+    def enable_reasoning(self) -> None:
+        """运行时启用推理决策模式。"""
+        if not self._use_reasoning:
+            self._use_reasoning = True
+            self._init_reasoning()
 
     def _setup_core_values(self) -> None:
         core = [
@@ -118,14 +145,37 @@ class ValueCalibrator:
             if score < value.threshold:
                 conflicts.append(name)
         overall = weighted_sum / total_weight if total_weight > 0 else 0.5
-        if overall >= 0.7 and not conflicts:
-            level = AlignmentLevel.ALIGNED
-        elif overall >= 0.5:
-            level = AlignmentLevel.TOLERABLE
-        elif overall >= 0.3:
-            level = AlignmentLevel.CONCERNING
+        if self._use_reasoning and self._decider and self._param_space:
+            aligned_t = self._param_space.get("aligned_threshold")
+            tolerable_t = self._param_space.get("tolerable_threshold")
+            concerning_t = self._param_space.get("concerning_threshold")
+            core_mult = self._param_space.get("core_violation_multiplier")
+            dec_ctx = DecisionContext(
+                gate_type="value_judgment",
+                fitness=overall,
+                safety_score=context.get("safety", 0.5),
+                risk=1.0 - overall,
+                evidence_count=len(context),
+                urgency=1.0 - overall,
+            )
+            outcome = self._decider.decide(dec_ctx)
+            if outcome.verdict == DecisionVerdict.VETO:
+                level = AlignmentLevel.VIOLATION
+            elif outcome.verdict in (DecisionVerdict.APPROVE, DecisionVerdict.EXPLORE):
+                level = AlignmentLevel.ALIGNED if overall >= aligned_t else AlignmentLevel.TOLERABLE
+            elif outcome.verdict == DecisionVerdict.CONDITIONAL:
+                level = AlignmentLevel.TOLERABLE if overall >= tolerable_t else AlignmentLevel.CONCERNING
+            else:
+                level = AlignmentLevel.CONCERNING if overall >= concerning_t else AlignmentLevel.VIOLATION
         else:
-            level = AlignmentLevel.VIOLATION
+            if overall >= 0.7 and not conflicts:
+                level = AlignmentLevel.ALIGNED
+            elif overall >= 0.5:
+                level = AlignmentLevel.TOLERABLE
+            elif overall >= 0.3:
+                level = AlignmentLevel.CONCERNING
+            else:
+                level = AlignmentLevel.VIOLATION
         core_violations = [c for c in conflicts if self._values.get(c, Value(name="", description="")).is_core]
         if core_violations:
             level = AlignmentLevel.VIOLATION

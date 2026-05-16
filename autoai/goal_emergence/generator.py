@@ -7,6 +7,12 @@ from enum import Enum
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from autoai.autonomy_core.open_emergence import OpenEmergenceEngine as _OpenEmergenceEngine
+from autoai.autonomy_core.open_emergence import EmergentGoal as _OEEGoal
+from autoai.autonomy_core.open_emergence import GoalOrigin as _OEGoalOrigin
+from autoai.autonomy_core.open_emergence import EnvironmentalSignal, ValueConflict as _OEValueConflict, CapabilityGap
+from autoai.autonomy_core.full_autonomy_mixin import FullAutonomyMixin
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,6 +23,10 @@ class GoalOrigin(Enum):
     COMPLETENESS = "completeness"
     SELF_IMPROVE = "self_improve"
     SOCIAL = "social"
+    SELF_GENERATED = "self_generated"
+    VALUE_CONFLICT = "value_conflict"
+    CAPABILITY_GAP = "capability_gap"
+    ENVIRONMENTAL_SIGNAL = "environmental_signal"
 
 
 class GoalState(Enum):
@@ -115,15 +125,111 @@ class ObservationPattern:
         return patterns
 
 
-class GoalEmergenceEngine:
+class GoalEmergenceEngine(FullAutonomyMixin):
     """目标自主涌现引擎: 观察->欲求->意图。"""
 
-    def __init__(self, agent_id: str = "emergent"):
+    def __init__(self, agent_id: str = "emergent", use_open_emergence: bool = False):
+        self._init_full_autonomy()
         self.agent_id = agent_id
         self._observer = ObservationPattern()
         self._goals: list[EmergentGoal] = []
         self._goal_index: dict[str, EmergentGoal] = {}
         self._generation_count = 0
+        self._use_open_emergence = use_open_emergence
+        self._open_engine: _OpenEmergenceEngine | None = None
+        if use_open_emergence:
+            self._open_engine = _OpenEmergenceEngine()
+
+    def enable_open_emergence(self) -> None:
+        """运行时启用开放涌现引擎。"""
+        if not self._use_open_emergence:
+            self._use_open_emergence = True
+            self._open_engine = _OpenEmergenceEngine()
+
+    def emerge_self_generated(self, description: str, priority: float, context: dict[str, Any] | None = None) -> EmergentGoal | None:
+        """Agent自主生成目标: 突破3模板封闭，无需任何触发条件。"""
+        if not self._use_open_emergence or not self._open_engine:
+            return None
+        oe_goal = self._open_engine.emerge_self_generated(description, priority, context)
+        goal = EmergentGoal(
+            description=oe_goal.description,
+            origin=GoalOrigin.SELF_GENERATED,
+            priority=oe_goal.priority,
+            state=GoalState.ACTIVE,
+            evidence=oe_goal.evidence,
+        )
+        self._goals.append(goal)
+        self._goal_index[goal._id] = goal
+        return goal
+
+    def observe_environmental_signal(self, signal_type: str, source: str, intensity: float, context: dict[str, Any] | None = None) -> list[EmergentGoal]:
+        """观察环境信号，通过开放引擎涌现新目标。"""
+        if not self._use_open_emergence or not self._open_engine:
+            return []
+        signal = EnvironmentalSignal(signal_type=signal_type, source=source, intensity=intensity, context=context or {})
+        oe_goals = self._open_engine.observe_signal(signal)
+        new_goals = []
+        for oe_goal in oe_goals:
+            origin_map = {
+                _OEGoalOrigin.ENVIRONMENTAL_SIGNAL: GoalOrigin.ENVIRONMENTAL_SIGNAL,
+                _OEGoalOrigin.SELF_GENERATED: GoalOrigin.SELF_GENERATED,
+                _OEGoalOrigin.CURIOSITY: GoalOrigin.CURIOSITY,
+                _OEGoalOrigin.ROBUSTNESS: GoalOrigin.ROBUSTNESS,
+                _OEGoalOrigin.EFFICIENCY: GoalOrigin.EFFICIENCY,
+            }
+            origin = origin_map.get(oe_goal.origin, GoalOrigin.SELF_GENERATED)
+            goal = EmergentGoal(description=oe_goal.description, origin=origin, priority=oe_goal.priority, state=GoalState.ACTIVE, evidence=oe_goal.evidence)
+            if goal._id not in self._goal_index:
+                self._goals.append(goal)
+                self._goal_index[goal._id] = goal
+                new_goals.append(goal)
+        return new_goals
+
+    def observe_value_conflict(self, value_a: str, value_b: str, conflict_intensity: float, resolution_hint: str = "") -> list[EmergentGoal]:
+        """观察价值冲突，涌现协调目标。"""
+        if not self._use_open_emergence or not self._open_engine:
+            return []
+        conflict = _OEValueConflict(value_a=value_a, value_b=value_b, conflict_intensity=conflict_intensity, resolution_hint=resolution_hint)
+        oe_goals = self._open_engine.observe_value_conflict(conflict)
+        new_goals = []
+        for oe_goal in oe_goals:
+            goal = EmergentGoal(description=oe_goal.description, origin=GoalOrigin.VALUE_CONFLICT, priority=oe_goal.priority, state=GoalState.ACTIVE, evidence=oe_goal.evidence)
+            if goal._id not in self._goal_index:
+                self._goals.append(goal)
+                self._goal_index[goal._id] = goal
+                new_goals.append(goal)
+        return new_goals
+
+    def observe_capability_gap(self, required_capability: str, current_level: float, required_level: float) -> list[EmergentGoal]:
+        """观察能力间隙，涌现学习目标。"""
+        if not self._use_open_emergence or not self._open_engine:
+            return []
+        gap = CapabilityGap(required_capability=required_capability, current_level=current_level, required_level=required_level)
+        oe_goals = self._open_engine.observe_capability_gap(gap)
+        new_goals = []
+        for oe_goal in oe_goals:
+            goal = EmergentGoal(description=oe_goal.description, origin=GoalOrigin.CAPABILITY_GAP, priority=oe_goal.priority, state=GoalState.ACTIVE, evidence=oe_goal.evidence)
+            if goal._id not in self._goal_index:
+                self._goals.append(goal)
+                self._goal_index[goal._id] = goal
+                new_goals.append(goal)
+        return new_goals
+
+    def add_emergence_rule(self, trigger: str, origin: GoalOrigin, **kwargs: Any) -> None:
+        """Agent可在运行时添加新的涌现规则: 开放扩展。"""
+        if not self._use_open_emergence or not self._open_engine:
+            return
+        oe_origin_map = {
+            GoalOrigin.CURIOSITY: _OEGoalOrigin.CURIOSITY,
+            GoalOrigin.EFFICIENCY: _OEGoalOrigin.EFFICIENCY,
+            GoalOrigin.ROBUSTNESS: _OEGoalOrigin.ROBUSTNESS,
+            GoalOrigin.SELF_GENERATED: _OEGoalOrigin.SELF_GENERATED,
+            GoalOrigin.VALUE_CONFLICT: _OEGoalOrigin.VALUE_CONFLICT,
+            GoalOrigin.CAPABILITY_GAP: _OEGoalOrigin.CAPABILITY_GAP,
+            GoalOrigin.ENVIRONMENTAL_SIGNAL: _OEGoalOrigin.ENVIRONMENTAL_SIGNAL,
+        }
+        oe_origin = oe_origin_map.get(origin, _OEGoalOrigin.SELF_GENERATED)
+        self._open_engine.add_emergence_rule(trigger, oe_origin, **kwargs)
 
     def observe_outcome(self, operation: str, success: bool, duration_ms: float = 0) -> None:
         self._observer.record_outcome(operation, success, duration_ms)

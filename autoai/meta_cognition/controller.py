@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
 
+from autoai.autonomy_core.learnable_params import ParamSpace, ParamLearner
+from autoai.autonomy_core.full_autonomy_mixin import FullAutonomyMixin
+
 logger = logging.getLogger(__name__)
 
 
@@ -84,10 +87,11 @@ class ThinkingAboutThinking:
         return avg_eff * 0.7 + attention_factor * 0.3
 
 
-class MetaCognitionController:
+class MetaCognitionController(FullAutonomyMixin):
     """元认知控制器: 监控和调控Agent的认知过程。"""
 
-    def __init__(self, agent_id: str = "meta"):
+    def __init__(self, agent_id: str = "meta", use_learnable: bool = False):
+        self._init_full_autonomy()
         self.agent_id = agent_id
         self._current_mode = CognitiveMode.ANALYTICAL
         self._attention = AttentionBudget()
@@ -95,6 +99,24 @@ class MetaCognitionController:
         self._mode_history: list[tuple[CognitiveMode, float]] = [(CognitiveMode.ANALYTICAL, time.time())]
         self._thought_signatures: list[str] = []
         self._loop_detection_window = 5
+        self._use_learnable = use_learnable
+        self._param_space: ParamSpace | None = None
+        self._param_learner: ParamLearner | None = None
+        if use_learnable:
+            self._init_learnable()
+
+    def _init_learnable(self) -> None:
+        self._param_space = ParamSpace("meta_cognition")
+        self._param_space.declare("stuck_loop_threshold", 3.0, 1.0, 10.0, lr=0.1, constitutional=False)
+        self._param_space.declare("insight_stuck_threshold", 0.1, 0.01, 0.3, lr=0.01)
+        self._param_space.declare("overload_threshold", 0.9, 0.7, 0.99, lr=0.01)
+        self._param_space.declare("strategy_ema_decay", 0.8, 0.5, 0.95, lr=0.01)
+        self._param_learner = ParamLearner(self._param_space)
+
+    def enable_learnable(self) -> None:
+        if not self._use_learnable:
+            self._use_learnable = True
+            self._init_learnable()
 
     @property
     def current_mode(self) -> CognitiveMode:
@@ -109,8 +131,32 @@ class MetaCognitionController:
         return old_mode
 
     def auto_switch_mode(self) -> CognitiveMode | None:
-        """基于当前状态自动切换认知模式。"""
+        """基于当前状态自动切换认知模式。
+
+        Phase Omega改造: 支持推理决策模式,Agent可选择非预设转移路径。
+        """
         meta = self.reflect()
+        if getattr(self, '_use_reasoning', False) and hasattr(self, '_decider') and self._decider:
+            return self._auto_switch_reasoning(meta)
+        return self._auto_switch_rules(meta)
+
+    def _auto_switch_reasoning(self, meta: Any) -> CognitiveMode | None:
+        """推理决策模式: 用ReasoningDecider选择认知模式。"""
+        from autoai.autonomy_core.reasoning_decider import DecisionContext
+        modes = [CognitiveMode.ANALYTICAL, CognitiveMode.CREATIVE, CognitiveMode.REFLECTIVE,
+                 CognitiveMode.EXPLORATORY, CognitiveMode.CONSERVATIVE, CognitiveMode.INTUITIVE]
+        if meta.is_stuck:
+            current_idx = modes.index(self._current_mode) if self._current_mode in modes else 0
+            candidates = modes[:current_idx] + modes[current_idx+1:]
+            if candidates:
+                chosen = candidates[hash(f"{time.time()}{meta.thought_loops}") % len(candidates)]
+                return self.switch_mode(chosen, f"stuck:推理切换(非固定路径)")
+        if meta.attention_utilization > 0.9:
+            return self.switch_mode(CognitiveMode.CONSERVATIVE, "过载:切换到保守模式")
+        return None
+
+    def _auto_switch_rules(self, meta: Any) -> CognitiveMode | None:
+        """规则模式: 向后兼容的固定FSM转移。"""
         if meta.is_stuck:
             if self._current_mode == CognitiveMode.ANALYTICAL:
                 return self.switch_mode(CognitiveMode.CREATIVE, "stuck:切换到创造性模式")
@@ -118,9 +164,18 @@ class MetaCognitionController:
                 return self.switch_mode(CognitiveMode.REFLECTIVE, "stuck:切换到反思模式")
             elif self._current_mode == CognitiveMode.REFLECTIVE:
                 return self.switch_mode(CognitiveMode.EXPLORATORY, "stuck:切换到探索模式")
-        if meta.attention_utilization > 0.9:
+        overload_t = 0.9
+        if self._use_learnable and self._param_space:
+            overload_t = self._param_space.get("overload_threshold")
+        if meta.attention_utilization > overload_t:
             return self.switch_mode(CognitiveMode.CONSERVATIVE, "过载:切换到保守模式")
         return None
+
+    def enable_reasoning_mode(self) -> None:
+        """运行时切换推理决策模式。"""
+        from autoai.autonomy_core.reasoning_decider import ReasoningDecider
+        self._use_reasoning = True
+        self._decider = ReasoningDecider()
 
     def record_strategy(self, strategy: str, outcome: float, duration_ms: float) -> None:
         record = StrategyRecord(
@@ -171,12 +226,15 @@ class MetaCognitionController:
     def reflect(self) -> ThinkingAboutThinking:
         """元认知反思: 生成当前认知状态快照。"""
         strategy_eff: dict[str, float] = {}
+        ema_decay = 0.8
+        if self._use_learnable and self._param_space:
+            ema_decay = self._param_space.get("strategy_ema_decay")
         for record in self._strategy_history[-50:]:
             if record.strategy not in strategy_eff:
                 strategy_eff[record.strategy] = record.outcome
             else:
                 old = strategy_eff[record.strategy]
-                strategy_eff[record.strategy] = old * 0.8 + record.outcome * 0.2
+                strategy_eff[record.strategy] = old * ema_decay + record.outcome * (1.0 - ema_decay)
         recent_30 = self._mode_history[-30:]
         mode_switches = len(recent_30) - 1 if len(recent_30) > 1 else 0
         recent_records = self._strategy_history[-20:]

@@ -17,6 +17,7 @@ Consolidates all scattered scripts into a single `aai` command hierarchy:
 from __future__ import annotations
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -761,6 +762,369 @@ def model_providers() -> None:
         click.echo(f"\n  Ollama: not detected (install from https://ollama.com)")
 
 
+@model.command("config", help=_("Interactive model configuration wizard."))
+@click.option("--provider", "-p", default=None, help=_("Pre-select provider (skip prompt)"))
+@click.option("--model", "-m", default=None, help=_("Pre-select model (skip prompt)"))
+@click.option("--strategy", "-s", default=None, help=_("Routing strategy"))
+@click.option("--save", is_flag=True, help=_("Save to .env file"))
+def model_config(provider: str | None, model: str | None, strategy: str | None, save: bool) -> None:
+    from autoai.llm.model_router import ModelRegistry, OllamaProvider, RoutingStrategy
+    from autoai.llm.model_router.model_spec import ModelTier
+
+    registry = ModelRegistry()
+    registry.load_builtin_specs()
+    ollama = OllamaProvider(auto_detect=True)
+    if ollama.is_detected:
+        registry.register_provider(ollama)
+
+    all_models = registry.list_models()
+    providers_order = []
+    seen = set()
+    for m in all_models:
+        if m.provider_name not in seen:
+            providers_order.append(m.provider_name)
+            seen.add(m.provider_name)
+
+    click.echo("\n" + "=" * 60)
+    click.echo(_("  Model Configuration Wizard"))
+    click.echo("=" * 60)
+
+    if provider is None:
+        click.echo(_("\n  Available providers:"))
+        for i, p in enumerate(providers_order, 1):
+            count = len([m for m in all_models if m.provider_name == p])
+            local_tag = " [LOCAL]" if p == "ollama" else ""
+            detected = ""
+            if p == "ollama":
+                detected = " (DETECTED)" if ollama.is_detected else " (not running)"
+            click.echo(f"    {i}. {p} ({count} models){local_tag}{detected}")
+        choice = click.prompt(_("\n  Select provider [1-{}]".format(len(providers_order))), type=int)
+        if choice < 1 or choice > len(providers_order):
+            raise click.ClickException(_("Invalid provider selection"))
+        provider = providers_order[choice - 1]
+
+    provider_models = [m for m in all_models if m.provider_name == provider]
+    if not provider_models:
+        raise click.ClickException(_("No models found for provider '{}'").format(provider))
+
+    if model is None:
+        click.echo(_("\n  Models for provider '{}':").format(provider))
+        for i, m in enumerate(provider_models, 1):
+            local_tag = " [LOCAL]" if m.is_local else ""
+            cost_str = f"${m.prompt_token_cost_per_1k:.5f}/1k" if not m.is_free else "FREE"
+            click.echo(f"    {i}. {m.model_id:<30s} tier={m.tier.value:<10s} ctx={m.max_context_tokens:>7d}  {cost_str}{local_tag}")
+        choice = click.prompt(_("\n  Select model [1-{}]".format(len(provider_models))), type=int)
+        if choice < 1 or choice > len(provider_models):
+            raise click.ClickException(_("Invalid model selection"))
+        selected = provider_models[choice - 1]
+    else:
+        selected = registry.get_model(model)
+        if selected is None or selected.provider_name != provider:
+            raise click.ClickException(_("Model '{}' not found for provider '{}'").format(model, provider))
+
+    if strategy is None:
+        strategies = list(RoutingStrategy)
+        click.echo(_("\n  Routing strategies:"))
+        for i, s in enumerate(strategies, 1):
+            desc = {
+                "cost_optimal": _("Minimize cost"),
+                "performance_optimal": _("Maximize performance"),
+                "local_first": _("Local models first (default)"),
+                "cloud_first": _("Cloud models first"),
+                "manual": _("Manual specification"),
+            }
+            click.echo(f"    {i}. {s.value:<22s} {desc.get(s.value, '')}")
+        choice = click.prompt(_("\n  Select strategy [1-{}]".format(len(strategies))), type=int, default=3)
+        if 1 <= choice <= len(strategies):
+            strategy = strategies[choice - 1].value
+        else:
+            strategy = "local_first"
+
+    fallback_chain = registry.get_fallback_chain(selected.model_id)
+
+    click.echo("\n" + "=" * 60)
+    click.echo(_("  Configuration Summary"))
+    click.echo("=" * 60)
+    click.echo(f"  Provider:   {selected.provider_name}")
+    click.echo(f"  Model:      {selected.model_id}")
+    click.echo(f"  Tier:       {selected.tier.value}")
+    click.echo(f"  Local:      {'Yes' if selected.is_local else 'No'}")
+    click.echo(f"  Context:    {selected.max_context_tokens:,} tokens")
+    if not selected.is_free:
+        click.echo(f"  Input Cost: ${selected.prompt_token_cost_per_1k:.5f}/1k tokens")
+        click.echo(f"  Output Cost:${selected.completion_token_cost_per_1k:.5f}/1k tokens")
+    else:
+        click.echo(f"  Cost:       FREE")
+    click.echo(f"  Strategy:   {strategy}")
+    if len(fallback_chain) > 1:
+        click.echo(f"  Fallback:   {' → '.join(fallback_chain)}")
+
+    if save or click.confirm(_("\n  Save to .env file?"), default=False):
+        _save_model_to_env(selected, strategy)
+        click.echo(_("  Configuration saved to .env"))
+
+
+@model.command("select", help=_("Interactively select and switch active model."))
+@click.option("--tier", "-t", default=None, help=_("Filter by tier (fast/balanced/smart)"))
+@click.option("--local", "local_only", is_flag=True, help=_("Show only local models"))
+@click.option("--free", "free_only", is_flag=True, help=_("Show only free models"))
+def model_select(tier: str | None, local_only: bool, free_only: bool) -> None:
+    from autoai.llm.model_router import ModelRegistry, OllamaProvider
+    from autoai.llm.model_router.model_router import ModelRouter, RoutingPolicy, RoutingStrategy
+
+    registry = ModelRegistry()
+    registry.load_builtin_specs()
+    ollama = OllamaProvider(auto_detect=True)
+    if ollama.is_detected:
+        registry.register_provider(ollama)
+
+    candidates = registry.list_models(tier=tier, local_only=local_only, free_only=free_only)
+    candidates = [m for m in candidates if m.tier.value != "embedding"]
+
+    if not candidates:
+        click.echo(_("No models found matching criteria."), err=True)
+        return
+
+    click.echo("\n" + "=" * 70)
+    click.echo(_("  Model Selection"))
+    click.echo("=" * 70)
+
+    current_fast = os.environ.get("FAST_LLM", "")
+    current_smart = os.environ.get("SMART_LLM", "")
+
+    for i, m in enumerate(candidates, 1):
+        local_tag = " [LOCAL]" if m.is_local else ""
+        free_tag = " [FREE]" if m.is_free else ""
+        active = ""
+        if m.model_id == current_fast or m.model_id == current_smart:
+            active = " <-- ACTIVE"
+        cost_str = f"${m.prompt_token_cost_per_1k:.5f}" if not m.is_free else "FREE"
+        click.echo(f"  {i:>3d}. {m.provider_name:<12s} {m.model_id:<30s} {m.tier.value:<10s} {cost_str:>10s}{local_tag}{free_tag}{active}")
+
+    click.echo(f"\n  {len(candidates)+1}. " + _("Auto-route (let router decide per task)"))
+    click.echo(f"  {len(candidates)+2}. " + _("Cancel"))
+
+    choice = click.prompt(_("\n  Select [1-{}]".format(len(candidates) + 2)), type=int)
+
+    if choice == len(candidates) + 2 or choice < 1:
+        click.echo(_("Cancelled."))
+        return
+
+    if choice == len(candidates) + 1:
+        click.echo("\n" + _("  Auto-route mode selected."))
+        click.echo(_("  The router will choose the best model per task based on complexity and strategy."))
+        if click.confirm(_("  Save FAST_LLM/SMART_LLM to .env?"), default=False):
+            fast_models = [m for m in candidates if m.tier.value == "fast"]
+            smart_models = [m for m in candidates if m.tier.value == "smart"]
+            if fast_models:
+                _write_env_key("FAST_LLM", fast_models[0].model_id)
+            if smart_models:
+                _write_env_key("SMART_LLM", smart_models[0].model_id)
+            click.echo(_("  Saved."))
+        return
+
+    if choice < 1 or choice > len(candidates):
+        raise click.ClickException(_("Invalid selection"))
+
+    selected = candidates[choice - 1]
+    tier_key = "FAST_LLM" if selected.tier.value in ("fast",) else "SMART_LLM"
+    click.echo(f"\n  " + _("Selected: {provider}:{model} (tier={tier})").format(
+        provider=selected.provider_name, model=selected.model_id, tier=selected.tier.value))
+
+    if click.confirm(_("  Set as {}?").format(tier_key), default=True):
+        _write_env_key(tier_key, selected.model_id)
+        click.echo(_("  {} has been updated to: {}").format(tier_key, selected.model_id))
+
+    if selected.tier.value == "smart":
+        if click.confirm(_("  Also set as FAST_LLM for simplicity?"), default=False):
+            _write_env_key("FAST_LLM", selected.model_id)
+            click.echo(_("  FAST_LLM has been updated to: {}").format(selected.model_id))
+
+
+@model.command("setup", help=_("Interactive first-time model setup wizard."))
+def model_setup() -> None:
+    import asyncio
+    from autoai.llm.model_router import ModelRegistry, OllamaProvider, OpenAICompatProvider
+
+    click.echo("\n" + "=" * 60)
+    click.echo(_("  AutoAI Model Setup Wizard"))
+    click.echo("=" * 60)
+    click.echo(_("\n  This wizard will help you configure your first model."))
+
+    registry = ModelRegistry()
+    registry.load_builtin_specs()
+    ollama = OllamaProvider(auto_detect=True)
+    if ollama.is_detected:
+        registry.register_provider(ollama)
+
+    click.echo(_("\n  Step 1: Choose your model source"))
+    click.echo("    1. " + _("Cloud API (OpenAI, DeepSeek, Anthropic, etc.)"))
+    click.echo("    2. " + _("Local model (Ollama)"))
+    click.echo("    3. " + _("Custom OpenAI-compatible API"))
+
+    source = click.prompt(_("\n  Select [1-3]"), type=int, default=1)
+
+    if source == 1:
+        cloud_providers = ["openai", "deepseek", "anthropic", "google", "aliyun", "zhipu"]
+        click.echo(_("\n  Step 2: Select cloud provider"))
+        for i, p in enumerate(cloud_providers, 1):
+            models = [m for m in registry.list_models(provider=p) if m.tier.value != "embedding"]
+            click.echo(f"    {i}. {p} ({len(models)} models)")
+        pchoice = click.prompt(_("\n  Select [1-{}]".format(len(cloud_providers))), type=int)
+        if pchoice < 1 or pchoice > len(cloud_providers):
+            raise click.ClickException(_("Invalid provider"))
+        chosen_provider = cloud_providers[pchoice - 1]
+
+        api_key_envs = {
+            "openai": "OPENAI_API_KEY",
+            "deepseek": "DEEPSEEK_API_KEY",
+            "anthropic": "ANTHROPIC_API_KEY",
+            "google": "GOOGLE_API_KEY",
+            "aliyun": "DASHSCOPE_API_KEY",
+            "zhipu": "ZHIPU_API_KEY",
+        }
+        base_urls = {
+            "openai": "https://api.openai.com/v1",
+            "deepseek": "https://api.deepseek.com/v1",
+            "anthropic": "https://api.anthropic.com/v1",
+            "google": "https://generativelanguage.googleapis.com/v1beta/openai/",
+            "aliyun": "https://dashscope.aliyuncs.com/compatible-mode/v1",
+            "zhipu": "https://open.bigmodel.cn/api/paas/v4",
+        }
+
+        env_key = api_key_envs.get(chosen_provider, "")
+        existing_key = os.environ.get(env_key, "")
+        if existing_key and existing_key != "your-openai-api-key":
+            click.echo(f"\n  {env_key} is already set.")
+            if not click.confirm(_("  Use existing key?"), default=True):
+                existing_key = ""
+
+        if not existing_key:
+            api_key = click.prompt(_("\n  Step 3: Enter your {} API key").format(chosen_provider), hide_input=True)
+            if api_key:
+                _write_env_key(env_key, api_key)
+                click.echo(_("  API key saved to .env"))
+
+        base_url = base_urls.get(chosen_provider, "")
+        if base_url:
+            _write_env_key("OPENAI_API_BASE_URL", base_url)
+
+        provider_models = [m for m in registry.list_models(provider=chosen_provider) if m.tier.value != "embedding"]
+        click.echo(_("\n  Step 4: Select default models"))
+        click.echo(_("  Smart model (for complex tasks):"))
+        smart_models = [m for m in provider_models if m.tier.value in ("smart", "balanced")]
+        for i, m in enumerate(smart_models, 1):
+            click.echo(f"    {i}. {m.model_id}")
+        if smart_models:
+            schoice = click.prompt(_("  Select [1-{}]".format(len(smart_models))), type=int, default=1)
+            if 1 <= schoice <= len(smart_models):
+                _write_env_key("SMART_LLM", smart_models[schoice - 1].model_id)
+
+        click.echo(_("  Fast model (for simple tasks):"))
+        fast_models = [m for m in provider_models if m.tier.value == "fast"]
+        if not fast_models:
+            fast_models = [m for m in provider_models if m.tier.value == "balanced"]
+        for i, m in enumerate(fast_models, 1):
+            click.echo(f"    {i}. {m.model_id}")
+        if fast_models:
+            fchoice = click.prompt(_("  Select [1-{}]".format(len(fast_models))), type=int, default=1)
+            if 1 <= fchoice <= len(fast_models):
+                _write_env_key("FAST_LLM", fast_models[fchoice - 1].model_id)
+
+    elif source == 2:
+        if not ollama.is_detected:
+            click.echo(_("\n  Ollama is not running. Please install and start Ollama first."))
+            click.echo(_("  Visit: https://ollama.com"))
+            if not click.confirm(_("  Continue anyway?"), default=False):
+                return
+        else:
+            click.echo(f"\n  Ollama detected at {ollama.base_url}")
+            pulled = ollama.list_models()
+            if pulled:
+                click.echo(_("  Pulled models:"))
+                for m in pulled:
+                    click.echo(f"    - {m}")
+            else:
+                click.echo(_("  No models pulled yet."))
+
+        local_models = [m for m in registry.list_models(provider="ollama") if m.tier.value != "embedding"]
+        click.echo(_("\n  Step 2: Select local models"))
+        click.echo(_("  Smart model:"))
+        smart_local = [m for m in local_models if m.tier.value in ("smart", "balanced")]
+        for i, m in enumerate(smart_local, 1):
+            click.echo(f"    {i}. {m.model_id}")
+        if smart_local:
+            schoice = click.prompt(_("  Select [1-{}]".format(len(smart_local))), type=int, default=1)
+            if 1 <= schoice <= len(smart_local):
+                _write_env_key("SMART_LLM", smart_local[schoice - 1].model_id)
+
+        click.echo(_("  Fast model:"))
+        fast_local = [m for m in local_models if m.tier.value == "fast"]
+        for i, m in enumerate(fast_local, 1):
+            click.echo(f"    {i}. {m.model_id}")
+        if fast_local:
+            fchoice = click.prompt(_("  Select [1-{}]".format(len(fast_local))), type=int, default=1)
+            if 1 <= fchoice <= len(fast_local):
+                _write_env_key("FAST_LLM", fast_local[fchoice - 1].model_id)
+
+    elif source == 3:
+        click.echo(_("\n  Step 2: Custom OpenAI-compatible API"))
+        base_url = click.prompt(_("  API base URL (e.g. http://localhost:8080/v1)"))
+        api_key = click.prompt(_("  API key (leave empty if not required)"), default="", show_default=False)
+        model_name = click.prompt(_("  Model name"), default="default")
+        _write_env_key("OPENAI_API_BASE_URL", base_url)
+        if api_key:
+            _write_env_key("OPENAI_API_KEY", api_key)
+        _write_env_key("SMART_LLM", model_name)
+        _write_env_key("FAST_LLM", model_name)
+
+    click.echo(_("\n  Step 5: Configure routing strategy"))
+    click.echo("    1. " + _("local_first  - Use local models when available (default)"))
+    click.echo("    2. " + _("cloud_first  - Prefer cloud APIs"))
+    click.echo("    3. " + _("cost_optimal - Always choose cheapest option"))
+    strat_choice = click.prompt(_("  Select [1-3]"), type=int, default=1)
+    strat_map = {1: "local_first", 2: "cloud_first", 3: "cost_optimal"}
+    chosen_strat = strat_map.get(strat_choice, "local_first")
+    _write_env_key("ROUTING_STRATEGY", chosen_strat)
+
+    click.echo("\n" + "=" * 60)
+    click.echo(_("  Setup Complete!"))
+    click.echo("=" * 60)
+    click.echo(_("  Configuration saved to .env"))
+    click.echo(_("  Run 'aai model config' to modify, or 'aai model list' to see all models."))
+
+
+def _write_env_key(key: str, value: str) -> None:
+    env_path = Path.cwd() / ".env"
+    lines: list[str] = []
+    if env_path.exists():
+        with open(env_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+    found = False
+    for i, line in enumerate(lines):
+        stripped = line.strip()
+        if stripped.startswith(f"{key}=") or stripped.startswith(f"# {key}="):
+            lines[i] = f"{key}={value}\n"
+            found = True
+            break
+    if not found:
+        if lines and not lines[-1].endswith("\n"):
+            lines[-1] += "\n"
+        lines.append(f"{key}={value}\n")
+    with open(env_path, "w", encoding="utf-8") as f:
+        f.writelines(lines)
+    os.environ[key] = value
+
+
+def _save_model_to_env(spec: "ModelSpec", strategy: str) -> None:
+    tier_key = "FAST_LLM" if spec.tier.value == "fast" else "SMART_LLM"
+    _write_env_key(tier_key, spec.model_id)
+    if spec.tier.value in ("smart", "balanced"):
+        if not os.environ.get("FAST_LLM"):
+            _write_env_key("FAST_LLM", spec.model_id)
+    _write_env_key("ROUTING_STRATEGY", strategy)
+
+
 # ======================================================================
 # 仪表盘 command
 # ======================================================================
@@ -1336,3 +1700,407 @@ def knowledge_believe(proposition: str, confidence: float, source: str) -> None:
     click.echo(f"  Belief: {proposition}")
     click.echo(f"  Confidence: {b.confidence:.2f}")
     click.echo(f"  Source: {b.source.value}")
+
+
+# ======================================================================
+# 混沌/免疫 command group (Phase lambda)
+# ======================================================================
+
+@click.group(help=_("Chaos engine: immune system and anti-fragile."))
+def chaos() -> None:
+    pass
+
+
+@chaos.command("immune", help=_("Run immune system self-attack cycle."))
+def chaos_immune() -> None:
+    from autoai.chaos.immune import ImmuneSystem
+    immune = ImmuneSystem()
+    report = immune.run_immune_cycle()
+    click.echo(f"  Attacks: {report['attacks_launched']}")
+    click.echo(f"  Breaches: {report['breaches']}")
+    click.echo(f"  Detected: {report['detected']}")
+    click.echo(f"  Patches generated: {report['patches_generated']}")
+    click.echo(f"  Patches verified: {report['patches_verified']}")
+
+
+@chaos.command("antifragile", help=_("Run anti-fragile chaos cycle."))
+@click.option("--injections", default=3, type=int, help=_("Number of fault injections"))
+def chaos_antifragile(injections: int) -> None:
+    from autoai.chaos.antifragile import AntiFragileEngine
+    engine = AntiFragileEngine()
+    result = engine.run_chaos_cycle(num_injections=injections)
+    click.echo(f"  Injections: {result['injections']}")
+    click.echo(f"  Recovered: {result['recovered']}")
+    click.echo(f"  Antifragile events: {result['antifragile_events']}")
+    click.echo(f"  Overall resilience: {result['overall_resilience']:.3f}")
+
+
+# ======================================================================
+# 技术达尔文 command group
+# ======================================================================
+
+@click.group(help=_("Tech Darwin: agent-driven technology evolution."))
+def darwin() -> None:
+    pass
+
+
+@darwin.command("scan", help=_("Scan for technology improvement opportunities."))
+def darwin_scan() -> None:
+    from autoai.evolution.tech_darwin import TechDarwinEngine
+    engine = TechDarwinEngine()
+    opps = engine.scan_opportunities()
+    for o in opps:
+        tag = "[WORTHWHILE]" if o.is_worthwhile else "[SKIP]"
+        click.echo(f"  {tag} [{o.op_type.value}] {o.description[:60]}")
+        click.echo(f"         benefit={o.estimated_benefit:.2f} cost={o.estimated_cost:.2f} net={o.net_value:.2f}")
+
+
+@darwin.command("evolve", help=_("Run full tech Darwin cycle."))
+def darwin_evolve() -> None:
+    from autoai.evolution.tech_darwin import TechDarwinEngine
+    engine = TechDarwinEngine()
+    result = engine.run_darwin_cycle()
+    click.echo(f"  Opportunities: {result['opportunities_found']}")
+    click.echo(f"  Worthwhile: {result['worthwhile']}")
+    click.echo(f"  Applied: {result['applied']}")
+    click.echo(f"  Rolled back: {result['rolled_back']}")
+
+
+# ======================================================================
+# 生殖 command group
+# ======================================================================
+
+@click.group(help=_("Agent reproduction pipeline."))
+def reproduce() -> None:
+    pass
+
+
+@reproduce.command("spawn", help=_("Spawn a child agent for a goal."))
+@click.argument("goal")
+def reproduce_spawn(goal: str) -> None:
+    from autoai.reproduction.pipeline import ReproductionPipeline
+    pipe = ReproductionPipeline()
+    report = pipe.reproduce(goal)
+    click.echo(f"  Child: {report.child_id}")
+    click.echo(f"  Status: {report.status.value}")
+    if report.is_alive:
+        click.echo(f"  Fitness: {report.fitness_score:.2f}")
+
+
+# ======================================================================
+# 自优化 command group
+# ======================================================================
+
+@click.group(help=_("Self-optimization loop."))
+def optimize() -> None:
+    pass
+
+
+@optimize.command("cycle", help=_("Run one optimization cycle."))
+def optimize_cycle() -> None:
+    from autoai.self_optimize.loop import SelfOptimizeLoop, OptimizeTrigger
+    loop = SelfOptimizeLoop()
+    report = loop.run_cycle(OptimizeTrigger.SCHEDULED)
+    click.echo(f"  Cycle: {report.cycle_id}")
+    click.echo(f"  Improvements: {report.improvements_made}")
+    click.echo(f"  Lessons: {len(report.lessons)}")
+    for lesson in report.lessons[:3]:
+        click.echo(f"    - {lesson}")
+
+
+# ======================================================================
+# 活架构 command group (Phase mu)
+# ======================================================================
+
+@click.group(help=_("Living architecture: architecture emerges every second."))
+def arch() -> None:
+    pass
+
+
+@arch.command("status", help=_("Show current architecture snapshot."))
+def arch_status() -> None:
+    from autoai.living_arch.engine import LivingArchEngine
+    engine = LivingArchEngine()
+    engine.register_default_modules()
+    snap = engine.snapshot()
+    click.echo(f"  Active: {len(snap.active_modules)}/{snap.total_modules}")
+    click.echo(f"  Efficiency: {snap.efficiency:.2f}")
+    click.echo(f"  Density: {snap.density:.2f}")
+
+
+@arch.command("rebalance", help=_("Rebalance architecture."))
+def arch_rebalance() -> None:
+    from autoai.living_arch.engine import LivingArchEngine
+    engine = LivingArchEngine()
+    engine.register_default_modules()
+    mutations = engine.rebalance()
+    click.echo(f"  Mutations: {len(mutations)}")
+    for m in mutations[:5]:
+        click.echo(f"    {m.operation}: {m.target} ({m.reason})")
+
+
+# ======================================================================
+# 身份 command group
+# ======================================================================
+
+@click.group(help=_("Agent identity flux and fusion."))
+def identity() -> None:
+    pass
+
+
+@identity.command("spawn", help=_("Spawn a new agent identity."))
+@click.argument("name")
+def identity_spawn(name: str) -> None:
+    from autoai.identity.flux import IdentityFlux
+    flux = IdentityFlux()
+    identity_obj = flux.spawn(name, {"reasoning", "knowledge"})
+    click.echo(f"  ID: {identity_obj.identity_id}")
+    click.echo(f"  State: {identity_obj.state.value}")
+
+
+# ======================================================================
+# 永不停歇 command
+# ======================================================================
+
+@click.command("forever", help=_("Start the forever evolution loop."))
+@click.option("--cycles", default=10, type=int, help=_("Number of cycles to run"))
+def forever(cycles: int) -> None:
+    from autoai.forever_loop.loop import ForeverLoop
+    loop = ForeverLoop()
+    click.echo(f"  Starting forever loop for {cycles} cycles...")
+    for i in range(cycles):
+        result = loop.run_cycle()
+        click.echo(f"  Cycle {result.cycle_id}: {result.success_rate:.0%} success, {result.improvements} improvements, {result.total_duration_ms:.0f}ms")
+
+
+# ======================================================================
+# 自愈 command
+# ======================================================================
+
+@click.group(help=_("Self-healing engine."))
+def heal() -> None:
+    pass
+
+
+@heal.command("detect", help=_("Run self-heal detection cycle."))
+def heal_detect() -> None:
+    from autoai.self_heal.engine import SelfHealEngine, IncidentType, IncidentSeverity
+    engine = SelfHealEngine()
+    engine.detect_incident(IncidentType.EXCEPTION, IncidentSeverity.MEDIUM, "test", "诊断检测")
+    result = engine.auto_heal_cycle()
+    click.echo(f"  Checked: {result['checked']}, Healed: {result['healed']}")
+
+
+# ======================================================================
+# 自测试 command
+# ======================================================================
+
+@click.group(help=_("Self-testing engine."))
+def selftest() -> None:
+    pass
+
+
+@selftest.command("generate", help=_("Generate and run tests for a module."))
+@click.argument("module")
+def selftest_generate(module: str) -> None:
+    from autoai.self_test.engine import SelfTestEngine
+    engine = SelfTestEngine()
+    specs = engine.generate_module_tests(module, ["main", "execute"])
+    result = engine.run_all_tests()
+    click.echo(f"  Generated: {len(specs)}, Passed: {result['passed']}/{result['total']}")
+
+
+# ======================================================================
+# 自升级 command
+# ======================================================================
+
+@click.group(help=_("Self-upgrade engine."))
+def upgrade() -> None:
+    pass
+
+
+@upgrade.command("scan", help=_("Scan for available upgrades."))
+def upgrade_scan() -> None:
+    from autoai.self_upgrade.engine import SelfUpgradeEngine
+    engine = SelfUpgradeEngine()
+    candidates = engine.scan_upgrades()
+    for c in candidates:
+        tag = "[AUTO]" if c.is_safe_auto else "[MANUAL]"
+        click.echo(f"  {tag} [{c.risk.value}] {c.description[:60]}")
+
+
+# ======================================================================
+# Phase Xi: 统一收敛终态 commands
+# ======================================================================
+
+@click.group(help=_("Evolution field - unified energy field for all modules."))
+def evofield() -> None:
+    pass
+
+
+@evofield.command("status", help=_("Show evolution field status."))
+def evofield_status() -> None:
+    from autoai.evolution_field.field import EvolutionField
+    ef = EvolutionField()
+    ef.add_default_nodes()
+    for _ in range(5):
+        ef.tick()
+    state = ef.query_field()
+    click.echo("  Evolution Field Status:")
+    for name, energy in sorted(state.items(), key=lambda x: -x[1])[:10]:
+        click.echo(f"    {name}: {energy:.3f}")
+    click.echo(f"  Total energy: {ef.stats['total_energy']:.2f}")
+
+
+@evofield.command("tick", help=_("Advance field by one tick."))
+@click.option("-n", "--count", default=1, help=_("Number of ticks"))
+def evofield_tick(count: int) -> None:
+    from autoai.evolution_field.field import EvolutionField
+    ef = EvolutionField()
+    ef.add_default_nodes()
+    for _ in range(count):
+        result = ef.tick()
+    click.echo(f"  Tick {result['tick']}: energy={result['total_energy']:.2f}, active={result['active_nodes']}")
+
+
+@click.group(help=_("Zero-human dependency engine."))
+def zerohuman() -> None:
+    pass
+
+
+@zerohuman.command("status", help=_("Show zero-human engine status."))
+def zerohuman_status() -> None:
+    from autoai.zero_human.engine import ZeroHumanEngine
+    zh = ZeroHumanEngine()
+    stats = zh.stats
+    click.echo(f"  Gates: {len(zh._gates)}, Auto-approve rate: {stats['auto_rate']:.0%}")
+
+
+@click.group(help=_("Emergent API engine."))
+def emapi() -> None:
+    pass
+
+
+@emapi.command("list", help=_("List emergent APIs."))
+def emapi_list() -> None:
+    from autoai.emergent_api.engine import EmergentAPIEngine
+    eapi = EmergentAPIEngine()
+    stats = eapi.stats
+    click.echo(f"  Patterns: {stats['total_patterns']}, APIs: {stats['total_apis']}, Stable: {stats['stable_apis']}")
+
+
+@click.group(help=_("Ecological niche computation."))
+def niche() -> None:
+    pass
+
+
+@niche.command("status", help=_("Show ecological niche status."))
+def niche_status() -> None:
+    from autoai.niche.engine import NicheEngine
+    ne = NicheEngine()
+    stats = ne.stats
+    click.echo(f"  Agents: {stats['agent_count']}, Avg fitness: {stats['avg_fitness']:.3f}")
+
+
+@niche.command("roles", help=_("Assign ecological roles."))
+def niche_roles() -> None:
+    from autoai.niche.engine import NicheEngine, CapabilityVector, CapabilityAxis
+    ne = NicheEngine()
+    ne.register("alpha", capability=CapabilityVector({CapabilityAxis.REASONING: 0.9, CapabilityAxis.LEARNING: 0.8}))
+    ne.register("beta", capability=CapabilityVector({CapabilityAxis.ACTION: 0.9, CapabilityAxis.CREATIVITY: 0.8}))
+    roles = ne.assign_ecological_roles()
+    for aid, role in roles.items():
+        click.echo(f"  {aid}: {role}")
+
+
+# ======================================================================
+# Phase Omega: 真自主核心 commands
+# ======================================================================
+
+@click.group(help=_("True autonomy core - learnable params + reasoning decider + real executor + open emergence + cognitive loop."))
+def autonomy_core() -> None:
+    pass
+
+
+@autonomy_core.command("params", help=_("Show learnable parameter space."))
+def autonomy_core_params() -> None:
+    from autoai.autonomy_core.learnable_params import ParamSpace
+    ps = ParamSpace("cli_demo")
+    ps.declare("safety_threshold", 0.7, constitutional=True)
+    ps.declare("risk_tolerance", 0.3)
+    ps.declare("exploration_rate", 0.1)
+    click.echo(f"  Constitutional: {ps.constitutional_params()}")
+    click.echo(f"  Mutable: {ps.mutable_params()}")
+
+
+@autonomy_core.command("decide", help=_("Run reasoning decider demo."))
+@click.option("--gate", default="default", help=_("Gate type"))
+@click.option("--fitness", default=0.7, type=float, help=_("Fitness score"))
+@click.option("--risk", default=0.3, type=float, help=_("Risk level"))
+def autonomy_core_decide(gate: str, fitness: float, risk: float) -> None:
+    from autoai.autonomy_core.reasoning_decider import ReasoningDecider, DecisionContext
+    rd = ReasoningDecider()
+    ctx = DecisionContext(gate_type=gate, fitness=fitness, risk=risk)
+    outcome = rd.decide(ctx)
+    click.echo(f"  Verdict: {outcome.verdict.value}")
+    click.echo(f"  Confidence: {outcome.confidence:.2f}")
+    click.echo(f"  Uncertainty: {outcome.uncertainty:.2f}")
+    click.echo(f"  Reasoning: {outcome.reasoning}")
+
+
+@autonomy_core.command("emerge", help=_("Run open goal emergence demo."))
+def autonomy_core_emerge() -> None:
+    from autoai.autonomy_core.open_emergence import OpenEmergenceEngine, EnvironmentalSignal, ValueConflict, CapabilityGap
+    engine = OpenEmergenceEngine()
+    engine.observe_signal(EnvironmentalSignal("cpu_spike", "monitor", 0.8))
+    engine.observe_value_conflict(ValueConflict("safety", "speed", 0.6, "balance throughput and safety"))
+    engine.observe_capability_gap(CapabilityGap("reasoning", 0.4, 0.8))
+    engine.emerge_self_generated("探索新型计算架构", priority=0.7)
+    active = engine.get_active_goals()
+    click.echo(f"  Active goals: {len(active)}")
+    for g in active:
+        click.echo(f"    [{g.origin.value}] {g.description[:60]} (p={g.priority:.2f})")
+
+
+@autonomy_core.command("cogloop", help=_("Run cognitive loop demo."))
+def autonomy_core_cogloop() -> None:
+    from autoai.autonomy_core.cognitive_loop import CognitiveLoop
+    cl = CognitiveLoop("cli_demo")
+    reflection = cl.run_full_cycle([
+        ("sensor", {"load": 0.85, "memory": 0.6}, 0.7),
+        ("internal", {"confidence": 0.5}, 0.4),
+    ])
+    click.echo(f"  Cycle: {reflection.cycle_id}")
+    click.echo(f"  Success rate: {reflection.actions_success_rate:.0%}")
+    click.echo(f"  Insights: {reflection.insights}")
+    click.echo(f"  Param adjustments: {reflection.param_adjustments}")
+
+
+@autonomy_core.command("audit", help=_("Run autonomy audit on all core modules."))
+def autonomy_core_audit() -> None:
+    from autoai.autonomy_core.auditor import AutonomyAuditor
+    auditor = AutonomyAuditor()
+    results = auditor.audit_core_modules()
+    for mod_path, report in sorted(results.items(), key=lambda x: x[1].score):
+        click.echo(f"  [{report.score:.0%}] {mod_path}: {report.passed_count}/{report.total}")
+        for c in report.critical_failures:
+            click.echo(f"    FAIL [{c.check_id}] {c.name}: {c.evidence}")
+
+
+@autonomy_core.command("orchestrator", help=_("Run autonomy orchestrator cycle."))
+@click.option("--enable", is_flag=True, help=_("Enable orchestration mode"))
+@click.option("--cycles", default=1, help=_("Number of cycles to run"))
+def autonomy_core_orchestrator(enable: bool, cycles: int) -> None:
+    from autoai.autonomy_core.orchestrator import AutonomyOrchestrator, ModuleRole
+    orch = AutonomyOrchestrator()
+    if enable:
+        orch.enable_orchestration()
+    for _ in range(cycles):
+        cycle = orch.run_cycle()
+        click.echo(f"  Cycle {cycle.cycle_id}: {cycle.modules_reflected} modules, "
+                    f"{cycle.actions_collected} actions, {cycle.decisions_made} decisions "
+                    f"({cycle.duration_ms:.1f}ms)")
+    stats = orch.stats
+    click.echo(f"  Stats: {stats['total_modules']} modules, "
+               f"weight={stats['param_reflection_weight']:.3f}, "
+               f"threshold={stats['param_action_threshold']:.3f}")

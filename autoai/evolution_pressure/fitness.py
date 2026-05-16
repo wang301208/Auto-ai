@@ -8,6 +8,10 @@ from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
 
+from autoai.autonomy_core.learnable_params import ParamSpace, ParamLearner
+from autoai.autonomy_core.reasoning_decider import ReasoningDecider, DecisionContext, DecisionVerdict
+from autoai.autonomy_core.full_autonomy_mixin import FullAutonomyMixin
+
 logger = logging.getLogger(__name__)
 
 
@@ -108,10 +112,11 @@ class AgentGenome:
         )
 
 
-class FitnessEvaluator:
+class FitnessEvaluator(FullAutonomyMixin):
     """多维度适应度评估器。"""
 
-    def __init__(self, weights: dict[str, float] | None = None):
+    def __init__(self, weights: dict[str, float] | None = None, use_learnable: bool = False):
+        self._init_full_autonomy()
         self._weights = weights or {
             FitnessDimension.EFFICIENCY.value: 0.25,
             FitnessDimension.ROBUSTNESS.value: 0.25,
@@ -120,12 +125,39 @@ class FitnessEvaluator:
             FitnessDimension.SAFETY.value: 0.15,
         }
         self._records: dict[str, dict[str, list[float]]] = {}
+        self._use_learnable = use_learnable
+        self._param_space: ParamSpace | None = None
+        self._param_learner: ParamLearner | None = None
+        if use_learnable:
+            self._init_learnable()
+
+    def _init_learnable(self) -> None:
+        self._param_space = ParamSpace("fitness")
+        self._param_space.declare("w_efficiency", 0.25, 0.05, 0.5, lr=0.01)
+        self._param_space.declare("w_robustness", 0.25, 0.05, 0.5, lr=0.01)
+        self._param_space.declare("w_innovation", 0.2, 0.05, 0.5, lr=0.01)
+        self._param_space.declare("w_collaboration", 0.15, 0.05, 0.4, lr=0.01)
+        self._param_space.declare("w_safety", 0.15, 0.05, 0.4, lr=0.01)
+        self._param_learner = ParamLearner(self._param_space)
+
+    def enable_learnable(self) -> None:
+        if not self._use_learnable:
+            self._use_learnable = True
+            self._init_learnable()
 
     def record(self, agent_id: str, dimension: str, value: float) -> None:
         self._records.setdefault(agent_id, {}).setdefault(dimension, []).append(value)
 
     def evaluate(self, agent_id: str, generation: int = 0) -> FitnessReport:
         agent_records = self._records.get(agent_id, {})
+        if self._use_learnable and self._param_space:
+            self._weights = {
+                FitnessDimension.EFFICIENCY.value: self._param_space.get("w_efficiency"),
+                FitnessDimension.ROBUSTNESS.value: self._param_space.get("w_robustness"),
+                FitnessDimension.INNOVATION.value: self._param_space.get("w_innovation"),
+                FitnessDimension.COLLABORATION.value: self._param_space.get("w_collaboration"),
+                FitnessDimension.SAFETY.value: self._param_space.get("w_safety"),
+            }
         scores = {}
         for dim in self._weights:
             values = agent_records.get(dim, [0.5])
@@ -140,16 +172,26 @@ class FitnessEvaluator:
         )
 
 
-class EvolutionPressure:
+class EvolutionPressure(FullAutonomyMixin):
     """进化压力系统: 自然选择作用于Agent群体。"""
 
-    def __init__(self, selection_threshold: float = 0.3):
+    def __init__(self, selection_threshold: float = 0.3, use_reasoning: bool = False):
+        self._init_full_autonomy()
         self.selection_threshold = selection_threshold
         self._evaluator = FitnessEvaluator()
         self._genomes: dict[str, AgentGenome] = {}
         self._niches: list[NicheSpec] = []
         self._generation = 0
         self._selections: list[dict] = []
+        self._use_reasoning = use_reasoning
+        self._decider: ReasoningDecider | None = None
+        if use_reasoning:
+            self._decider = ReasoningDecider()
+
+    def enable_reasoning(self) -> None:
+        if not self._use_reasoning:
+            self._use_reasoning = True
+            self._decider = ReasoningDecider()
 
     def register_genome(self, genome: AgentGenome) -> None:
         self._genomes[genome.agent_id] = genome
@@ -166,8 +208,19 @@ class EvolutionPressure:
         for aid in self._genomes:
             report = self._evaluator.evaluate(aid, self._generation)
             self._genomes[aid].fitness_history.append(report.overall)
-            survival_prob = min(1.0, report.overall / self.selection_threshold)
-            survived = random.random() < survival_prob
+            if self._use_reasoning and self._decider:
+                ctx = DecisionContext(
+                    gate_type="evolution_select",
+                    fitness=report.overall,
+                    safety_score=1.0 - report.overall,
+                    risk=1.0 - report.overall,
+                    historical_success_rate=report.overall,
+                )
+                outcome = self._decider.decide(ctx)
+                survived = outcome.verdict not in (DecisionVerdict.VETO,)
+            else:
+                survival_prob = min(1.0, report.overall / self.selection_threshold)
+                survived = random.random() < survival_prob
             results[aid] = survived
             if not survived:
                 logger.info(f"自然选择淘汰: {aid} (适应度={report.overall:.3f})")

@@ -6,6 +6,9 @@ from dataclasses import dataclass, field
 from typing import Any
 from enum import Enum
 
+from autoai.autonomy_core.learnable_params import ParamSpace, ParamLearner
+from autoai.autonomy_core.full_autonomy_mixin import FullAutonomyMixin
+
 logger = logging.getLogger(__name__)
 
 
@@ -104,16 +107,34 @@ class AwarenessSnapshot:
         return load_score * 0.3 + cap_avg * 0.4 + (1.0 - gap_avg) * 0.3
 
 
-class SelfAwarenessLoop:
+class SelfAwarenessLoop(FullAutonomyMixin):
     """自我意识回路: 持续内省Agent自身状态。"""
 
-    def __init__(self, agent_id: str = "aware"):
+    def __init__(self, agent_id: str = "aware", use_learnable: bool = False):
+        self._init_full_autonomy()
         self.agent_id = agent_id
         self._load = CognitiveLoad()
         self._capabilities: dict[str, CapabilityBoundary] = {}
         self._gaps: list[KnowledgeGap] = []
         self._reflection_count = 0
         self._history: list[AwarenessSnapshot] = []
+        self._use_learnable = use_learnable
+        self._param_space: ParamSpace | None = None
+        self._param_learner: ParamLearner | None = None
+        if use_learnable:
+            self._init_learnable()
+
+    def _init_learnable(self) -> None:
+        self._param_space = ParamSpace("self_awareness")
+        self._param_space.declare("relief_threshold", 0.7, 0.5, 0.9, lr=0.01)
+        self._param_space.declare("cap_ema_alpha", 0.3, 0.1, 0.5, lr=0.01)
+        self._param_space.declare("critical_gap_threshold", 0.7, 0.5, 0.9, lr=0.01)
+        self._param_learner = ParamLearner(self._param_space)
+
+    def enable_learnable(self) -> None:
+        if not self._use_learnable:
+            self._use_learnable = True
+            self._init_learnable()
 
     def update_load(self, active_tasks: int = 0, pending_decisions: int = 0,
                     context_usage: float = 0.0, memory_pressure: float = 0.0,
@@ -146,6 +167,8 @@ class SelfAwarenessLoop:
         cap.evidence_count += 1
         cap.last_tested = time.time()
         alpha = 0.3
+        if self._use_learnable and self._param_space:
+            alpha = self._param_space.get("cap_ema_alpha")
         if success:
             cap.confidence = cap.confidence * (1 - alpha) + 1.0 * alpha
         else:
@@ -172,7 +195,27 @@ class SelfAwarenessLoop:
         self._reflection_count += 1
         if len(self._history) > 100:
             self._history = self._history[-100:]
+        self._last_reflection_actions = self._derive_actions(snapshot)
         return snapshot
+
+    def _derive_actions(self, snapshot: AwarenessSnapshot) -> list[dict[str, Any]]:
+        """从反思中推导可行动的行为修正(Phase Omega: 闭环reflect->decide->act)。"""
+        actions = []
+        if snapshot.cognitive_load.needs_relief:
+            if snapshot.cognitive_load.active_tasks > 5:
+                actions.append({"type": "reduce_tasks", "reason": "active_tasks>5", "suggestion": "减少并行任务数"})
+            if snapshot.cognitive_load.context_window_usage > 0.8:
+                actions.append({"type": "compress_context", "reason": "context_usage>0.8", "suggestion": "压缩上下文"})
+            if snapshot.cognitive_load.memory_pressure > 0.7:
+                actions.append({"type": "offload_memory", "reason": "memory_pressure>0.7", "suggestion": "转移工作记忆"})
+        for gap in snapshot.knowledge_gaps:
+            if gap.is_critical:
+                actions.append({"type": "learn", "domain": gap.domain, "priority": gap.priority})
+        return actions
+
+    def get_reflection_actions(self) -> list[dict[str, Any]]:
+        """获取反思产生的可行动修正(可被CognitiveLoop等消费)。"""
+        return getattr(self, '_last_reflection_actions', [])
 
     def get_learning_plan(self) -> list[KnowledgeGap]:
         critical = [g for g in self._gaps if g.is_critical]
