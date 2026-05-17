@@ -30,6 +30,7 @@ from governance.experience_store import ExperienceStore
 from governance.modification_chain import ModificationChain
 from autoai.agents.meta_evolution import MetaEvolutionEngine, EvolutionPhase
 from autoai.agents.agent_fission import AgentFissionEngine, FissionDecision
+from autoai.agents.environment_sensor import EnvironmentSensor
 from autoai.logs import logger
 
 
@@ -49,6 +50,10 @@ class AutonomousCycleResult:
     boundary_adjusted: bool = False
     meta_evolution_applied: bool = False
     community_broadcast: bool = False
+    environment_checked: bool = False
+    diagnose_run: bool = False
+    diagnose_issues: int = 0
+    self_healed: bool = False
     errors: list[str] = field(default_factory=list)
 
 
@@ -71,6 +76,9 @@ class AutonomousLoop:
         meta_evolution: MetaEvolutionEngine | None = None,
         fission_engine: AgentFissionEngine | None = None,
         community_broadcaster: Any | None = None,
+        environment_sensor: EnvironmentSensor | None = None,
+        diagnose_func: Any | None = None,
+        heal_func: Any | None = None,
     ) -> None:
         self.workspace = workspace
         self.autonomy = autonomy or AutonomyManager()
@@ -82,12 +90,17 @@ class AutonomousLoop:
         self.meta_evolution = meta_evolution or MetaEvolutionEngine(autonomy=self.autonomy)
         self.fission = fission_engine or AgentFissionEngine(autonomy=self.autonomy, experience_store=self.experience)
         self.community = community_broadcaster
+        self.environment_sensor = environment_sensor or EnvironmentSensor()
+        self.diagnose_func = diagnose_func
+        self.heal_func = heal_func
 
         self._cycle_count: int = 0
         self._total_fixes: int = 0
         self._total_failures: int = 0
         self._running: bool = False
         self._last_cycle_at: str = ""
+        self._last_diagnose_at: str = ""
+        self._diagnose_interval: int = 10
 
     @property
     def is_running(self) -> bool:
@@ -117,6 +130,7 @@ class AutonomousLoop:
         self._cycle_count += 1
 
         try:
+            result.environment_checked = self._step_environment_check(result)
             result.scan_findings = await self._step_scan(result)
             result.children_spawned = await self._step_fission(result)
             result.fixes_attempted, result.fixes_succeeded, result.fixes_failed = await self._step_fix(result)
@@ -125,6 +139,8 @@ class AutonomousLoop:
             result.boundary_adjusted = self._step_boundary_adjust(result)
             result.meta_evolution_applied = self._step_meta_evolution(result)
             result.community_broadcast = self._step_community_broadcast(result)
+            result.diagnose_run, result.diagnose_issues = self._step_diagnose(result)
+            result.self_healed = self._step_self_heal(result)
         except Exception as e:
             result.errors.append(str(e))
             logger.warn(f"[AutonomousLoop] Cycle {result.cycle_id} error: {e}")
@@ -265,6 +281,49 @@ class AutonomousLoop:
                 return True
             return False
         except Exception:
+            return False
+
+    def _step_environment_check(self, result: AutonomousCycleResult) -> bool:
+        try:
+            state = self.environment_sensor.check()
+            should_throttle, reason = self.environment_sensor.should_throttle()
+            if should_throttle:
+                logger.info(f"[AutonomousLoop] Environment throttle: {reason}")
+                result.errors.append(f"environment_throttle:{reason}")
+            return True
+        except Exception as e:
+            result.errors.append(f"environment: {e}")
+            return False
+
+    def _step_diagnose(self, result: AutonomousCycleResult) -> tuple[bool, int]:
+        if self._cycle_count % self._diagnose_interval != 0:
+            return False, 0
+        if self.diagnose_func is None:
+            return False, 0
+        try:
+            diagnose_result = self.diagnose_func()
+            self._last_diagnose_at = datetime.now(timezone.utc).isoformat()
+            issues = len(diagnose_result.get("issues", []))
+            if issues > 0:
+                logger.info(f"[AutonomousLoop] Diagnose found {issues} issues")
+            return True, issues
+        except Exception as e:
+            result.errors.append(f"diagnose: {e}")
+            return False, 0
+
+    def _step_self_heal(self, result: AutonomousCycleResult) -> bool:
+        if not result.diagnose_run or result.diagnose_issues == 0:
+            return False
+        if self.heal_func is None:
+            return False
+        try:
+            heal_result = self.heal_func({"issues_count": result.diagnose_issues})
+            healed = heal_result.get("healed", False)
+            if healed:
+                logger.info("[AutonomousLoop] Self-heal succeeded")
+            return healed
+        except Exception as e:
+            result.errors.append(f"heal: {e}")
             return False
 
 

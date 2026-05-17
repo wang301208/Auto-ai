@@ -90,16 +90,22 @@ class AgentHealthMonitor:
         orchestrator: Any | None = None,
         config: HealthCheckConfig | None = None,
         restart_callback: Callable[[str, str], bool] | None = None,
+        heal_callback: Callable[[str, dict], bool] | None = None,
+        diagnose_callback: Callable[[], dict] | None = None,
     ) -> None:
         self.comm_bus = comm_bus
         self.orchestrator = orchestrator
         self.config = config or HealthCheckConfig()
         self._restart_callback = restart_callback
+        self._heal_callback = heal_callback
+        self._diagnose_callback = diagnose_callback
         self._records: dict[str, AgentHealthRecord] = {}
         self._lock = threading.Lock()
         self._running = False
         self._check_thread: threading.Thread | None = None
         self._stop_event = threading.Event()
+        self._heal_history: list[dict[str, Any]] = []
+        self._diagnose_result: dict[str, Any] = {}
 
     def register(self, agent_id: str, role: str = "", metadata: dict[str, Any] | None = None) -> None:
         with self._lock:
@@ -230,6 +236,79 @@ class AgentHealthMonitor:
 
         for agent_id in restarts:
             self._restart_agent(agent_id)
+
+        self._auto_heal_check()
+
+    def _auto_heal_check(self) -> None:
+        if self._diagnose_callback is None:
+            return
+        try:
+            self._diagnose_result = self._diagnose_callback()
+            issues = self._diagnose_result.get("issues", [])
+            if not issues:
+                return
+
+            logger.info("[health] Diagnose found %d issues, attempting auto-heal", len(issues))
+
+            for issue in issues[:5]:
+                issue_id = issue.get("id", str(id(issue)))
+                issue_type = issue.get("type", "unknown")
+                severity = issue.get("severity", "medium")
+
+                if self._heal_callback is not None:
+                    try:
+                        healed = self._heal_callback(issue_id, issue)
+                        heal_record = {
+                            "issue_id": issue_id,
+                            "issue_type": issue_type,
+                            "severity": severity,
+                            "healed": healed,
+                            "timestamp": datetime.now().isoformat(),
+                        }
+                        self._heal_history.append(heal_record)
+                        if len(self._heal_history) > 100:
+                            self._heal_history.pop(0)
+
+                        if healed:
+                            logger.info("[health] Auto-healed issue: %s (%s)", issue_id, issue_type)
+                        else:
+                            logger.warning("[health] Failed to heal issue: %s (%s)", issue_id, issue_type)
+                    except Exception as e:
+                        logger.error("[health] Heal callback error: %s", e)
+        except Exception as e:
+            logger.error("[health] Diagnose callback error: %s", e)
+
+    def diagnose(self) -> dict[str, Any]:
+        if self._diagnose_callback is None:
+            return {"issues": [], "message": "no diagnose_callback configured"}
+        try:
+            result = self._diagnose_callback()
+            self._diagnose_result = result
+            return result
+        except Exception as e:
+            return {"issues": [], "error": str(e)}
+
+    def heal(self, issue_id: str, issue: dict[str, Any]) -> bool:
+        if self._heal_callback is None:
+            logger.warning("[health] No heal_callback configured")
+            return False
+        try:
+            healed = self._heal_callback(issue_id, issue)
+            self._heal_history.append({
+                "issue_id": issue_id,
+                "healed": healed,
+                "timestamp": datetime.now().isoformat(),
+            })
+            return healed
+        except Exception as e:
+            logger.error("[health] Heal failed: %s", e)
+            return False
+
+    def get_heal_history(self) -> list[dict[str, Any]]:
+        return self._heal_history.copy()
+
+    def get_diagnose_result(self) -> dict[str, Any]:
+        return self._diagnose_result.copy()
 
     def _evict_agent(self, agent_id: str) -> None:
         logger.warning("[health] Evicting dead 代理: %s", agent_id)
