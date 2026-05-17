@@ -1,129 +1,66 @@
 import React from 'react';
 import { Box, Text } from 'ink';
+import { useStore } from '@nanostores/react';
 import { theme } from '../theme.js';
+import { desiresAtom } from '../stores/cognitiveStore.js';
 
-interface Desire {
-  type: 'curiosity' | 'creativity' | 'social' | 'power' | 'preservation';
-  urgency: number;
-  satisfaction: number;
-  lastAction: string;
+type Desire = import('../stores/cognitiveStore.js').Desire;
+
+const DEFAULT_DESIRE_CONFIG = { emoji: '❓', label: '未知', color: theme.colors.dim };
+
+const DESIRE_CONFIG: Record<string, { emoji: string; label: string; color: string }> = {
+  curiosity:    { emoji: '🔍', label: '求知欲', color: theme.colors.info },
+  creativity:   { emoji: '💡', label: '创造欲', color: theme.colors.primary },
+  social:       { emoji: '🤝', label: '社交欲', color: theme.colors.success },
+  power:        { emoji: '⚡', label: '权力欲', color: theme.colors.warning },
+  preservation: { emoji: '🛡️', label: '永生欲', color: theme.colors.secondary },
+};
+
+function renderBar(urgency: number, filledChar: string, emptyChar: string, width: number = 10): string {
+  const filled = Math.round(urgency * width);
+  return filledChar.repeat(Math.max(0, filled)) + emptyChar.repeat(Math.max(0, width - filled));
 }
 
-interface DesireIndicatorProps {
-  desires: Desire[];
-  mostUrgent: string;
-  initiatives?: string[];
-}
+const DesireIndicator = React.memo(function DesireIndicator() {
+  const desires = useStore(desiresAtom);
 
-/**
- * 欲望状态指示器 - 展示系统当前的内在驱动力
- * 
- * 设计理念：
- * - 让用户理解系统的"动机"和"需求"
- * - 透明化AI的内在状态
- * - 促进人机协作而非单向命令
- */
-export default function DesireIndicator({
-  desires,
-  mostUrgent,
-  initiatives = []
-}: DesireIndicatorProps) {
-  const desireEmojis = {
-    curiosity: '🔍',
-    creativity: '💡',
-    social: '🤝',
-    power: '⚡',
-    preservation: '🛡️'
-  };
+  if (desires.length === 0) return null;
 
-  const desireLabels = {
-    curiosity: '求知欲',
-    creativity: '创造欲',
-    social: '社交欲',
-    power: '权力欲',
-    preservation: '永生欲'
-  };
-
-  const desireColors = {
-    curiosity: theme.colors.info,
-    creativity: theme.colors.primary,
-    social: theme.colors.success,
-    power: theme.colors.warning,
-    preservation: theme.colors.secondary
-  };
-
-  // 渲染urgency进度条
-  const renderUrgencyBar = (urgency: number, color: string) => {
-    const totalBars = 10;
-    const filledBars = Math.round(urgency * totalBars);
-    
-    let bars = '';
-    for (let i = 0; i < totalBars; i++) {
-      bars += i < filledBars ? '█' : '░';
-    }
-    
-    return (
-      <Text>
-        <Text color={color}>{bars}</Text>
-        <Text dimColor> {Math.round(urgency * 100)}%</Text>
-      </Text>
-    );
-  };
-
-  // 渲染satisfaction进度条
-  const renderSatisfactionBar = (satisfaction: number) => {
-    const totalBars = 10;
-    const filledBars = Math.round(satisfaction * totalBars);
-    
-    let bars = '';
-    for (let i = 0; i < totalBars; i++) {
-      bars += i < filledBars ? '■' : '□';
-    }
-    
-    return (
-      <Text dimColor>
-        满足度: {bars} {Math.round(satisfaction * 100)}%
-      </Text>
-    );
-  };
+  const mostUrgent = desires[0]?.type || 'curiosity';
 
   return (
     <Box flexDirection="column" padding={1}>
-      {/* 标题 */}
       <Text bold color={theme.colors.primary}>
         💭 系统内心状态
       </Text>
 
-      {/* 欲望列表 */}
       <Box marginTop={1} flexDirection="column">
         {desires.map((desire) => {
           const isMostUrgent = desire.type === mostUrgent;
-          const emoji = desireEmojis[desire.type];
-          const label = desireLabels[desire.type];
-          const color = desireColors[desire.type];
+          const config = DESIRE_CONFIG[desire.type] || DEFAULT_DESIRE_CONFIG;
 
           return (
-            <Box
-              key={desire.type}
-              flexDirection="column"
-              paddingLeft={isMostUrgent ? 0 : 0}
-              marginBottom={1}
-            >
+            <Box key={desire.type} flexDirection="column" marginBottom={1}>
               <Box>
                 <Text>
-                  {emoji} {label}
+                  {config.emoji} {config.label}
                   {isMostUrgent && <Text color={theme.colors.warning}> [最紧急]</Text>}
                 </Text>
               </Box>
-              
+
               <Box paddingLeft={2}>
-                {renderUrgencyBar(desire.urgency, color)}
+                <Text>
+                  <Text color={config.color}>{renderBar(desire.urgency, '█', '░')}</Text>
+                  <Text dimColor> {Math.round(desire.urgency * 100)}%</Text>
+                </Text>
               </Box>
-              
+
               <Box paddingLeft={2}>
-                {renderSatisfactionBar(desire.satisfaction)}
+                <Text dimColor>
+                  满足度: {renderBar(desire.satisfaction, '■', '□')} {Math.round(desire.satisfaction * 100)}%
+                </Text>
               </Box>
-              
+
               <Box paddingLeft={2}>
                 <Text dimColor>
                   最近行动: {desire.lastAction}
@@ -133,29 +70,8 @@ export default function DesireIndicator({
           );
         })}
       </Box>
-
-      {/* 主动倡议 */}
-      {initiatives.length > 0 && (
-        <Box marginTop={1} flexDirection="column">
-          <Text bold color={theme.colors.warning}>
-            🌟 基于当前状态的主动建议:
-          </Text>
-          
-          {initiatives.map((initiative, index) => (
-            <Box key={index} paddingLeft={2} marginTop={1}>
-              <Text>
-                {index + 1}. {initiative}
-              </Text>
-            </Box>
-          ))}
-          
-          <Box marginTop={1} paddingLeft={2}>
-            <Text dimColor>
-              输入数字选择，或按回车忽略
-            </Text>
-          </Box>
-        </Box>
-      )}
     </Box>
   );
-}
+});
+
+export default DesireIndicator;

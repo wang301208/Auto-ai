@@ -570,10 +570,75 @@ def doctor() -> None:
         if not ok and not optional:
             all_pass = False
 
-    if all_pass:
-        click.echo("All checks passed.")
+    click.echo(_("\n  === .env 配置检查 ==="))
+    env_path = Path.cwd() / ".env"
+    if env_path.exists():
+        env_content = env_path.read_text(encoding="utf-8")
+        env_lines = {}
+        for line in env_content.splitlines():
+            if "=" in line and not line.strip().startswith("#"):
+                k, v = line.split("=", 1)
+                env_lines[k.strip()] = v.strip()
+
+        key_checks = [
+            ("OPENAI_API_KEY", bool(env_lines.get("OPENAI_API_KEY", "") not in ("", "your-openai-api-key", "sk-xxx"))),
+            ("SMART_LLM", bool(env_lines.get("SMART_LLM", ""))),
+            ("FAST_LLM", bool(env_lines.get("FAST_LLM", ""))),
+            ("ROUTING_STRATEGY", env_lines.get("ROUTING_STRATEGY", "") in ("local_first", "cloud_first", "cost_optimal", "performance_optimal", "manual")),
+            ("OPENAI_API_BASE_URL", bool(env_lines.get("OPENAI_API_BASE_URL", ""))),
+        ]
+        for name, ok in key_checks:
+            val = env_lines.get(name, "")
+            display_val = val[:8] + "..." if "KEY" in name and len(val) > 12 else val
+            status = "OK" if ok else "MISSING"
+            click.echo(f"  {name}: {status} ({display_val})")
+            if not ok:
+                all_pass = False
+
+        base_url = env_lines.get("OPENAI_API_BASE_URL", "")
+        if base_url:
+            click.echo(_("\n  === API 连通性检查 ==="))
+            try:
+                import httpx
+                r = httpx.get(f"{base_url.rstrip('/')}/models", headers={"Authorization": f"Bearer {env_lines.get('OPENAI_API_KEY', '')}"}, timeout=8)
+                if r.status_code == 200:
+                    models_count = len(r.json().get("data", []))
+                    click.echo(f"  {base_url}: OK ({models_count} models)")
+                elif r.status_code == 401:
+                    click.echo(f"  {base_url}: AUTH FAILED (401)")
+                    all_pass = False
+                else:
+                    click.echo(f"  {base_url}: HTTP {r.status_code}")
+                    all_pass = False
+            except httpx.ConnectError:
+                click.echo(f"  {base_url}: CONNECTION REFUSED")
+                all_pass = False
+            except httpx.ConnectTimeout:
+                click.echo(f"  {base_url}: TIMEOUT")
+                all_pass = False
+            except Exception as e:
+                click.echo(f"  {base_url}: {type(e).__name__}")
+                all_pass = False
     else:
-        click.echo("Some checks failed.", err=True)
+        click.echo("  .env: MISSING")
+        all_pass = False
+
+    click.echo(_("\n  === TUI 前端检查 ==="))
+    tui_dir = Path.cwd() / "ui-tui"
+    tui_checks = [
+        ("ui-tui/package.json", (tui_dir / "package.json").is_file()),
+        ("ui-tui/dist/entry.js", (tui_dir / "dist" / "entry.js").is_file()),
+        ("ui-tui/node_modules", (tui_dir / "node_modules").is_dir()),
+    ]
+    for name, ok in tui_checks:
+        click.echo(f"  {name}: {'OK' if ok else 'MISSING'}")
+        if not ok:
+            all_pass = False
+
+    if all_pass:
+        click.echo(_("\n  All checks passed. ✓"))
+    else:
+        click.echo(_("\n  Some checks failed. ✗"), err=True)
         raise SystemExit(1)
 
 
@@ -798,10 +863,56 @@ def model_config(provider: str | None, model: str | None, strategy: str | None, 
             if p == "ollama":
                 detected = " (DETECTED)" if ollama.is_detected else " (not running)"
             click.echo(f"    {i}. {p} ({count} models){local_tag}{detected}")
-        choice = click.prompt(_("\n  Select provider [1-{}]".format(len(providers_order))), type=int)
-        if choice < 1 or choice > len(providers_order):
+        custom_idx = len(providers_order) + 1
+        click.echo(f"    {custom_idx}. " + _("Custom (OpenAI-compatible API)"))
+        choice = click.prompt(_("\n  Select provider [1-{}]".format(custom_idx)), type=int)
+        if choice == custom_idx:
+            provider = "__custom__"
+        elif choice < 1 or choice > len(providers_order):
             raise click.ClickException(_("Invalid provider selection"))
-        provider = providers_order[choice - 1]
+        else:
+            provider = providers_order[choice - 1]
+
+    if provider == "__custom__":
+        base_url = click.prompt(_("  API base URL (e.g. http://localhost:8080/v1)"))
+        api_key = click.prompt(_("  API key (leave empty if not required)"), default="", show_default=False)
+        custom_model = click.prompt(_("  Model name"), default="default")
+        _write_env_key("OPENAI_API_BASE_URL", base_url)
+        if api_key:
+            _write_env_key("OPENAI_API_KEY", api_key)
+
+        if strategy is None:
+            strategies = list(RoutingStrategy)
+            click.echo(_("\n  Routing strategies:"))
+            for i, s in enumerate(strategies, 1):
+                desc = {
+                    "cost_optimal": _("Minimize cost"),
+                    "performance_optimal": _("Maximize performance"),
+                    "local_first": _("Local models first (default)"),
+                    "cloud_first": _("Cloud models first"),
+                    "manual": _("Manual specification"),
+                }
+                click.echo(f"    {i}. {s.value:<22s} {desc.get(s.value, '')}")
+            choice = click.prompt(_("\n  Select strategy [1-{}]".format(len(strategies))), type=int, default=3)
+            if 1 <= choice <= len(strategies):
+                strategy = strategies[choice - 1].value
+            else:
+                strategy = "local_first"
+
+        click.echo("\n" + "=" * 60)
+        click.echo(_("  Configuration Summary"))
+        click.echo("=" * 60)
+        click.echo(f"  {_('Provider')}:   " + _("Custom"))
+        click.echo(f"  {_('Base URL')}:   {base_url}")
+        click.echo(f"  {_('Model')}:      {custom_model}")
+        click.echo(f"  {_('Strategy')}:   {strategy}")
+
+        if save or click.confirm(_("\n  Save to .env file?"), default=False):
+            _write_env_key("SMART_LLM", custom_model)
+            _write_env_key("FAST_LLM", custom_model)
+            _write_env_key("ROUTING_STRATEGY", strategy)
+            click.echo(_("  Configuration saved to .env"))
+        return
 
     provider_models = [m for m in all_models if m.provider_name == provider]
     if not provider_models:
@@ -845,19 +956,19 @@ def model_config(provider: str | None, model: str | None, strategy: str | None, 
     click.echo("\n" + "=" * 60)
     click.echo(_("  Configuration Summary"))
     click.echo("=" * 60)
-    click.echo(f"  Provider:   {selected.provider_name}")
-    click.echo(f"  Model:      {selected.model_id}")
-    click.echo(f"  Tier:       {selected.tier.value}")
-    click.echo(f"  Local:      {'Yes' if selected.is_local else 'No'}")
-    click.echo(f"  Context:    {selected.max_context_tokens:,} tokens")
+    click.echo(f"  {_('Provider')}:   {selected.provider_name}")
+    click.echo(f"  {_('Model')}:      {selected.model_id}")
+    click.echo(f"  {_('Tier')}:       {selected.tier.value}")
+    click.echo(f"  {_('Local')}:      {_('Yes') if selected.is_local else _('No')}")
+    click.echo(f"  {_('Context')}:    {selected.max_context_tokens:,} {_('tokens')}")
     if not selected.is_free:
-        click.echo(f"  Input Cost: ${selected.prompt_token_cost_per_1k:.5f}/1k tokens")
-        click.echo(f"  Output Cost:${selected.completion_token_cost_per_1k:.5f}/1k tokens")
+        click.echo(f"  {_('Input Cost')}: ${selected.prompt_token_cost_per_1k:.5f}/1k {_('tokens')}")
+        click.echo(f"  {_('Output Cost')}: ${selected.completion_token_cost_per_1k:.5f}/1k {_('tokens')}")
     else:
-        click.echo(f"  Cost:       FREE")
-    click.echo(f"  Strategy:   {strategy}")
+        click.echo(f"  {_('Cost')}:       FREE")
+    click.echo(f"  {_('Strategy')}:   {strategy}")
     if len(fallback_chain) > 1:
-        click.echo(f"  Fallback:   {' → '.join(fallback_chain)}")
+        click.echo(f"  {_('Fallback')}:   {' → '.join(fallback_chain)}")
 
     if save or click.confirm(_("\n  Save to .env file?"), default=False):
         _save_model_to_env(selected, strategy)
@@ -902,12 +1013,25 @@ def model_select(tier: str | None, local_only: bool, free_only: bool) -> None:
         click.echo(f"  {i:>3d}. {m.provider_name:<12s} {m.model_id:<30s} {m.tier.value:<10s} {cost_str:>10s}{local_tag}{free_tag}{active}")
 
     click.echo(f"\n  {len(candidates)+1}. " + _("Auto-route (let router decide per task)"))
-    click.echo(f"  {len(candidates)+2}. " + _("Cancel"))
+    click.echo(f"  {len(candidates)+2}. " + _("Custom model"))
+    click.echo(f"  {len(candidates)+3}. " + _("Cancel"))
 
-    choice = click.prompt(_("\n  Select [1-{}]".format(len(candidates) + 2)), type=int)
+    choice = click.prompt(_("\n  Select [1-{}]".format(len(candidates) + 3)), type=int)
 
-    if choice == len(candidates) + 2 or choice < 1:
+    if choice == len(candidates) + 3 or choice < 1:
         click.echo(_("Cancelled."))
+        return
+
+    if choice == len(candidates) + 2:
+        custom_model = click.prompt(_("  Model name"))
+        base_url = click.prompt(_("  API base URL"), default=os.environ.get("OPENAI_API_BASE_URL", "https://api.openai.com/v1"))
+        api_key = click.prompt(_("  API key (leave empty if not required)"), default="", show_default=False)
+        _write_env_key("SMART_LLM", custom_model)
+        _write_env_key("FAST_LLM", custom_model)
+        _write_env_key("OPENAI_API_BASE_URL", base_url)
+        if api_key:
+            _write_env_key("OPENAI_API_KEY", api_key)
+        click.echo(_("  Custom model configured: {}").format(custom_model))
         return
 
     if choice == len(candidates) + 1:

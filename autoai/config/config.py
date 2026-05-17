@@ -84,6 +84,9 @@ class Config(SystemSettings, arbitrary_types_allowed=True):
     # 运行 循环 configuration
     continuous_mode: bool = False
     continuous_limit: int = 0
+    async_mode: bool = False
+    autonomous: bool = False
+    multi_agent: bool = False
     max_repeated_commands: int = 3
     repeat_window: float = 30.0
     # Self 开发 循环

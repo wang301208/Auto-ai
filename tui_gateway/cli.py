@@ -108,10 +108,11 @@ async def run_setup(args: argparse.Namespace) -> int:
 async def run_model(args: argparse.Namespace) -> int:
     server = JSONRPCServer(config_path=getattr(args, "config", None), writer=lambda _: None)
     if args.spec:
-        result = await server.handle_model_configure(server._parse_model_spec(args.spec))
+        spec_dict = server.parse_model_spec(args.spec)
+        result = await server.handle_model_configure(spec_dict)
         print(f"模型已配置：{result['provider']}:{result['model']}")
         return 0
-    print(server._format_model_status())
+    print(server.format_model_status())
     return 0
 
 

@@ -165,4 +165,4 @@ CURRENT_BULLETIN.md
 
 # Nodejs
 package-lock.json
-package.json
+/package.json

@@ -11,7 +11,7 @@ def _load_dotenv(dotenv_path: str | Path | None = None, override: bool = False, 
     else:
         dotenv_path = Path(dotenv_path)
     if not dotenv_path.exists():
-        回报
+        return
     with open(dotenv_path, encoding="utf-8") as f:
         for line in f:
             line = line.strip()

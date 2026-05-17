@@ -165,4 +165,40 @@ export interface ModelProvider {
   reason?: string;
 }
 
+export interface ContextFilesEvent {
+  files: string[];
+  action: 'added' | 'removed' | 'modified';
+}
+
+export interface DevTaskUpdate {
+  task_id: string;
+  title?: string;
+  status?: string;
+  progress?: number;
+  detail?: string;
+}
+
+export interface CronEvent {
+  cron_id: string;
+  expression: string;
+  action: string;
+  task_name?: string;
+  due_at?: number;
+}
+
+export interface McpCallEvent {
+  server: string;
+  tool: string;
+  args?: Record<string, unknown>;
+  result?: unknown;
+  error?: string;
+}
+
+export interface McpServerEvent {
+  server: string;
+  status: 'added' | 'removed' | 'error';
+  tools?: string[];
+  error?: string;
+}
+
 

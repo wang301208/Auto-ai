@@ -332,7 +332,7 @@ def scan_plugins(config: Config, debug: bool = False) -> List[AutoAIPluginTempla
 
         try:
             __import__(qualified_module_name)
-        except:
+        except (ImportError, ModuleNotFoundError):
             logger.error(f"Failed 到load {qualified_module_名称}")
             continue
         plugin = sys.modules[qualified_module_name]

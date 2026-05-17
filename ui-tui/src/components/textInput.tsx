@@ -1,14 +1,13 @@
 import React from 'react';
-import {Text} from 'ink';
 import InkTextInput from 'ink-text-input';
-import {theme} from '../theme.js';
+import { theme } from '../theme.js';
 
 interface Props {
   disabled?: boolean;
   placeholder?: string;
   value: string;
   onChange: (value: string) => void;
-  onSubmit: (value: string) => void;
+  onSubmit: () => void;
 }
 
 export default function TextInput({
@@ -19,7 +18,7 @@ export default function TextInput({
   onSubmit
 }: Props) {
   if (disabled) {
-    return <Text color={theme.dim}>{placeholder || '等待当前操作完成'}</Text>;
+    return <InkTextInput value={value} onChange={() => {}} onSubmit={() => {}} placeholder={placeholder} showCursor={false} />;
   }
 
   return (
@@ -29,7 +28,7 @@ export default function TextInput({
       showCursor
       value={value}
       onChange={onChange}
-      onSubmit={() => onSubmit(value)}
+      onSubmit={onSubmit}
     />
   );
 }

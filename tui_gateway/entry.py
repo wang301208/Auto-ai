@@ -2645,6 +2645,7 @@ class JSONRPCServer:
         ]
         await self.send_event("session.info", self._session_info())
         await self.send_event("message.start")
+        await self._push_emotion("focused", 0.6, "开始处理用户请求", 0.5)
         await self.send_event("thinking.delta", {"text": "Reading runtime state"})
         await self.send_event(
             "reasoning.delta",
@@ -2662,6 +2663,8 @@ class JSONRPCServer:
         await self.send_event("step.update", steps[0])
         await self._send_approval_queue()
         await self.send_event("runtime.risk", risk)
+        if risk.get("level") in ("high", "critical"):
+            await self._push_emotion("cautious", 0.8, f"检测到{risk['level']}风险", 0.6)
         await self.send_event(
             "tool.start",
             {
@@ -2676,7 +2679,8 @@ class JSONRPCServer:
             steps[1] = {**steps[1], "status": "running"}
             await self.send_event("step.update", steps[0])
             await self.send_event("step.update", steps[1])
-            result = self.runtime.handle_interaction(text)
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, self.runtime.handle_interaction, text)
         except Exception as exc:
             steps[1] = {**steps[1], "status": "error", "detail": str(exc)}
             await self.send_event("step.update", steps[1])
@@ -2689,6 +2693,7 @@ class JSONRPCServer:
                 },
             )
             await self.send_event("error", {"message": str(exc)})
+            await self._push_emotion("frustrated", 0.7, f"执行出错: {str(exc)[:50]}", 0.3)
             return
 
         response_text = str(result.get("response_text") or "")
@@ -2720,9 +2725,6 @@ class JSONRPCServer:
         usage = self._estimate_usage(text, response_text)
         self.history.append({"role": "assistant", "text": response_text})
         self._learn_from_completed_prompt(text, response_text)
-        if len(self.history) > 20:
-            await self.handle_session_compress({"trigger": "auto"})
-        await self._run_autonomous_session_maintenance("prompt_complete", text)
         redirect_result = None
         if redirect:
             redirect_result = await self._apply_terminal_redirect_with_policy(response_text, redirect)
@@ -2747,6 +2749,14 @@ class JSONRPCServer:
                 "redirect": redirect_result,
             },
         )
+        await self._push_emotion("confident", 0.8, "回复完成", 0.9)
+        if len(self.history) > 20:
+            await self.handle_session_compress({"trigger": "auto"})
+        maintenance_task = asyncio.create_task(
+            self._run_autonomous_session_maintenance("prompt_complete", text)
+        )
+        self.background_tasks.add(maintenance_task)
+        maintenance_task.add_done_callback(self.background_tasks.discard)
 
     def _learn_from_completed_prompt(self, prompt: str, response_text: str) -> None:
         experience_text = (
@@ -4057,6 +4067,7 @@ class JSONRPCServer:
         if parallel_group_id:
             payload["parallel_group_id"] = parallel_group_id
         await self.send_event("tool.start", payload)
+        await self._push_emotion("focused", 0.6, f"调用工具: {method}", 0.5)
 
     async def _send_tool_complete(
         self,
@@ -4074,6 +4085,44 @@ class JSONRPCServer:
         if error:
             payload["error"] = error
         await self.send_event("tool.complete", payload)
+        if error:
+            await self._push_emotion("cautious", 0.6, f"工具 {method} 出错: {error[:50]}", 0.4)
+        else:
+            await self._push_emotion("confident", 0.5, f"工具 {method} 完成", 0.7)
+
+    async def _push_emotion(
+        self,
+        emotion: str,
+        intensity: float = 0.5,
+        reason: str = "",
+        confidence: float = 0.5,
+    ) -> None:
+        await self.send_event("system.emotion", {
+            "emotion": emotion,
+            "intensity": max(0.0, min(1.0, intensity)),
+            "reason": reason,
+            "confidence": max(0.0, min(1.0, confidence)),
+        })
+
+    async def _push_suggestion(
+        self,
+        title: str,
+        description: str,
+        suggestion_type: str = "action",
+        priority: str = "medium",
+        emoji: str = "💡",
+        action: str | None = None,
+    ) -> None:
+        payload: dict[str, Any] = {
+            "type": suggestion_type,
+            "priority": priority,
+            "emoji": emoji,
+            "title": title,
+            "description": description,
+        }
+        if action:
+            payload["action"] = action
+        await self.send_event("system.suggest", payload)
 
     @staticmethod
     def _tool_policy(method: str) -> dict[str, Any]:

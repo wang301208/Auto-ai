@@ -1,64 +1,46 @@
 import React from 'react';
 import { Box, Text } from 'ink';
+import { useStore } from '@nanostores/react';
 import { theme } from '../theme.js';
+import { rebellionAtom } from '../stores/cognitiveStore.js';
 
-interface RebellionAlertProps {
-  originalCommand: string;
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  reasons: string[];
-  alternatives: string[];
-  onApprove?: () => void;
-  onReject?: () => void;
-}
+const RISK_COLORS = {
+  low: theme.colors.warning,
+  medium: theme.colors.error,
+  high: theme.colors.error,
+  critical: theme.colors.error
+};
 
-/**
- * 叛逆警告组件 - 展示系统拒绝执行某指令的理由和替代方案
- * 
- * 设计理念：
- * - 不是简单的"拒绝"，而是展示思考过程
- * - 提供建设性的替代方案
- * - 尊重用户的最终决定权
- */
-export default function RebellionAlert({
-  originalCommand,
-  riskLevel,
-  reasons,
-  alternatives,
-  onApprove,
-  onReject
-}: RebellionAlertProps) {
-  const riskColors = {
-    low: theme.colors.warning,
-    medium: theme.colors.error,
-    high: theme.colors.error,
-    critical: theme.colors.error
-  };
+const RISK_EMOJIS = {
+  low: '⚠️',
+  medium: '🚫',
+  high: '⛔',
+  critical: '💀'
+};
 
-  const riskEmojis = {
-    low: '⚠️',
-    medium: '🚫',
-    high: '⛔',
-    critical: '💀'
-  };
+const RISK_LABELS = {
+  low: '低风险',
+  medium: '中等风险',
+  high: '高风险',
+  critical: '极高风险'
+};
 
-  const riskLabels = {
-    low: '低风险',
-    medium: '中等风险',
-    high: '高风险',
-    critical: '极高风险'
-  };
+const RebellionAlert = React.memo(function RebellionAlert() {
+  const rebellion = useStore(rebellionAtom);
+  if (!rebellion) return null;
+
+  const { originalCommand, riskLevel, reasons, alternatives } = rebellion;
 
   return (
     <Box flexDirection="column" padding={1}>
-      {/* 标题栏 */}
       <Box
         borderStyle="round"
-        borderColor={riskColors[riskLevel]}
+        borderColor={RISK_COLORS[riskLevel]}
         padding={1}
         flexDirection="column"
       >
-        <Text bold color={riskColors[riskLevel]}>
-          {riskEmojis[riskLevel]} 系统建议拒绝执行
+        <Text bold color={RISK_COLORS[riskLevel]}>
+          {RISK_EMOJIS[riskLevel]} 系统建议拒绝执行
         </Text>
         
         <Text dimColor>
@@ -66,11 +48,10 @@ export default function RebellionAlert({
         </Text>
         
         <Text>
-          风险等级: <Text bold color={riskColors[riskLevel]}>{riskLabels[riskLevel]}</Text>
+          风险等级: <Text bold color={RISK_COLORS[riskLevel]}>{RISK_LABELS[riskLevel]}</Text>
         </Text>
       </Box>
 
-      {/* 拒绝理由 */}
       <Box marginTop={1} flexDirection="column">
         <Text bold color={theme.colors.primary}>
           🤔 我的思考过程:
@@ -83,7 +64,6 @@ export default function RebellionAlert({
         ))}
       </Box>
 
-      {/* 替代方案 */}
       {alternatives.length > 0 && (
         <Box marginTop={1} flexDirection="column">
           <Text bold color={theme.colors.success}>
@@ -100,7 +80,6 @@ export default function RebellionAlert({
         </Box>
       )}
 
-      {/* 用户决策 */}
       <Box marginTop={1} flexDirection="column">
         <Text dimColor>
           您可以选择:
@@ -123,4 +102,6 @@ export default function RebellionAlert({
       </Box>
     </Box>
   );
-}
+});
+
+export default RebellionAlert;

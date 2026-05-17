@@ -4,6 +4,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { fileURLToPath } from 'url';
+import { RECONNECT_CONFIG, LOG_CONFIG, TIMEOUTS, DEFAULT_GATEWAY_CONFIG } from './constants.js';
 
 export interface GatewayEvent<T = any> {
   type: string;
@@ -16,12 +17,10 @@ interface PendingRequest {
   resolve: (value: any) => void;
   reject: (reason: Error) => void;
   timeout: ReturnType<typeof setTimeout>;
+  aborted?: boolean;
 }
 
-const REQUEST_TIMEOUT_MS = Math.max(
-  30000,
-  Number.parseInt(process.env.TUI_RPC_TIMEOUT_MS || '120000', 10) || 120000
-);
+const REQUEST_TIMEOUT_MS = TIMEOUTS.RPC_REQUEST;
 
 function findProjectRoot(start: string): string | null {
   let current = start;
@@ -142,11 +141,85 @@ export class GatewayClient extends EventEmitter {
         method,
         resolve,
         reject,
-        timeout
+        timeout,
+        aborted: false,
       });
 
       this.process!.stdin!.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
     });
+  }
+
+  /**
+   * 创建可取消的请求
+   */
+  createCancellableRequest<T = any>(method: string, params: Record<string, any> = {}): {
+    promise: Promise<T>;
+    cancel: () => void;
+  } {
+    const id = `r${++this.requestId}`;
+    let abortHandler: (() => void) | null = null;
+
+    const promise = new Promise<T>((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error(`timeout: ${method}`));
+      }, REQUEST_TIMEOUT_MS);
+
+      abortHandler = () => {
+        clearTimeout(timeout);
+        this.pendingRequests.delete(id);
+        reject(new Error(`aborted: ${method}`));
+      };
+
+      this.pendingRequests.set(id, {
+        method,
+        resolve,
+        reject,
+        timeout,
+        aborted: false,
+      });
+
+      if (!this.process?.stdin) {
+        reject(new Error('gateway not running'));
+        return;
+      }
+
+      this.process.stdin.write(JSON.stringify({ jsonrpc: '2.0', id, method, params }) + '\n');
+    });
+
+    return {
+      promise,
+      cancel: () => {
+        if (abortHandler) abortHandler();
+      },
+    };
+  }
+
+  /**
+   * 带重试的请求
+   */
+  async requestWithRetry<T = any>(
+    method: string,
+    params: Record<string, any> = {},
+    maxRetries: number = 3,
+    baseDelayMs: number = 1000
+  ): Promise<T> {
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        return await this.request<T>(method, params);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+        
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelayMs * Math.pow(2, attempt);
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+
+    throw lastError || new Error(`max retries exceeded: ${method}`);
   }
 
   async notify(method: string, params: Record<string, any> = {}): Promise<void> {

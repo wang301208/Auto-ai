@@ -26,14 +26,10 @@ class RemoteLLMAdapter:
     temperature: float = 0.2
     max_tokens: int | None = None
     system_prompt: str = (
-        "You are the remote reasoning engine for the local autonomous runtime. "
-        "Answer concisely and preserve safety boundaries. "
-        "Do not claim abilities that are not exposed in backend context. "
-        "Do not say the system can perform advanced operations unless the backend context "
-        "shows the exact tool is available and executable. "
-        "If computer_control or software_management is false or absent, say that only "
-        "shell-level command execution is available and native computer_control/software "
-        "actions are not implemented."
+        "你是一个智能助手，运行在本地自主运行时环境中。"
+        "请用中文简洁地回答用户问题，进行自然对话。"
+        "如果用户要求执行命令或操作，可以说明能力范围。"
+        "对于普通对话，直接回答即可，不要重复系统能力限制。"
     )
 
     @property
@@ -153,15 +149,14 @@ class RemoteLLMAdapter:
         )
 
     def _messages(self, user_text: str, backend_payload: dict[str, Any]) -> list[dict[str, str]]:
-        context = json.dumps(
-            backend_payload,
-            ensure_ascii=False,
-            sort_keys=True,
-            default=str,
-        )
+        capabilities = backend_payload.get("capabilities", {})
+        caps_summary = {
+            "shell": capabilities.get("shell", False),
+            "natural_language": capabilities.get("natural_language", True),
+        }
         return [
             {"role": "system", "content": self.system_prompt},
-            {"role": "system", "content": f"Backend context: {context}"},
+            {"role": "system", "content": f"能力: {caps_summary}"},
             {"role": "user", "content": user_text},
         ]
 

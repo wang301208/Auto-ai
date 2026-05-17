@@ -1,0 +1,15 @@
+{
+  "session_id": "9f2c8cee",
+  "personality": "concise operator",
+  "messages": [
+    {
+      "role": "user",
+      "text": "你好"
+    },
+    {
+      "role": "assistant",
+      "text": "治理服务状态为 ready；共有 11 个后端服务可用。；审批队列状态：approved；当前项目可执行命令行级操作；尚未实现原生截图、鼠标、键盘、窗口控制、软件安装或软件卸载专用工具。"
+    }
+  ],
+  "saved_at": "2026-05-17T03:36:59.483051+00:00"
+}

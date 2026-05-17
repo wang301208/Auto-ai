@@ -2,9 +2,9 @@
   "identity": "local_autonomous_agent",
   "autonomy_level": "bounded_autonomous_maintenance",
   "active_goal_id": "goal_20260511_090302_540712",
-  "active_goal": "远程自主反思第 3 次",
-  "session_id": "428a8d36",
-  "updated_at": "2026-05-11T18:11:47.171228+00:00",
+  "active_goal": "你好",
+  "session_id": "9f2c8cee",
+  "updated_at": "2026-05-17T03:36:59.505395+00:00",
   "principles": [
     "self_run_system_maintenance",
     "natural_language_for_user_goals",
@@ -25,15 +25,18 @@
     "remote_model_autonomous_reflection"
   ],
   "last_maintenance": {
-    "id": "autonomy_20260511_181147_164218",
-    "trigger": "remote_loop",
+    "id": "autonomy_20260517_033659_496395",
+    "trigger": "prompt_complete",
     "completed": [
+      "runtime.status_snapshot",
+      "runtime.health",
+      "runtime.preflight",
+      "runtime.adapters",
+      "governance.approval_sync",
+      "memory.periodic_tick",
+      "session.save",
       "autonomous.remote_reflection",
-      "autonomous.plan",
-      "autonomous.execute.runtime.status_snapshot",
-      "autonomous.verify.runtime.status_snapshot",
-      "autonomous.execute.memory.periodic_tick",
-      "autonomous.verify.memory.periodic_tick",
+      "self_model.update",
       "autonomous.goals.update"
     ],
     "failed": []
@@ -42,12 +45,12 @@
     "total": 1,
     "active": {
       "id": "goal_20260511_090302_540712",
-      "title": "远程自主反思第 3 次",
+      "title": "你好",
       "status": "active",
       "priority": 5,
-      "source": "remote_loop",
+      "source": "prompt_complete",
       "created_at": "2026-05-11T09:03:02.540712+00:00",
-      "updated_at": "2026-05-11T18:11:47.163218+00:00",
+      "updated_at": "2026-05-17T03:36:59.495395+00:00",
       "progress": [
         {
           "trigger": "remote_loop",
@@ -246,33 +249,13 @@
         },
         {
           "trigger": "long_term_agi_evolution_goal",
-          "created_at": "2026-05-11T10:06:05.626665+00:00",
-          "summary": "??????????????????????????????????????????????????????????????"
-        },
-        {
-          "trigger": "long_term_agi_evolution_goal",
           "created_at": "2026-05-11T10:08:40.238777+00:00",
           "summary": "长期目标：在安全、可审计、能力边界真实的前提下，持续演进为具备更强通用问题解决能力的智能体系统，朝向强人工智能能力体系发展。"
-        },
-        {
-          "trigger": "remote_loop",
-          "created_at": "2026-05-11T10:08:53.744446+00:00",
-          "summary": "??????? 999 ?"
         },
         {
           "trigger": "long_term_agi_evolution_goal",
           "created_at": "2026-05-11T10:10:28.337266+00:00",
           "summary": "长期目标：在安全、可审计、能力边界真实的前提下，持续演进为具备更强通用问题解决能力的智能体系统，朝向强人工智能能力体系发展。"
-        },
-        {
-          "trigger": "remote_loop",
-          "created_at": "2026-05-11T10:10:28.352107+00:00",
-          "summary": "??????? 1000 ?"
-        },
-        {
-          "trigger": "long_term_agi_evolution_goal",
-          "created_at": "2026-05-11T10:17:43.682585+00:00",
-          "summary": "??????????????????????????????????????????????????????????????"
         },
         {
           "trigger": "remote_loop",
@@ -298,6 +281,21 @@
           "trigger": "remote_loop",
           "created_at": "2026-05-11T18:11:47.163218+00:00",
           "summary": "远程自主反思第 3 次"
+        },
+        {
+          "trigger": "prompt_complete",
+          "created_at": "2026-05-17T03:33:07.755667+00:00",
+          "summary": "你好"
+        },
+        {
+          "trigger": "prompt_complete",
+          "created_at": "2026-05-17T03:33:49.806890+00:00",
+          "summary": "你好"
+        },
+        {
+          "trigger": "prompt_complete",
+          "created_at": "2026-05-17T03:36:59.495395+00:00",
+          "summary": "你好"
         }
       ],
       "next_actions": [

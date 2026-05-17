@@ -8,20 +8,22 @@ interface Props {
   items: CompletionItem[];
 }
 
-export default function CompletionList({ active, items }: Props) {
+const CompletionList = React.memo(function CompletionList({ active, items }: Props) {
   if (!items.length) return null;
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor={theme.border} paddingX={1} marginBottom={1}>
+    <Box flexDirection="column" borderStyle="single" borderColor={theme.colors.border} paddingX={1} marginBottom={1}>
       {items.slice(0, 8).map((item, index) => (
-        <Text color={index === active ? theme.prompt : theme.text} key={`${item.text}:${index}`}>
+        <Text color={index === active ? theme.colors.prompt : theme.colors.text} key={`${item.text}:${index}`}>
           {index === active ? '>' : '  '}
           {item.display || item.text}
-          {item.meta ? <Text color={theme.dim}>  {item.meta}</Text> : null}
+          {item.meta ? <Text color={theme.colors.dim}>  {item.meta}</Text> : null}
         </Text>
       ))}
     </Box>
   );
-}
+});
+
+export default CompletionList;
 
 

@@ -1,40 +1,41 @@
-﻿import React from 'react';
+import React from 'react';
 import { Box, Text } from 'ink';
+import { theme, glyph } from '../theme.js';
 import type { TranscriptMessage } from '../types.js';
-import { glyph, theme } from '../theme.js';
 
 interface Props {
-  compact?: boolean;
-  isStreaming?: boolean;
   message: TranscriptMessage;
+  isStreaming?: boolean;
+  compact?: boolean;
 }
 
-const roleStyle = {
-  user: { color: theme.user, label: '你', mark: glyph.user },
-  assistant: { color: theme.assistant, label: '助手', mark: glyph.assistant },
-  system: { color: theme.warn, label: '系统', mark: '!' },
-  tool: { color: theme.tool, label: '工具', mark: glyph.tool }
-} as const;
+const ROLE_STYLE: Record<string, { color: string; prefix: string }> = {
+  user:      { color: theme.colors.user,      prefix: glyph.user },
+  assistant: { color: theme.colors.assistant, prefix: glyph.assistant },
+  system:    { color: theme.colors.dim,       prefix: '' },
+  tool:      { color: theme.colors.tool,      prefix: glyph.tool },
+};
 
-export default function MessageLine({ compact = false, isStreaming = false, message }: Props) {
-  const style = roleStyle[message.role];
+const MessageLine = React.memo(function MessageLine({
+  message,
+  isStreaming = false,
+  compact = false,
+}: Props) {
+  const style = ROLE_STYLE[message.role] || { color: theme.colors.text, prefix: '' };
+
+  const displayText = compact && message.text.length > 200
+    ? `${message.text.slice(0, 200)}...`
+    : message.text;
+
+  const content = `${style.prefix ? style.prefix + ' ' : ''}${displayText}${isStreaming ? '▌' : ''}`;
 
   return (
-    <Box flexDirection="column" marginTop={compact ? 0 : 1}>
-      <Box>
-        <Text color={style.color} bold>
-          {style.mark} {style.label}
-        </Text>
-        {isStreaming ? <Text color={theme.dim}> 正在输出</Text> : null}
-      </Box>
-      <Box paddingLeft={2}>
-        <Text wrap="wrap">
-          {message.text}
-          {isStreaming ? <Text color={theme.prompt}> {glyph.cursor}</Text> : null}
-        </Text>
-      </Box>
+    <Box flexDirection="column" marginBottom={compact ? 0 : 1}>
+      <Text color={style.color} bold={!!style.prefix} wrap="wrap">
+        {content}
+      </Text>
     </Box>
   );
-}
+});
 
-
+export default MessageLine;

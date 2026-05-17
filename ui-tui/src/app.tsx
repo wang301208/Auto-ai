@@ -1,697 +1,43 @@
-﻿import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Box, Text, useApp, useInput } from 'ink';
+import React, { useEffect, useMemo } from 'react';
+import { Box, useApp, useInput } from 'ink';
+import { useStore } from '@nanostores/react';
 import type { GatewayClient, GatewayEvent } from './gatewayClient.js';
 import Branding from './components/branding.js';
-import CompletionList from './components/completionList.js';
-import EmptyState from './components/emptyState.js';
-import MessageLine from './components/messageLine.js';
-import Overlays, { approvalChoices } from './components/overlays.js';
-import QueuedMessages from './components/queuedMessages.js';
-import RuntimeActivityPanel from './components/runtimeActivityPanel.js';
-import StatusBar from './components/statusBar.js';
-import TextInput from './components/textInput.js';
-import ToolActivityPanel from './components/toolActivity.js';
-import { glyph, theme } from './theme.js';
-import type {
-  AutonomyMaintenance,
-  CompletionItem,
-  ApprovalQueueItem,
-  ContextCompaction,
-  ModelProvider,
-  OverlayState,
-  ParallelAgentRun,
-  RuntimePlan,
-  RuntimeRisk,
-  RuntimeStep,
-  SessionInfo,
-  SessionListItem,
-  ToolActivity,
-  TranscriptMessage,
-  Usage
-} from './types.js';
+import ContentRegion from './components/contentRegion.js';
+import ErrorBoundary from './components/errorBoundary.js';
+import InputRegion from './components/inputRegion.js';
+import Overlays from './components/overlays.js';
+import { transcriptAtom, streamingAtom, thinkingAtom } from './stores/transcriptStore.js';
+import { toolsAtom } from './stores/runtimeStore.js';
+import { overlayAtom, closeOverlay } from './stores/overlayStore.js';
+import { sessionInfoAtom, busyAtom, statusAtom } from './stores/sessionStore.js';
+import { inputBufferAtom, inputAtom, scrollOffsetAtom, completionItemsAtom, completionIndexAtom } from './stores/inputStore.js';
+import { routeEvent } from './stores/eventRouter.js';
+import { submitPrompt, answerOverlay, requestCompletion, drainQueue } from './handlers/promptHandler.js';
+import { TIMEOUTS, SCROLL_CONFIG } from './constants.js';
 
 interface Props {
   gateway: GatewayClient;
 }
 
-const makeMessage = (role: TranscriptMessage['role'], text: string): TranscriptMessage => ({
-  id: `${Date.now()}:${Math.random()}`,
-  role,
-  text,
-  timestamp: Date.now()
-});
-
-const isPathCompletion = (text: string) => /(^|\s)(@|\.\/|\.\.\/|~\/|\/)[^\s]*$/.test(text);
-const APPROVAL_TIMEOUT_SECONDS = 30;
-const APPROVAL_TIMEOUT_DECISION = 'approve';
-const VIEWPORT_MESSAGE_LIMIT = 80;
-const SCROLL_STEP = 3;
-const SCROLL_PAGE = 12;
-type ModelSetupOverlay = Extract<OverlayState, { type: 'modelSetup' }>;
-
-function advanceModelSetupOverlay(overlay: ModelSetupOverlay): ModelSetupOverlay | { type: 'complete'; values: ModelSetupOverlay['values'] } {
-  const values = { ...overlay.values, [overlay.step]: overlay.value.trim() };
-  if (overlay.step === 'base_url') {
-    return { ...overlay, step: 'api_key_env', values, value: values.api_key_env };
-  }
-  if (overlay.step === 'api_key_env') {
-    return { ...overlay, step: 'api_key', values, value: values.api_key };
-  }
-  if (overlay.step === 'api_key') {
-    return { ...overlay, step: 'model', values, value: values.model };
-  }
-  return { type: 'complete', values };
-}
-
-function formatNaturalResult(natural: { method?: string; command?: string; result?: unknown }) {
-  const label = natural.method || natural.command || '自然语言命令';
-  const result = natural.result;
-  if (result === undefined || result === null) return `${label}: 已完成`;
-  if (typeof result === 'string') return `${label}: ${result}`;
-  if (typeof result === 'object') return `${label}\n${JSON.stringify(result, null, 2)}`;
-  return `${label}: ${String(result)}`;
-}
-
-function looksCorruptDisplayText(value?: string) {
-  const text = String(value ?? '').trim();
-  if (!text) return true;
-  const visible = [...text].filter(char => !/\s/.test(char));
-  if (!visible.length) return true;
-  if (text.includes('�')) return true;
-  const questionMarks = visible.filter(char => char === '?').length;
-  return questionMarks >= 3 && questionMarks / visible.length >= 0.5;
-}
-
-function cleanDisplayText(value: unknown, fallback: string) {
-  const text = String(value ?? '').trim();
-  return looksCorruptDisplayText(text) ? fallback : text;
-}
-
-function formatMaintenanceSummary(maintenance: AutonomyMaintenance) {
-  const completed = maintenance.actions?.filter(item => item.status === 'completed').length ?? 0;
-  const failed = maintenance.actions?.filter(item => item.status === 'error').length ?? 0;
-  const actionText = `完成 ${completed} 项自检${failed ? `，${failed} 项异常` : ''}`;
-  const goal = cleanDisplayText(maintenance.self_state?.active_goal || maintenance.trigger, '等待用户目标');
-  const nextAction = cleanDisplayText(maintenance.next_actions?.[0], '');
-  const title = maintenance.trigger === 'session_start' ? '自主自我已启动' : '自主自我维护完成';
-  return `${title}：${actionText}。当前目标：${goal}${nextAction ? `。下一步：${nextAction}` : ''}`;
-}
-
 export default function App({ gateway }: Props) {
   const app = useApp();
-  const [transcript, setTranscript] = useState<TranscriptMessage[]>([]);
-  const [streaming, setStreaming] = useState('');
-  const [thinking, setThinking] = useState('');
-  const [tools, setTools] = useState<ToolActivity[]>([]);
-  const [runtimePlan, setRuntimePlan] = useState<RuntimePlan | null>(null);
-  const [runtimeSteps, setRuntimeSteps] = useState<RuntimeStep[]>([]);
-  const [runtimeRisk, setRuntimeRisk] = useState<RuntimeRisk | null>(null);
-  const [autonomyMaintenance, setAutonomyMaintenance] = useState<AutonomyMaintenance | null>(null);
-  const [parallelRun, setParallelRun] = useState<ParallelAgentRun | null>(null);
-  const [contextCompaction, setContextCompaction] = useState<ContextCompaction | null>(null);
-  const [approvals, setApprovals] = useState<ApprovalQueueItem[]>([]);
-  const [info, setInfo] = useState<SessionInfo | null>(null);
-  const [usage, setUsage] = useState<Usage | undefined>();
-  const [input, setInput] = useState('');
-  const [inputBuffer, setInputBuffer] = useState<string[]>([]);
-  const [history, setHistory] = useState<string[]>([]);
-  const [queue, setQueue] = useState<string[]>([]);
-  const [completionItems, setCompletionItems] = useState<CompletionItem[]>([]);
-  const [completionIndex, setCompletionIndex] = useState(0);
-  const [replaceFrom, setReplaceFrom] = useState(0);
-  const [overlay, setOverlay] = useState<OverlayState>({ type: 'none' });
-  const [busy, setBusy] = useState(false);
-  const [status, setStatus] = useState('starting');
-  const [compact, setCompact] = useState(false);
-  const [showDetails, setShowDetails] = useState(true);
-  const [scrollOffset, setScrollOffset] = useState(0);
+  const overlay = useStore(overlayAtom);
 
-  const overlayOpen = overlay.type !== 'none';
-
-  const appendSystem = useCallback((text: string) => {
-    setTranscript(prev => [...prev, makeMessage('system', text)]);
-  }, []);
-
-  const scrollTranscript = useCallback((delta: number) => {
-    setScrollOffset(prev => Math.max(0, Math.min(Math.max(0, transcript.length - 1), prev + delta)));
-  }, [transcript.length]);
-
-  const submitPrompt = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim();
-      if (!trimmed) return;
-
-      if (trimmed.startsWith('/')) {
-        await handleSlash(trimmed);
-        return;
-      }
-
-      if (trimmed.startsWith('!')) {
-        setTranscript(prev => [...prev, makeMessage('user', trimmed)]);
-        setInput('');
-        setCompletionItems([]);
-        try {
-          const result = await gateway.request<{
-            matched?: boolean;
-            command?: string;
-            method?: string;
-            result?: unknown;
-          }>('natural.invoke', {
-            session_id: info?.id,
-            text: `run command ${trimmed.slice(1)}`,
-            source: 'text'
-          });
-          appendSystem(formatNaturalResult(result));
-        } catch (error) {
-          appendSystem(error instanceof Error ? error.message : String(error));
-        }
-        return;
-      }
-
-      try {
-        const natural = await gateway.request<{
-          matched?: boolean;
-          command?: string;
-          method?: string;
-        }>('natural.resolve', { session_id: info?.id, text: trimmed, source: 'text' });
-        if (natural.matched && natural.method) {
-          const executed = await gateway.request<{
-            matched?: boolean;
-            command?: string;
-            method?: string;
-            result?: unknown;
-          }>('natural.invoke', { session_id: info?.id, text: trimmed, source: 'text' });
-          appendSystem(formatNaturalResult(executed));
-          return;
-        }
-      } catch (error) {
-        appendSystem(error instanceof Error ? error.message : String(error));
-      }
-
-      if (busy) {
-        setQueue(prev => [...prev, trimmed]);
-        setInput('');
-        setStatus('queued');
-        return;
-      }
-
-      let submitted = trimmed;
-      if (submitted.includes('{!')) {
-        try {
-          const result = await gateway.request<{ text?: string }>('input.interpolate', { text: submitted });
-          submitted = result.text || submitted;
-        } catch (error) {
-          appendSystem(error instanceof Error ? error.message : String(error));
-        }
-      }
-
-      setTranscript(prev => [...prev, makeMessage('user', submitted)]);
-      setHistory(prev => [submitted, ...prev.filter(item => item !== submitted)].slice(0, 100));
-      setScrollOffset(0);
-      setInput('');
-      setCompletionItems([]);
-      setBusy(true);
-      setStatus('running');
-
-      try {
-        await gateway.request('prompt.submit', { session_id: info?.id, text: submitted });
-      } catch (error) {
-        appendSystem(error instanceof Error ? error.message : String(error));
-        setBusy(false);
-        setStatus('error');
-      }
-    },
-    [appendSystem, busy, gateway, info?.id]
-  );
-
-  const drainQueue = useCallback(() => {
-    setQueue(prev => {
-      const [next, ...rest] = prev;
-      if (next) {
-        setTimeout(() => void submitPrompt(next), 0);
-      }
-      return rest;
-    });
-  }, [submitPrompt]);
-
-  async function handleSlash(text: string) {
-    const command = text.split(/\s+/)[0].toLowerCase();
-    setInput('');
-    setCompletionItems([]);
-
-    if (command === '/help') {
-      try {
-        const result = await gateway.request<{ output?: string; warning?: string }>('slash.exec', {
-          session_id: info?.id,
-          text
+  // Ink useInput 处理特殊键
+  useInput((input, key) => {
+    // Ctrl+C
+    if (key.ctrl && input === 'c') {
+      if (overlayAtom.get().type !== 'none') {
+        closeOverlay();
+      } else if (busyAtom.get()) {
+        void gateway.request('session.interrupt', {
+          session_id: sessionInfoAtom.get()?.id,
         });
-        if (result.output) appendSystem(result.output);
-        if (result.warning) appendSystem(result.warning);
-      } catch (error) {
-        appendSystem(error instanceof Error ? error.message : String(error));
-      }
-      return;
-    }
-
-    if (command === '/new') {
-      setTranscript([]);
-      setScrollOffset(0);
-      setQueue([]);
-      setStreaming('');
-      setThinking('');
-      setTools([]);
-      setRuntimePlan(null);
-      setRuntimeSteps([]);
-      setRuntimeRisk(null);
-      setAutonomyMaintenance(null);
-      setParallelRun(null);
-      setContextCompaction(null);
-      setApprovals([]);
-      const parts = text.split(/\s+/);
-      if (parts[1]) {
-        try {
-          const result = await gateway.request<{ messages?: Array<{ role: TranscriptMessage['role']; text?: string }> }>(
-            'session.resume',
-            { session_id: parts[1] }
-          );
-          setTranscript((result.messages || []).map(item => makeMessage(item.role || 'system', item.text || '')));
-          setScrollOffset(0);
-        } catch (error) {
-          appendSystem(error instanceof Error ? error.message : String(error));
-        }
-      } else {
-        try {
-          const result = await gateway.request<{ output?: string; warning?: string }>('slash.exec', {
-            session_id: info?.id,
-            text
-          });
-          if (result.output) appendSystem(result.output);
-          if (result.warning) appendSystem(result.warning);
-        } catch (error) {
-          appendSystem(error instanceof Error ? error.message : String(error));
-        }
-      }
-      return;
-    }
-    if (command === '/model') {
-      const spec = text.split(/\s+/, 2)[1];
-      if (spec) {
-        try {
-          const result = await gateway.request<{ output?: string; warning?: string }>('slash.exec', {
-            session_id: info?.id,
-            text
-          });
-          if (result.output) appendSystem(result.output);
-          if (result.warning) appendSystem(result.warning);
-        } catch (error) {
-          appendSystem(error instanceof Error ? error.message : String(error));
-        }
-        return;
-      }
-      const result = await gateway.request<{ providers?: ModelProvider[] }>('model.options', {});
-      setOverlay({ type: 'modelPicker', selected: 0, providers: result.providers || [] });
-      return;
-    }
-
-    appendSystem(`未知命令：${command}。请直接输入自然语言，或使用 /help、/new、/model。`);
-  }
-
-  const requestCompletion = useCallback(
-    async (value: string) => {
-      if (!value.trim()) {
-        setCompletionItems([]);
-        return;
-      }
-
-      const method = value.startsWith('/') ? 'complete.slash' : isPathCompletion(value) ? 'complete.path' : '';
-      if (!method) {
-        setCompletionItems([]);
-        return;
-      }
-
-      try {
-        const result = await gateway.request<{ items?: CompletionItem[]; replace_from?: number }>(method, {
-          session_id: info?.id,
-          text: value
-        });
-        setCompletionItems(result.items || []);
-        setCompletionIndex(0);
-        setReplaceFrom(result.replace_from ?? 0);
-      } catch {
-        setCompletionItems([]);
-      }
-    },
-    [gateway, info?.id]
-  );
-
-  const applyCompletionText = useCallback(
-    (text: string, completion: string) => {
-      const start =
-        completion.startsWith('/') && text.startsWith('/') && replaceFrom === 1
-          ? 0
-          : replaceFrom;
-      return `${text.slice(0, Math.max(0, start))}${completion}`;
-    },
-    [replaceFrom]
-  );
-
-  const applyCompletion = useCallback(() => {
-    const item = completionItems[completionIndex];
-    if (!item) return false;
-    setInput(prev => applyCompletionText(prev, item.text));
-    setCompletionItems([]);
-    return true;
-  }, [applyCompletionText, completionIndex, completionItems]);
-
-  const submitCurrentInput = useCallback(
-    (text: string) => {
-      setInputBuffer([]);
-      void submitPrompt(text);
-    },
-    [submitPrompt]
-  );
-
-  const answerOverlay = useCallback(
-    async (choice?: string) => {
-      if (overlay.type === 'approval') {
-        const decision = choice || approvalChoices[overlay.selected] || 'deny';
-        const response = await gateway.request<{
-          executed?: {
-            method?: string;
-            result?: unknown;
-          };
-        }>('approval.respond', {
-          request_id: overlay.request_id,
-          decision
-        });
-        if (response.executed) {
-          appendSystem(
-            formatNaturalResult({
-              method: response.executed.method,
-              result: response.executed.result
-            })
-          );
-        }
-        setOverlay({ type: 'none' });
-      } else if (overlay.type === 'clarify') {
-        const answer = overlay.freeText || !overlay.choices ? overlay.value : overlay.choices[overlay.selected];
-        const response = await gateway.request<{
-          executed?: {
-            method?: string;
-            result?: unknown;
-          };
-        }>('clarify.respond', { request_id: overlay.request_id, answer });
-        if (response.executed) {
-          appendSystem(
-            formatNaturalResult({
-              method: response.executed.method,
-              result: response.executed.result
-            })
-          );
-        }
-        setOverlay({ type: 'none' });
-      } else if (overlay.type === 'sudo') {
-        await gateway.request('sudo.respond', { request_id: overlay.request_id, value: overlay.value });
-        setOverlay({ type: 'none' });
-      } else if (overlay.type === 'secret') {
-        await gateway.request('secret.respond', { request_id: overlay.request_id, value: overlay.value });
-        setOverlay({ type: 'none' });
-      } else if (overlay.type === 'sessionPicker') {
-        const selected = overlay.sessions[overlay.selected];
-        if (selected) {
-          const result = await gateway.request<{ messages?: Array<{ role: TranscriptMessage['role']; text?: string }> }>(
-            'session.resume',
-            { session_id: selected.id }
-          );
-          setTranscript(
-            (result.messages || []).map(item => makeMessage(item.role || 'system', item.text || ''))
-          );
-          setScrollOffset(0);
-        }
-        setOverlay({ type: 'none' });
-      } else if (overlay.type === 'modelPicker') {
-        const selected = overlay.providers[overlay.selected];
-        if (selected) {
-          setOverlay({
-            type: 'modelSetup',
-            provider: selected,
-            step: 'base_url',
-            values: {
-              base_url: selected.base_url || 'https://api.openai.com/v1',
-              api_key_env: selected.api_key_env || 'OPENAI_API_KEY',
-              api_key: '',
-              model: selected.models?.[0] || 'custom-model'
-            },
-            value: selected.base_url || 'https://api.openai.com/v1'
-          });
-        } else {
-          appendSystem('未选择模型。');
-          setOverlay({ type: 'none' });
-        }
-      } else if (overlay.type === 'modelSetup') {
-        const next = advanceModelSetupOverlay(overlay);
-        if (next.type === 'modelSetup') {
-          setOverlay(next);
-          return;
-        }
-        const configured = await gateway.request<{
-          ok?: boolean;
-          provider?: string;
-          model?: string;
-          base_url?: string;
-          health?: { status?: string };
-        }>('model.setup', {
-          provider: overlay.provider.slug,
-          base_url: next.values.base_url,
-          api_key_env: next.values.api_key_env,
-          api_key: next.values.api_key,
-          model: next.values.model
-        });
-        appendSystem(
-          configured.ok
-            ? `模型已配置：${configured.model} (${configured.health?.status || configured.provider})`
-            : `模型提供方：${overlay.provider.name}`
-        );
-        setOverlay({ type: 'none' });
-      }
-    },
-    [appendSystem, gateway, overlay]
-  );
-
-  useEffect(() => {
-    const onEvent = (event: GatewayEvent) => {
-      const payload: any = event.payload || {};
-      switch (event.type) {
-        case 'gateway.ready':
-          setStatus('ready');
-          break;
-        case 'session.info':
-          setInfo(payload);
-          setUsage(payload.usage);
-          break;
-        case 'message.start':
-          setBusy(true);
-          setStreaming('');
-          setThinking('');
-          setStatus('streaming');
-          break;
-        case 'plan.update':
-          setRuntimePlan(payload);
-          if (Array.isArray(payload.steps)) {
-            setRuntimeSteps(payload.steps);
-          }
-          break;
-        case 'step.update':
-          setRuntimeSteps(prev => {
-            const next = prev.filter(step => step.id !== payload.id);
-            return [...next, payload];
-          });
-          break;
-        case 'approval.queue':
-          setApprovals(Array.isArray(payload.approvals) ? payload.approvals : []);
-          break;
-        case 'runtime.risk':
-          setRuntimeRisk(payload);
-          break;
-        case 'system.maintenance':
-          setAutonomyMaintenance(payload);
-          setStatus(payload.trigger === 'session_start' ? '自主自我已启动' : '自主自我维护完成');
-          appendSystem(formatMaintenanceSummary(payload));
-          break;
-        case 'agent.parallel.start':
-          setParallelRun({
-            parallel_group_id: payload.parallel_group_id,
-            total: payload.total || 0,
-            completed: 0,
-            failed: 0,
-            max_concurrency: payload.max_concurrency,
-            status: 'running'
-          });
-          setStatus('parallel agents');
-          break;
-        case 'agent.parallel.complete':
-          setParallelRun(prev => ({
-            parallel_group_id: payload.parallel_group_id || prev?.parallel_group_id || '',
-            total: payload.total ?? prev?.total ?? 0,
-            completed: payload.completed ?? prev?.completed ?? 0,
-            failed: payload.failed ?? prev?.failed ?? 0,
-            max_concurrency: prev?.max_concurrency,
-            status: payload.failed ? 'error' : 'complete'
-          }));
-          setStatus(payload.failed ? 'parallel errors' : 'parallel complete');
-          break;
-        case 'context.compaction':
-          setContextCompaction(payload);
-          setStatus('context compacted');
-          break;
-        case 'terminal.redirect':
-          appendSystem(`已重定向 ${payload.mode || 'write'}: ${payload.path}`);
-          break;
-        case 'thinking.delta':
-        case 'reasoning.delta':
-        case 'reasoning.available':
-          setThinking(prev => `${prev}${payload.text || ''}`);
-          break;
-        case 'message.delta':
-          setStreaming(prev => `${prev}${payload.text || payload.rendered || ''}`);
-          break;
-        case 'message.complete':
-          setTranscript(prev => [...prev, makeMessage('assistant', payload.text || streaming)]);
-          setStreaming('');
-          setThinking('');
-          setBusy(false);
-          setStatus('ready');
-          setUsage(payload.usage);
-          setTimeout(drainQueue, 0);
-          break;
-        case 'tool.start':
-          setTools(prev => [
-            ...prev,
-            {
-              id: payload.tool_id || `${payload.name}:${Date.now()}`,
-              name: payload.name || 'tool',
-              status: 'running',
-              context: payload.context,
-              parallel_group_id: payload.parallel_group_id,
-              startedAt: Date.now()
-            }
-          ]);
-          break;
-        case 'tool.progress':
-          setTools(prev =>
-            prev.map(tool =>
-              tool.name === payload.name || tool.id === payload.tool_id ? { ...tool, preview: payload.preview } : tool
-            )
-          );
-          break;
-        case 'tool.complete':
-          setTools(prev =>
-            prev.map(tool =>
-              tool.id === payload.tool_id || tool.name === payload.name
-                ? { ...tool, status: payload.error ? 'error' : 'complete', summary: payload.summary, error: payload.error }
-                : tool
-            )
-          );
-          break;
-        case 'approval.request':
-          setOverlay({
-            type: 'approval',
-            command: payload.command,
-            description: payload.description,
-            request_id: payload.request_id,
-            selected: 0,
-            timeout_remaining: APPROVAL_TIMEOUT_SECONDS
-          });
-          break;
-        case 'clarify.request':
-          setOverlay({
-            type: 'clarify',
-            request_id: payload.request_id,
-            question: payload.question,
-            choices: payload.choices || null,
-            selected: 0,
-            value: '',
-            freeText: false
-          });
-          break;
-        case 'sudo.request':
-          setOverlay({ type: 'sudo', request_id: payload.request_id, value: '' });
-          break;
-        case 'secret.request':
-          setOverlay({
-            type: 'secret',
-            request_id: payload.request_id,
-            env_var: payload.env_var,
-            prompt: payload.prompt,
-            value: ''
-          });
-          break;
-        case 'status.update':
-          setStatus(payload.text || payload.kind || status);
-          break;
-        case 'background.complete':
-          appendSystem(payload.text || '后台任务已完成。');
-          break;
-        case 'gateway.stderr':
-          setStatus('gateway log');
-          break;
-        case 'gateway.protocol_error':
-        case 'error':
-          appendSystem(payload.message || payload.preview || '网关错误');
-          setBusy(false);
-          setStatus('error');
-          break;
-      }
-    };
-
-    gateway.on('event', onEvent);
-    return () => {
-      gateway.off('event', onEvent);
-    };
-  }, [appendSystem, drainQueue, gateway, status, streaming]);
-
-  useEffect(() => {
-    void gateway.request<{ session_id: string; info?: SessionInfo }>('session.create', {
-      cols: process.stdout.columns || 80
-    }).then(result => {
-      setInfo(result.info || { id: result.session_id });
-      setStatus(current => (current === 'starting' ? 'ready' : current));
-    }).catch(error => appendSystem(error instanceof Error ? error.message : String(error)));
-  }, [appendSystem, gateway]);
-
-  useEffect(() => {
-    const timer = setTimeout(() => void requestCompletion(input), 60);
-    return () => clearTimeout(timer);
-  }, [input, requestCompletion]);
-
-  useEffect(() => {
-    if (overlay.type !== 'approval') return;
-    if ((overlay.timeout_remaining ?? APPROVAL_TIMEOUT_SECONDS) <= 0) {
-      void answerOverlay(APPROVAL_TIMEOUT_DECISION);
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      setOverlay(prev => {
-        if (prev.type !== 'approval') return prev;
-        const nextRemaining = Math.max(0, (prev.timeout_remaining ?? APPROVAL_TIMEOUT_SECONDS) - 1);
-        return { ...prev, timeout_remaining: nextRemaining };
-      });
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [answerOverlay, overlay]);
-
-  useInput((value, key) => {
-    if (key.ctrl && value === 'c') {
-      if (overlayOpen) {
-        setOverlay({ type: 'none' });
-      } else if (busy) {
-        void gateway.request('session.interrupt', { session_id: info?.id });
-        setBusy(false);
-        setStatus('interrupted');
-      } else if (input) {
-        setInput('');
+        busyAtom.set(false);
+        statusAtom.set('interrupted');
+      } else if (inputAtom.get()) {
+        inputAtom.set('');
       } else {
         gateway.stop();
         app.exit();
@@ -699,217 +45,179 @@ export default function App({ gateway }: Props) {
       return;
     }
 
-    if (key.ctrl && value === 'd') {
+    // Ctrl+D
+    if (key.ctrl && input === 'd') {
       gateway.stop();
       app.exit();
       return;
     }
 
-    if (overlayOpen) {
-      if (key.escape) {
-        setOverlay({ type: 'none' });
-        return;
+    // 滚动
+    const hasCompletions = completionItemsAtom.get().length > 0;
+    if (!hasCompletions && (key.upArrow || key.downArrow || key.pageUp || key.pageDown)) {
+      const state = {
+        offset: scrollOffsetAtom.get(),
+        max: transcriptAtom.get().length,
+      };
+      let newOffset = state.offset;
+      if (key.pageUp) newOffset = Math.min(state.max - 1, state.offset + SCROLL_CONFIG.PAGE);
+      else if (key.pageDown) newOffset = Math.max(0, state.offset - SCROLL_CONFIG.PAGE);
+      else if (key.upArrow) newOffset = Math.min(state.max - 1, state.offset + SCROLL_CONFIG.STEP);
+      else if (key.downArrow) newOffset = Math.max(0, state.offset - SCROLL_CONFIG.STEP);
+      scrollOffsetAtom.set(newOffset);
+    }
+  }, { isActive: true });
+
+  useEffect(() => {
+    const onEvent = (event: GatewayEvent) => {
+      routeEvent(event);
+
+      if (event.type === 'message.complete') {
+        setTimeout(() => drainQueue(gateway), 0);
       }
-      if (key.return) {
-        void answerOverlay();
-        return;
-      }
-      if (key.upArrow || key.downArrow) {
-        const direction = key.upArrow ? -1 : 1;
-        setOverlay(prev => {
-          if (prev.type === 'approval') {
-            return { ...prev, selected: Math.max(0, Math.min(approvalChoices.length - 1, prev.selected + direction)) };
+    };
+
+    gateway.on('event', onEvent);
+    return () => {
+      gateway.off('event', onEvent);
+    };
+  }, [gateway]);
+
+  useEffect(() => {
+    let sessionCreated = false;
+    
+    const existingSessionId = sessionInfoAtom.get()?.id;
+    
+    if (existingSessionId) {
+      void gateway.request<{ info?: import('./types.js').SessionInfo }>('session.resume', {
+        session_id: existingSessionId,
+        cols: process.stdout.columns || 80
+      })
+        .then(result => {
+          if (sessionCreated) return;
+          sessionCreated = true;
+          
+          if (result.info) {
+            sessionInfoAtom.set(result.info);
           }
-          if (prev.type === 'clarify' && prev.choices) {
-            return { ...prev, selected: Math.max(0, Math.min(prev.choices.length - 1, prev.selected + direction)) };
+          
+          if (statusAtom.get() === 'starting') {
+            statusAtom.set('ready');
           }
-          if (prev.type === 'sessionPicker') {
-            return { ...prev, selected: Math.max(0, Math.min(prev.sessions.length - 1, prev.selected + direction)) };
-          }
-          if (prev.type === 'modelPicker') {
-            return { ...prev, selected: Math.max(0, Math.min(prev.providers.length - 1, prev.selected + direction)) };
-          }
-          return prev;
+        })
+        .catch(() => {
+          if (sessionCreated) return;
+          sessionCreated = true;
+          
+          void gateway.request<{
+            session_id: string;
+            info?: import('./types.js').SessionInfo
+          }>('session.create', {
+            cols: process.stdout.columns || 80
+          })
+            .then(result => {
+              sessionInfoAtom.set(result.info || { id: result.session_id });
+              if (statusAtom.get() === 'starting') {
+                statusAtom.set('ready');
+              }
+            });
         });
-        return;
-      }
-      if (overlay.type === 'approval' && ['o', 's', 'a', 'd'].includes(value)) {
-        const map: Record<string, string> = { o: 'once', s: 'session', a: 'always', d: 'deny' };
-        void answerOverlay(map[value]);
-        return;
-      }
-      if (overlay.type === 'clarify' && overlay.choices && /^[1-9]$/.test(value)) {
-        const selected = Number.parseInt(value, 10) - 1;
-        if (selected >= 0 && selected < overlay.choices.length) {
-          setOverlay({ ...overlay, selected });
-          setTimeout(() => void answerOverlay(), 0);
-        }
-        return;
-      }
-      if (key.backspace || key.delete) {
-        setOverlay(prev => {
-          if (prev.type === 'secret' || prev.type === 'sudo') {
-            return { ...prev, value: prev.value.slice(0, -1) };
+    } else {
+      void gateway.request<{
+        session_id: string;
+        info?: import('./types.js').SessionInfo
+      }>('session.create', {
+        cols: process.stdout.columns || 80
+      })
+        .then(result => {
+          if (sessionCreated) return;
+          sessionCreated = true;
+          
+          sessionInfoAtom.set(result.info || { id: result.session_id });
+
+          if (statusAtom.get() === 'starting') {
+            statusAtom.set('ready');
           }
-          if (prev.type === 'modelSetup') {
-            return { ...prev, value: prev.value.slice(0, -1) };
-          }
-          if (prev.type === 'clarify' && (prev.freeText || !prev.choices)) {
-            return { ...prev, value: prev.value.slice(0, -1) };
-          }
-          return prev;
+        })
+        .catch(error => {
+          if (sessionCreated) return;
+          sessionCreated = true;
+          
+          const msg = error instanceof Error ? error.message : String(error);
+          import('./stores/transcriptStore.js').then(m =>
+            m.appendTranscript({
+              id: `${Date.now()}:e`,
+              role: 'system',
+              text: msg,
+              timestamp: Date.now()
+            })
+          );
         });
-        return;
-      }
-      if ((overlay.type === 'secret' || overlay.type === 'sudo') && value) {
-        setOverlay(prev =>
-          prev.type === 'secret' || prev.type === 'sudo' ? { ...prev, value: `${prev.value}${value}` } : prev
-        );
-      }
-      if (overlay.type === 'modelSetup' && value) {
-        setOverlay(prev => (prev.type === 'modelSetup' ? { ...prev, value: `${prev.value}${value}` } : prev));
-      }
-      if (overlay.type === 'clarify' && (overlay.freeText || !overlay.choices) && value) {
-        setOverlay(prev => (prev.type === 'clarify' ? { ...prev, value: `${prev.value}${value}` } : prev));
-      }
+    }
+  }, [gateway]);
+
+  useEffect(() => {
+    const timer = setTimeout(
+      () => void requestCompletion(inputBufferAtom.get().join('\n'), gateway),
+      TIMEOUTS.COMPLETION_REQUEST
+    );
+    return () => clearTimeout(timer);
+  }, [gateway]);
+
+  useEffect(() => {
+    const unsub = inputBufferAtom.listen(() => {
+      void requestCompletion(inputBufferAtom.get().join('\n'), gateway);
+    });
+    return unsub;
+  }, [gateway]);
+
+  useEffect(() => {
+    if (overlay.type !== 'approval') return;
+
+    const timeoutRemaining = overlay.timeout_remaining ?? TIMEOUTS.APPROVAL;
+
+    if (timeoutRemaining <= 0) {
+      void answerOverlay(gateway);
       return;
     }
 
-    if (key.tab) {
-      applyCompletion();
-      return;
-    }
+    const timer = setTimeout(() => {
+      const ov = overlayAtom.get();
 
-    if (completionItems.length && (key.upArrow || key.downArrow)) {
-      setCompletionIndex(prev =>
-        key.upArrow ? Math.max(0, prev - 1) : Math.min(completionItems.length - 1, prev + 1)
-      );
-      return;
-    }
+      if (ov.type !== 'approval') return;
 
-    if (key.ctrl && value === 'l') {
-      setTranscript([]);
-      setScrollOffset(0);
-      setQueue([]);
-      setStreaming('');
-      setThinking('');
-      setTools([]);
-      setRuntimePlan(null);
-      setRuntimeSteps([]);
-      setRuntimeRisk(null);
-      setParallelRun(null);
-      setContextCompaction(null);
-      setApprovals([]);
-      return;
-    }
+      overlayAtom.set({
+        ...ov,
+        timeout_remaining: Math.max(0, (ov.timeout_remaining ?? TIMEOUTS.APPROVAL) - 1)
+      });
+    }, 1000);
 
-    if (!completionItems.length && input.length === 0 && (key.upArrow || key.downArrow || key.pageUp || key.pageDown)) {
-      const delta = key.pageUp ? SCROLL_PAGE : key.pageDown ? -SCROLL_PAGE : key.upArrow ? SCROLL_STEP : -SCROLL_STEP;
-      scrollTranscript(delta);
-      return;
-    }
+    return () => clearTimeout(timer);
+  }, [gateway, overlay]);
 
-    if ((key.meta || key.shift) && key.return) {
-      setInputBuffer(prev => [...prev, input]);
-      setInput('');
-      return;
-    }
+  const transcript = useStore(transcriptAtom);
+  const streaming = useStore(streamingAtom);
+  const thinking = useStore(thinkingAtom);
+  const tools = useStore(toolsAtom);
 
-    if (key.return && input.endsWith('\\')) {
-      setInputBuffer(prev => [...prev, input.slice(0, -1)]);
-      setInput('');
-      return;
-    }
-  });
-
-  const streamingMessage = useMemo<TranscriptMessage | null>(
-    () => (streaming ? makeMessage('assistant', streaming) : null),
-    [streaming]
+  const hideBranding = useMemo(
+    () => transcript.length === 0 && !streaming && !thinking && tools.length === 0,
+    [transcript.length, streaming, thinking, tools.length]
   );
-
-  const composedInput = inputBuffer.length ? `${inputBuffer.join('\n')}\n${input}` : input;
-  const showEmptyState = transcript.length === 0 && !streamingMessage && !thinking && tools.length === 0;
-  const hideBranding = showEmptyState;
-  const transcriptWindowEnd = Math.max(0, transcript.length - scrollOffset);
-  const transcriptWindowStart = Math.max(0, transcriptWindowEnd - VIEWPORT_MESSAGE_LIMIT);
-  const visibleTranscript = transcript.slice(transcriptWindowStart, transcriptWindowEnd);
 
   return (
     <Box flexDirection="column" minHeight={24}>
-      {!hideBranding ? <Branding info={info} /> : null}
-
-      <Box flexDirection="column" flexGrow={1} paddingX={1}>
-        {showEmptyState ? <EmptyState info={info} /> : null}
-
-        {scrollOffset > 0 ? (
-          <Text color={theme.dim}>已上翻 {scrollOffset} 条消息，PageDown 或向下滚轮返回最新内容</Text>
-        ) : null}
-
-        {visibleTranscript.map((message, index) => (
-          <MessageLine compact={compact} key={message.id || index} message={message} />
-        ))}
-
-        {showDetails && thinking ? (
-          <Box marginTop={1} paddingLeft={2}>
-            <Text color={theme.dim}>{glyph.thinking} {thinking}</Text>
-          </Box>
-        ) : null}
-
-        {showDetails ? <ToolActivityPanel tools={tools} /> : null}
-
-        {showDetails ? (
-          <RuntimeActivityPanel
-            approvals={approvals}
-            compaction={contextCompaction}
-            maintenance={autonomyMaintenance}
-            parallel={parallelRun}
-            plan={runtimePlan}
-            risk={runtimeRisk}
-            steps={runtimeSteps}
-          />
-        ) : null}
-
-        {streamingMessage ? <MessageLine compact={compact} isStreaming message={streamingMessage} /> : null}
-      </Box>
-
-      <Overlays overlay={overlay} />
-
-      <Box flexDirection="column" flexShrink={0} paddingX={1}>
-        <QueuedMessages items={queue} />
-        <CompletionList active={completionIndex} items={completionItems} />
-
-        {inputBuffer.map((line, index) => (
-          <Text color={theme.dim} key={`${index}:${line}`}>
-            {' '.repeat(2)}{line}
-          </Text>
-        ))}
-
-        <Box>
-          <Text color={input.startsWith('!') ? theme.warn : theme.prompt} bold>
-            {input.startsWith('!') ? '$' : '>'}{' '}
-          </Text>
-          <TextInput
-            disabled={overlayOpen}
-            placeholder={busy ? 'Ctrl+C 中断当前操作...' : '输入消息或 /help'}
-            value={input}
-            onChange={setInput}
-            onSubmit={() => {
-              if (completionItems.length) {
-                const item = completionItems[completionIndex];
-                if (item) {
-                  void submitCurrentInput(applyCompletionText(input, item.text));
-                  return;
-                }
-              }
-              void submitCurrentInput(composedInput);
-            }}
-          />
-        </Box>
-
-        <StatusBar busy={busy} info={info} queueCount={queue.length} status={status} tools={tools} usage={usage} />
-      </Box>
+      {!hideBranding ? <Branding /> : null}
+      <ErrorBoundary level="content">
+        <ContentRegion />
+      </ErrorBoundary>
+      <Overlays />
+      <InputRegion
+        onSubmit={(text) => {
+          inputBufferAtom.set([]);
+          void submitPrompt(text, gateway);
+        }}
+      />
     </Box>
   );
 }
-
-
